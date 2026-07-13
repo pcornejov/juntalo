@@ -1,170 +1,170 @@
 # Juntalo — Etapa 2: Arquitectura
 
-> Estado: **propuesta, pendiente de aprobación**. Depende de la Etapa 1 aprobada (`etapa-1-analisis-producto.md`). Decisión confirmada: modelo de fondos **split payment** (el dinero va directo al organizador vía la pasarela; Juntalo solo cobra comisión).
+> Estado: **propuesta v2, pendiente de aprobación**. Depende de la Etapa 1 aprobada (`etapa-1-analisis-producto.md`). Decisiones confirmadas: modelo de fondos **split payment**; backend en **NestJS (TypeScript)** — el usuario trabaja TS a diario y Go sería aprendizaje; para 1 dev, un solo lenguaje + tipos compartidos end-to-end vale más que las ventajas operacionales de Go en esta etapa.
 
 ---
 
 ## 1. Visión general
 
-Monorepo con dos aplicaciones desplegables y una infraestructura común:
+Monorepo TypeScript con dos aplicaciones y un paquete compartido:
 
 ```
 juntalo/
-├── frontend/          # SPA React + TS (Vite)
-├── backend/           # API Go (Fiber) + workers ligeros
-├── docs/              # Documentos de producto y arquitectura
-├── docker/            # Dockerfiles + compose + config nginx/caddy
+├── apps/
+│   ├── web/               # SPA React + TS (Vite)
+│   └── api/               # NestJS
+├── packages/
+│   └── shared/            # ← tipos compartidos: DTOs, códigos de error, tipos de campaña, helpers CLP
+├── docs/
+├── docker/
 └── README.md
 ```
 
-- **Un solo binario Go** sirve la API. No hay microservicios: a la escala del MVP (y de los primeros miles de usuarios) un monolito modular es más rápido de desarrollar, desplegar y depurar. La modularidad interna (ver §3) permite extraer servicios después *si algún módulo lo justifica con datos*, no por anticipación.
-- **SPA + endpoint SSR mínimo**: la app es una SPA (Vite), pero la página pública de campaña necesita meta tags Open Graph server-rendered (riesgo 14 de Etapa 1). En vez de meter Next.js o SSR completo, el backend Go renderiza un HTML mínimo (plantilla con OG tags + redirect/hydrate a la SPA) para las rutas `/c/:slug` cuando el user-agent es un bot/preview, y sirve la SPA normal para navegadores. Un middleware de detección simple es suficiente y evita duplicar el stack de frontend.
+- **pnpm workspaces** (+ scripts npm coordinados; Turborepo solo si el build se vuelve lento — no de entrada). `packages/shared` es la ventaja estructural de ir full-TS: el contrato API vive en un solo lugar, tipado, importado por ambas apps. Cambias un DTO y el compilador te muestra todo lo que rompe, en frontend y backend.
+- **Un solo deployable de backend** (monolito modular NestJS). Sin microservicios: a la escala del MVP un monolito es más rápido de desarrollar, desplegar y depurar; los módulos NestJS dan la modularidad interna para extraer servicios después *si los datos lo justifican*.
+- **SPA + render OG en el API**: la página pública `/c/:slug` necesita meta tags Open Graph server-rendered (riesgo 14, Etapa 1 — la preview en WhatsApp es la conversión). En vez de migrar a Next.js, un controller NestJS sirve HTML mínimo con OG tags para bots/previews y la SPA para navegadores. Si más adelante el SEO público se vuelve crítico, se evalúa mover solo la página pública a SSR.
 
 ### Alternativas descartadas
-- **Next.js/Remix (SSR completo)**: resuelve OG tags "gratis" pero duplica la complejidad operacional (servidor Node + servidor Go) para 1 dev. Se descarta; si el SEO de páginas públicas se vuelve crítico, se revisa.
-- **Microservicios / serverless**: sin equipo ni carga que lo justifique. El monolito modular es la decisión correcta hoy y no cierra puertas.
+- **Go + Fiber** (propuesta v1): mejor huella de RAM y binario único, pero el usuario no trabaja Go; el costo de aprendizaje + mantener el contrato API a mano supera esas ventajas para validar un MVP en solitario. El diseño de dominio se tradujo 1:1 — nada se perdió.
+- **Next.js full-stack (API routes/server actions)**: acopla frontend y backend en un solo runtime y limita la evolución del API (webhooks de pasarelas, workers, rate limiting fino). NestJS da estructura de backend real que crecerá con el producto.
+- **Microservicios / serverless**: sin equipo ni carga que lo justifique.
 
 ---
 
-## 2. Backend (Go + Fiber)
+## 2. Backend (NestJS)
 
-### 2.1 Capas
+### 2.1 Módulos y capas
 
-Clean Architecture pragmática, tres capas + API. La regla de dependencia es estricta: las flechas apuntan hacia adentro.
+Módulos NestJS por vertical de dominio (misma partición que la Etapa 1), con separación interna dominio / aplicación / infraestructura donde aporta:
 
 ```
-backend/
-├── cmd/api/main.go                  # composición: wiring de dependencias, arranque
-├── internal/
-│   ├── domain/                      # ← núcleo: entidades, invariantes, errores de negocio
-│   │   ├── campaign/                #    Campaign, CampaignType (registro declarativo), estados
-│   │   ├── payment/                 #    Payment, máquina de estados, comisión, Money (CLP)
-│   │   ├── contribution/            #    Contributor, Contribution
-│   │   ├── identity/                #    User, Organization, credenciales
-│   │   └── audit/                   #    AuditLog
-│   ├── app/                         # ← casos de uso: orquestan dominio + puertos
-│   │   ├── campaigns/               #    CreateCampaign, PublishCampaign, FinishCampaign...
-│   │   ├── contributions/           #    StartContribution, ConfirmContribution...
-│   │   ├── auth/                    #    Register, Login, RefreshToken
-│   │   └── dashboard/               #    ListCampaigns, ExportCSV, CampaignStats
-│   ├── infra/                       # ← adaptadores: implementan los puertos
-│   │   ├── postgres/                #    repositorios (sqlc), migraciones, tx manager
-│   │   ├── payments/                #    PaymentProvider: mock/ (luego webpay/, mercadopago/)
-│   │   ├── storage/                 #    FileStorage: local/ (luego r2/)
-│   │   └── ratelimit/               #    limiter (in-memory MVP; Redis-ready)
-│   └── api/                         # ← HTTP: handlers Fiber, middleware, DTOs, validación
-│       ├── handlers/
-│       ├── middleware/              #    auth JWT, rate limit, request-id, recover, logging
-│       └── public/                  #    rutas públicas /c/:slug + render OG
-├── db/
-│   ├── migrations/                  # golang-migrate, SQL puro, versionadas
-│   ├── queries/                     # SQL fuente para sqlc
-│   └── seeds/
-└── Makefile
+apps/api/src/
+├── main.ts                       # bootstrap: helmet, CORS, pipes de validación globales
+├── app.module.ts
+├── modules/
+│   ├── auth/                     # register, login, refresh; guards JWT; argon2id
+│   ├── identity/                 # User, Organization (1:1 personal en MVP), user_identities
+│   ├── campaigns/                # CRUD + máquina de estados + registro de tipos
+│   │   ├── domain/               #    entidades puras, transiciones, campaign-types.registry.ts
+│   │   ├── campaigns.service.ts  #    casos de uso
+│   │   ├── campaigns.controller.ts
+│   │   └── campaigns.repository.ts
+│   ├── contributions/            # Contributor, Contribution, flujo de aporte
+│   ├── payments/                 # Payment, máquina de estados, comisión
+│   │   ├── domain/               #    payment.entity.ts, money.ts (CLP), transitions.ts
+│   │   ├── provider/             #    payment-provider.interface.ts + mock/ (luego webpay/, mercadopago/)
+│   │   └── webhooks.controller.ts
+│   ├── files/                    # FileStorage: local hoy, R2 mañana (misma interfaz S3)
+│   ├── public/                   # GET /c/:slug JSON + render OG HTML para bots
+│   ├── dashboard/                # stats, participantes, export CSV
+│   └── audit/                    # AuditLogs (interceptor + service)
+├── common/                       # filtros de excepciones, interceptors, decorators, request-id
+└── database/                     # drizzle: schema, migraciones, seeds, tx helper
 ```
 
-**Dónde SÍ hay interfaces (puertos)** — solo donde existe o existirá más de una implementación, o donde aísla I/O para testear:
-- `payment.Provider` (mock hoy; Webpay/Mercado Pago/Stripe/Khipu mañana) — pedido explícito.
-- `storage.FileStorage` (disco local hoy; Cloudflare R2 mañana).
-- Repositorios por agregado (`CampaignRepository`, `PaymentRepository`, ...) — una sola implementación (Postgres), pero la interfaz vive en `app/` y permite tests de casos de uso sin base de datos. Es el único "costo Clean Architecture" que se paga sin segunda implementación, y se paga porque los casos de uso de pagos/comisión son exactamente lo que más vale la pena testear aislado.
+**Reglas de oro** (el equivalente pragmático de Clean Architecture aquí):
+- La **lógica de negocio pura** (máquina de estados de pagos y campañas, cálculo de comisión, registro de tipos) vive en `domain/` como clases/funciones TS **sin decoradores NestJS ni imports de infraestructura** → testeable con Vitest sin levantar nada.
+- **Interfaces solo donde pagan**: `PaymentProvider` (mock hoy, pasarelas mañana — pedido explícito) y `FileStorage` (local hoy, R2 mañana), inyectadas por token de DI. Los repositorios son clases concretas sobre Drizzle — NestJS DI permite sustituirlos en tests sin necesidad de interfaz formal; no se paga ceremonia extra.
+- Los **DTOs de request/response viven en `packages/shared`** (Zod schemas): el backend los usa para validar (pipe de Zod), el frontend para tipar las llamadas. Una sola fuente de verdad del contrato.
 
-**Dónde NO hay interfaces**: logging (se usa `slog` directo), validación, render de templates, generación de QR. Abstraer eso es ceremonia sin retorno.
+### 2.2 ORM: Drizzle vs Prisma → **Drizzle**
 
-### 2.2 sqlc vs GORM → **sqlc**
+El argumento de la v1 para sqlc (dominio financiero ⇒ SQL visible y auditable) se traduce directamente:
 
-| Criterio | sqlc | GORM |
+| Criterio | Drizzle | Prisma |
 |---|---|---|
-| Tipado | Genera structs y funciones tipadas desde SQL real; errores en compile-time | Reflexión en runtime; errores de mapping en producción |
-| Dominio financiero | SQL explícito: sumas de pagos, snapshots de comisión y locks (`SELECT ... FOR UPDATE`) se ven y auditan en el código | El SQL generado queda oculto; expresiones como `SUM(...) FILTER (WHERE ...)` obligan a raw SQL igual |
-| Rendimiento | Sin overhead de reflexión | Aceptable, pero N+1 fácil de introducir sin notar |
-| Curva | Hay que escribir SQL (para este dominio, es una ventaja: el SQL *es* la especificación) | Más rápido para CRUD trivial |
-| Migraciones | Ninguna de las dos las resuelve; se usa **golang-migrate** con SQL puro en ambos casos | AutoMigrate existe pero es peligroso en producción (cambios implícitos de schema) |
+| Control del SQL | Queries que son SQL tipado 1:1; `sum().filterWhere(...)`, `FOR UPDATE`, CTEs — todo expresable y visible | Query engine intermedio; agregaciones financieras y locks acaban en `$queryRaw` sin tipos |
+| Dominio financiero | El SQL *es* la especificación: auditar un descuadre de comisiones = leer la query | El SQL real queda oculto tras el cliente |
+| Runtime | Ligero, sin binario extra | Query engine aparte (mejoró con la versión TS, pero sigue siendo una capa más) |
+| Migraciones | `drizzle-kit generate` → SQL versionado en el repo, revisable en PR | `prisma migrate` similar, buen tooling |
+| DX/madurez | Muy buena, ecosistema más joven | Excelente DX para CRUD, más madura |
 
-**Decisión: sqlc + golang-migrate + pgx.** En una plataforma donde `Payment` es la entidad central de reporting (Etapa 1, §4), querer ver y controlar cada query financiera no es purismo — es la diferencia entre poder auditar un descuadre de comisiones o no. El costo (escribir SQL) es bajo para 1 dev que además define el schema.
+**Decisión: Drizzle + node-postgres, migraciones SQL generadas por drizzle-kit y versionadas en el repo.** Donde `Payment` es la entidad central de reporting (Etapa 1 §4), controlar cada query financiera no es purismo — es auditabilidad. Prisma sería perfectamente válido para un CRUD genérico; aquí Drizzle encaja mejor con lo que el producto es.
 
 ### 2.3 PaymentProvider (diseño para split payment)
 
-```go
-// domain/payment/provider.go
-type Provider interface {
-    // Inicia un intento de pago. La idempotencyKey garantiza que reintentos
-    // del mismo intento no dupliquen cargos (riesgo 8, Etapa 1).
-    CreateIntent(ctx context.Context, req IntentRequest) (Intent, error)
-    // Consulta/confirma el estado real en la pasarela (fuente de verdad externa).
-    GetIntent(ctx context.Context, providerRef string) (Intent, error)
-    // Solicita reembolso total o parcial de un pago confirmado.
-    Refund(ctx context.Context, providerRef string, amount Money) (Refund, error)
+```ts
+// packages/shared → tipos; apps/api/src/modules/payments/provider/payment-provider.interface.ts
+export interface PaymentProvider {
+  /** Inicia un intento de pago. idempotencyKey garantiza que reintentos
+   *  del mismo intento no dupliquen cargos (riesgo 8, Etapa 1). */
+  createIntent(req: IntentRequest): Promise<PaymentIntent>;
+  /** Consulta el estado real en la pasarela (fuente de verdad externa). */
+  getIntent(providerRef: string): Promise<PaymentIntent>;
+  /** Reembolso total o parcial de un pago confirmado. */
+  refund(providerRef: string, amount: Money): Promise<RefundResult>;
 }
 
-type IntentRequest struct {
-    IdempotencyKey string
-    Amount         Money        // CLP, entero
-    Commission     Money        // snapshot: lo que Juntalo retiene (split)
-    PayeeAccount   PayeeRef     // cuenta del organizador (split payment)
-    Metadata       map[string]string
+export interface IntentRequest {
+  idempotencyKey: string;
+  amount: Money;            // CLP, entero
+  commission: Money;        // snapshot: lo que Juntalo retiene (split)
+  payeeAccount: PayeeRef;   // cuenta del organizador (split payment)
+  metadata?: Record<string, string>;
 }
 ```
 
-Puntos de diseño:
-- **La máquina de estados vive en el dominio, no en el provider**: `pending → confirmed → refunded` y `pending → failed`, con transiciones validadas en `domain/payment`. El provider solo reporta hechos externos; el dominio decide si la transición es legal. Así, cambiar de pasarela jamás toca la lógica de negocio.
-- **Split explícito en la interfaz**: `Commission` y `PayeeAccount` están en el request desde el día 1, porque en split payment la comisión se declara *al crear el intento*, no después. El `MockPaymentProvider` los acepta y los registra; Webpay/Mercado Pago los usarán de verdad.
-- **`MockPaymentProvider`** implementa el ciclo completo, con modos configurables para simular: confirmación inmediata, confirmación diferida, fallo, y **reintentos/duplicados** (mismo `IdempotencyKey` dos veces debe devolver el mismo Intent — así la idempotencia llega probada a la pasarela real, Etapa 1 §2).
-- **Webhooks-ready**: el endpoint `POST /webhooks/payments/:provider` existe desde el MVP (el mock lo invoca a sí mismo para simular confirmación asíncrona). Las pasarelas reales confirman por webhook; ensayar ese flujo con el mock evita rediseñar el flujo de confirmación después.
+Puntos de diseño (idénticos a v1 — son independientes del lenguaje):
+- **La máquina de estados vive en el dominio, no en el provider**: `pending → confirmed → refunded`, `pending → failed`, con transiciones validadas en `payments/domain/transitions.ts`. El provider reporta hechos externos; el dominio decide si la transición es legal. Cambiar de pasarela jamás toca lógica de negocio.
+- **Split explícito en la interfaz**: `commission` y `payeeAccount` van en el request desde el día 1 — en split payment la comisión se declara *al crear el intento*.
+- **`MockPaymentProvider`** implementa el ciclo completo con modos configurables: confirmación inmediata, diferida, fallo, y **reintentos/duplicados** (mismo `idempotencyKey` dos veces ⇒ mismo intent — la idempotencia llega probada a la pasarela real).
+- **Webhooks-ready**: `POST /webhooks/payments/:provider` existe desde el MVP; el mock lo invoca para simular confirmación asíncrona, ensayando el flujo que Webpay/Mercado Pago usarán de verdad.
 
 ### 2.4 Tipos de campaña (registro declarativo)
 
-Conforme a Etapa 1 (riesgo 1): tipos como código, no motor genérico.
+Conforme a Etapa 1 (riesgo 1): tipos como código, no motor genérico de JSON schema.
 
-```go
-// domain/campaign/types.go
-type TypeDefinition struct {
-    Key          TypeKey          // "collection", "sale", "event", ... "raffle" (disabled)
-    Enabled      bool
-    Labels       TypeLabels       // textos: CTA ("Aportar"/"Comprar"/"Inscribirse"), unidades
-    Fields       []FieldSpec      // campos extra que este tipo agrega al form (van a settings JSONB)
-    Rules        TypeRules        // requiere meta económica?, permite monto libre?, montos sugeridos?
+```ts
+// packages/shared/src/campaign-types.ts  ← compartido: el frontend renderiza desde aquí
+export interface CampaignTypeDefinition {
+  key: CampaignTypeKey;        // 'collection' | 'sale' | 'event' | ... | 'raffle' (disabled)
+  enabled: boolean;
+  labels: TypeLabels;          // CTA ("Aportar"/"Comprar"/"Inscribirse"), unidades, textos
+  fields: FieldSpec[];         // campos extra del tipo (persisten en settings JSONB)
+  rules: TypeRules;            // ¿meta económica requerida?, ¿monto libre?, montos sugeridos
 }
-var Registry = map[TypeKey]TypeDefinition{ ... } // MVP: solo "collection" Enabled
+export const CAMPAIGN_TYPE_REGISTRY: Record<CampaignTypeKey, CampaignTypeDefinition> = { ... };
+// MVP: solo 'collection' enabled
 ```
 
-El frontend consume `GET /campaign-types` y renderiza según la definición. Agregar "Venta" en el futuro = agregar una entrada al registro + sus campos; cero refactor del flujo.
+Ventaja extra sobre la v1: al vivir en `packages/shared`, el frontend **importa el registro directamente** (tipado) en lugar de consumir `GET /campaign-types`. Agregar "Venta" = una entrada nueva + sus campos; cero refactor.
 
 ### 2.5 Transversales
 
-- **Auth**: JWT access token corto (15 min) + refresh token opaco en cookie httpOnly (rotado, revocable en DB). Passwords con **argon2id**. Tabla `user_identities` separada de `users` desde el día 1 → agregar Google OAuth después es una fila más por proveedor, no una migración.
-- **Rate limiting**: middleware por IP+ruta con límites agresivos en `POST /contributions` y auth. Implementación in-memory (el MVP corre en 1 VPS); la interfaz permite backend Redis cuando haya más de una instancia.
-- **Validación**: en el borde (`api/`) con DTOs + `go-playground/validator`; los invariantes de negocio se re-validan en dominio (defensa en profundidad).
-- **Errores**: tipo `DomainError` con código estable (`campaign_not_active`, `payment_duplicate`, ...) mapeado a HTTP en un solo lugar; el frontend traduce códigos a mensajes.
-- **Observabilidad**: `slog` JSON estructurado + request-id propagado; `AuditLogs` en Postgres para acciones de negocio (cambios de estado de campaña, payouts futuros).
-- **Config**: struct tipada cargada de env vars (`envconfig`), `.env` solo en desarrollo, fail-fast si falta algo en producción.
+- **Auth**: JWT access corto (15 min, `@nestjs/jwt` + guard global con `@Public()` para rutas abiertas) + refresh token opaco en cookie httpOnly, rotado y revocable en DB. Passwords con **argon2id**. Tabla `user_identities` separada de `users` → Google OAuth futuro es una fila por proveedor, no una migración.
+- **Rate limiting**: `@nestjs/throttler` con límites agresivos en `POST /contributions` y auth; storage in-memory (1 VPS), Redis cuando haya más instancias.
+- **Validación**: Zod schemas de `packages/shared` aplicados en un pipe global — la misma definición valida en el borde y tipa el cliente. Invariantes de negocio re-validados en dominio (defensa en profundidad).
+- **Errores**: `DomainError` con código estable (`campaign_not_active`, `payment_duplicate`, ...) → exception filter único los mapea a HTTP; el frontend traduce códigos (compartidos) a mensajes.
+- **Observabilidad**: `pino` (nestjs-pino) JSON estructurado + request-id; `AuditLogs` en Postgres para acciones de negocio (cambios de estado de campaña, futuros payouts).
+- **Config**: `@nestjs/config` + schema Zod de env vars, fail-fast al arrancar si falta algo. `.env` solo en desarrollo.
+- **Seguridad HTTP**: helmet, CORS estricto, cookies `Secure`/`SameSite`, límites de tamaño de payload.
 
 ---
 
 ## 3. Frontend (React + TS + Vite)
 
 ```
-frontend/
-├── src/
-│   ├── app/                # router, providers (QueryClient, Auth), layout raíz
-│   ├── features/           # verticales por dominio — misma lógica que el backend
-│   │   ├── auth/           #    páginas + hooks + api de registro/login
-│   │   ├── campaigns/      #    crear/editar/listar (dashboard)
-│   │   ├── public-campaign/#    página pública /c/:slug + flujo de aporte
-│   │   └── dashboard/      #    stats, participantes, export CSV
-│   ├── shared/
-│   │   ├── ui/             # Design System: Button, Input, Card, Progress, Dialog...
-│   │   ├── api/            # cliente HTTP (fetch tipado), manejo de errores/códigos
-│   │   ├── hooks/
-│   │   └── lib/            # formato CLP, fechas, helpers de share/WhatsApp/QR
-│   └── styles/             # tokens Tailwind (tailwind.config: colores, tipografía, dark-ready)
-└── ...
+apps/web/src/
+├── app/                # router, providers (QueryClient, Auth), layout raíz
+├── features/           # verticales por dominio — espejo del backend
+│   ├── auth/
+│   ├── campaigns/      #    crear/editar/listar (dashboard)
+│   ├── public-campaign/#    página pública /c/:slug + flujo de aporte
+│   └── dashboard/      #    stats, participantes, export CSV
+├── shared/
+│   ├── ui/             # Design System: Button, Input, Card, Progress, Dialog...
+│   ├── api/            # cliente HTTP tipado con los DTOs de packages/shared
+│   ├── hooks/
+│   └── lib/            # share/WhatsApp/QR helpers (formato CLP viene de packages/shared)
+└── styles/             # tokens Tailwind (paleta, tipografía, dark-ready)
 ```
 
-- **Feature-folders, no capas técnicas globales**: cada feature contiene sus páginas, hooks de React Query y llamadas API. `shared/ui` es el único código verdaderamente transversal. Esto escala mejor para 1 dev que `components/`+`pages/`+`services/` globales.
-- **React Query** como única capa de estado servidor (sin Redux): cache, invalidación tras mutaciones, estados de carga. Estado local con `useState`/`useReducer`; no se agrega gestor global salvo necesidad demostrada.
-- **Design System mínimo pero real**: ~10 componentes en `shared/ui` construidos sobre tokens Tailwind (paleta definida en `tailwind.config`, tipografía Inter, espaciado consistente). Dark mode preparado vía CSS variables + `data-theme` (tokens semánticos: `bg-surface`, `text-primary`), sin toggle en MVP.
-- **Mobile-first estricto**: la página pública y el flujo de aporte se diseñan primero a 375px (in-app browser de WhatsApp), el dashboard puede ser desktop-first.
-- **Rutas**: `/c/:slug` (pública), `/login`, `/register`, `/dashboard`, `/dashboard/campaigns/new`, `/dashboard/campaigns/:id`. Rutas de dashboard protegidas por guard de auth.
+- **Feature-folders, no capas técnicas globales**: cada feature contiene páginas, hooks de React Query y llamadas API. Escala mejor para 1 dev que `components/`+`services/` globales.
+- **React Query** como única capa de estado servidor (sin Redux): cache, invalidación tras mutaciones, estados de carga. Estado local con `useState`/`useReducer`.
+- **Cliente HTTP tipado**: `shared/api` usa los Zod schemas de `packages/shared` para tipar (y opcionalmente validar) las respuestas — errores de contrato se detectan en compilación o en el borde, nunca en medio de la UI.
+- **Design System mínimo pero real**: ~10 componentes sobre tokens Tailwind (tipografía Inter, espaciado consistente). Dark mode preparado vía CSS variables + `data-theme` (tokens semánticos `bg-surface`, `text-primary`), sin toggle en MVP.
+- **Mobile-first estricto**: página pública y flujo de aporte diseñados primero a 375px (in-app browser de WhatsApp); el dashboard puede ser desktop-first.
+- **Rutas**: `/c/:slug` (pública), `/login`, `/register`, `/dashboard`, `/dashboard/campaigns/new`, `/dashboard/campaigns/:id`. Dashboard protegido por guard de auth.
 
 ---
 
@@ -172,25 +172,26 @@ frontend/
 
 ```
 docker/
-├── backend.Dockerfile      # multi-stage: build Go → imagen distroless/alpine
-├── frontend.Dockerfile     # build Vite → estáticos servidos por Caddy
-├── docker-compose.yml      # dev: postgres + backend (air hot-reload) + frontend (vite dev)
-└── docker-compose.prod.yml # prod VPS: caddy (TLS automático) + backend + postgres
+├── api.Dockerfile          # multi-stage: pnpm build → node:22-slim, solo dist + prod deps
+├── web.Dockerfile          # build Vite → estáticos servidos por Caddy
+├── docker-compose.yml      # dev: postgres + api (watch) + web (vite dev)
+└── docker-compose.prod.yml # prod VPS: caddy (TLS automático) + api + postgres
 ```
 
-- **Caddy** como reverse proxy en el VPS: TLS automático (Let's Encrypt), sirve los estáticos del frontend, proxy `/api/*` y `/c/*` (OG render) al backend. Más simple de operar que nginx para 1 dev; **Cloudflare-ready** (DNS+proxy delante, sin cambios).
-- **Cloudflare R2-ready**: `FileStorage` con implementación `local/` (disco + servido por Caddy) en MVP; `r2/` es la misma interfaz con SDK S3-compatible.
-- **Migraciones** corren como paso explícito (`make migrate` / job en compose), nunca automáticas al arrancar el binario en producción.
-- **Backups**: `pg_dump` diario vía cron en el VPS desde el día 1 — es una plataforma que registra dinero, aunque sea mock.
+- **Caddy** como reverse proxy: TLS automático (Let's Encrypt), sirve estáticos del frontend, proxy `/api/*` y `/c/*` (render OG) al backend NestJS. **Cloudflare-ready** (DNS+proxy delante sin cambios).
+- **Cloudflare R2-ready**: `FileStorage` con implementación local (disco servido por Caddy) en MVP; R2 es la misma interfaz vía SDK S3-compatible.
+- **Migraciones** como paso explícito (`pnpm db:migrate` / job en compose), nunca automáticas al arrancar en producción.
+- **Backups**: `pg_dump` diario vía cron desde el día 1 — la plataforma registra dinero, aunque sea mock.
+- Nota operacional: Node consume más RAM que Go (~150-300MB vs ~40MB); irrelevante para el MVP en cualquier VPS de 2GB. Se acepta el trade-off conscientemente.
 
 ---
 
 ## 5. Calidad
 
-- **Tests**: unitarios de dominio (máquina de estados de pago, comisión, transiciones de campaña, tipos) y de casos de uso con repos fake; tests de integración de repositorios sqlc contra Postgres real (testcontainers o compose). Frontend: Vitest + Testing Library en flujos críticos (form de aporte, creación de campaña). Sin E2E en MVP (costo alto, se agrega con Playwright cuando el flujo se estabilice).
-- **Lint/formato**: `golangci-lint` + `gofumpt`; ESLint + Prettier. `make check` corre todo.
-- **CI (GitHub Actions)**: lint + tests + build de ambas apps en cada PR.
-- **Scripts**: `make dev` (compose up con hot-reload), `make migrate`, `make seed`, `make check`, `make build`.
+- **Tests (Vitest en todo el monorepo)**: unitarios del dominio (máquina de estados de pagos y campañas, comisión, registro de tipos — todo `domain/` puro sin NestJS); tests de servicios con providers/repos sustituidos vía DI; integración de repositorios Drizzle contra Postgres real (testcontainers). Frontend: Vitest + Testing Library en flujos críticos (form de aporte, creación de campaña). Sin E2E en MVP; Playwright cuando el flujo se estabilice.
+- **Lint/formato**: ESLint (config compartida en el monorepo) + Prettier; `pnpm check` corre lint + typecheck + tests de todo.
+- **CI (GitHub Actions)**: lint + typecheck + tests + build de ambas apps en cada PR.
+- **Scripts**: `pnpm dev` (compose + watch), `pnpm db:migrate`, `pnpm db:seed`, `pnpm check`, `pnpm build`.
 
 ---
 
@@ -198,12 +199,14 @@ docker/
 
 | Decisión | Elección | Alternativa descartada y por qué |
 |---|---|---|
-| Topología | Monolito modular Go | Microservicios: sin equipo/carga que lo justifique |
-| OG tags | Render mínimo en Go para `/c/:slug` | Next.js SSR: duplica stack operacional |
-| ORM | sqlc + golang-migrate + pgx | GORM: SQL oculto en dominio financiero |
+| Lenguaje backend | TypeScript (NestJS) | Go: mejor huella operacional, pero curva de aprendizaje + contrato API manual pesan más para 1 dev TS |
+| Monorepo | pnpm workspaces + `packages/shared` | Repos separados: se pierde el contrato tipado compartido |
+| Topología | Monolito modular NestJS | Microservicios: sin equipo/carga que lo justifique |
+| OG tags | Controller NestJS para `/c/:slug` | Next.js SSR: acopla frontend/backend y limita el API |
+| ORM | Drizzle + migraciones SQL versionadas | Prisma: gran DX, pero SQL financiero oculto tras el query engine |
+| Validación | Zod schemas compartidos front/back | class-validator: duplica el contrato en decoradores solo-backend |
 | Fondos | Split payment en la interfaz del provider | Merchant of record: custodia = exposición UAF |
 | Estado frontend | React Query + estado local | Redux: sin estado global real que gestionar |
-| Estructura frontend | Feature-folders | Capas técnicas globales: se degradan al crecer |
 | Proxy | Caddy | nginx: más config manual para TLS |
 | Passwords | argon2id | bcrypt: válido, pero argon2id es el estándar actual |
 | Auth futura | `user_identities` separada desde día 1 | Columnas OAuth en `users`: migración dolorosa |
