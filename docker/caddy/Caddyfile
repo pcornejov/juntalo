@@ -1,0 +1,16 @@
+{$JUNTALO_DOMAIN} {
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+	handle /c/* {
+		reverse_proxy backend:8080
+	}
+	handle /webhooks/* {
+		reverse_proxy backend:8080
+	}
+	handle {
+		root * /usr/share/caddy
+		try_files {path} /index.html
+		file_server
+	}
+}

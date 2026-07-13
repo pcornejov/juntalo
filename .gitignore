@@ -1,0 +1,15 @@
+# Backend
+backend/tmp/
+*.env
+.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Editores / SO
+.DS_Store
+*.log
+
+# Secrets de producción
+docker/secrets/

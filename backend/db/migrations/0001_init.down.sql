@@ -1,0 +1,13 @@
+DROP VIEW IF EXISTS campaign_totals;
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS payment_refunds;
+DROP TABLE IF EXISTS payments;
+DROP TABLE IF EXISTS contributions;
+DROP TABLE IF EXISTS contributors;
+DROP TABLE IF EXISTS campaigns;
+DROP TABLE IF EXISTS files;
+DROP TABLE IF EXISTS organization_members;
+DROP TABLE IF EXISTS organizations;
+DROP TABLE IF EXISTS refresh_tokens;
+DROP TABLE IF EXISTS user_identities;
+DROP TABLE IF EXISTS users;
