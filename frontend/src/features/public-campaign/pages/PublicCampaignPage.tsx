@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { usePublicCampaign } from '../hooks/usePublicCampaign'
 import { formatCLP } from '../../../shared/lib/clp'
-import { absoluteUrl } from '../../../shared/lib/share'
 import { Button, Card, Progress, ShareButtons, QrCode, Footer } from '../../../shared/ui'
 import { ContributeSheet } from '../components/ContributeSheet'
 import { ContributeSuccessPanel } from './ContributeSuccessPage'
@@ -28,7 +27,10 @@ export function PublicCampaignPage() {
     )
   }
 
-  const publicUrl = absoluteUrl(`/public/${slug}`)
+  // public_url viene del backend y apunta a /c/:slug (con OG tags para
+  // WhatsApp/Facebook/etc.) — no se reconstruye en el frontend para que
+  // re-compartir desde aquí siga mostrando preview con imagen y título.
+  const publicUrl = campaign.public_url
   const canContribute = campaign.status === 'active'
 
   return (

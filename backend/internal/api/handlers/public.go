@@ -26,23 +26,31 @@ type PublicHandler struct {
 	files       app.FileRepository
 	storage     app.FileStorage
 	frontendURL string
+	selfURL     string
 }
 
-func NewPublicHandler(get *campaignsuc.GetService, files app.FileRepository, storage app.FileStorage, frontendURL string) *PublicHandler {
-	return &PublicHandler{get: get, files: files, storage: storage, frontendURL: frontendURL}
+func NewPublicHandler(get *campaignsuc.GetService, files app.FileRepository, storage app.FileStorage, frontendURL, selfURL string) *PublicHandler {
+	return &PublicHandler{get: get, files: files, storage: storage, frontendURL: frontendURL, selfURL: selfURL}
 }
 
 // GetJSON is consumed by the SPA's public campaign page (Etapa 4 §4).
 func (h *PublicHandler) GetJSON(c *fiber.Ctx) error {
 	c.Set("Cache-Control", "public, max-age=30")
 
-	found, totals, err := h.get.GetPublicBySlug(c.Context(), c.Params("slug"))
+	slug := c.Params("slug")
+	found, totals, err := h.get.GetPublicBySlug(c.Context(), slug)
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
 
 	coverURL := resolveCoverURL(c, h.files, h.storage, found.CoverFileID)
-	return c.JSON(toPublicCampaignResponse(found, totals, coverURL))
+	resp := toPublicCampaignResponse(found, totals, coverURL)
+	// public_url apunta a /c/:slug en el dominio del backend (donde vive el
+	// render de OG tags), no al dominio del frontend — así, si alguien
+	// re-comparte el link desde la página pública, la preview de WhatsApp
+	// sigue funcionando (Etapa 2 §1).
+	resp.PublicURL = h.selfURL + "/c/" + slug
+	return c.JSON(resp)
 }
 
 // OGPage serves GET /c/:slug: HTML con OG tags para bots/previews, 302 a la

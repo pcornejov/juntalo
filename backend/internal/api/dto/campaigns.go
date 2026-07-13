@@ -55,6 +55,7 @@ type PublicCampaignResponse struct {
 	Totals      TotalsDTO `json:"totals"`
 	CTA         string    `json:"cta"`
 	Unit        string    `json:"unit"`
+	PublicURL   string    `json:"public_url"`
 }
 
 type CampaignTypeResponse struct {

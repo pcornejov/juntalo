@@ -10,6 +10,7 @@ export interface PublicCampaign {
   totals: Totals
   cta: string
   unit: string
+  public_url: string
 }
 
 export function getPublicCampaign(slug: string) {

@@ -30,6 +30,7 @@ type CampaignHandler struct {
 	files      app.FileRepository
 	storage    app.FileStorage
 	audit      app.AuditRepository
+	selfURL    string
 }
 
 func NewCampaignHandler(
@@ -44,11 +45,12 @@ func NewCampaignHandler(
 	files app.FileRepository,
 	storage app.FileStorage,
 	audit app.AuditRepository,
+	selfURL string,
 ) *CampaignHandler {
 	return &CampaignHandler{
 		create: create, get: get, list: list, update: update,
 		transition: transition, del: del, upload: upload, orgs: orgs,
-		files: files, storage: storage, audit: audit,
+		files: files, storage: storage, audit: audit, selfURL: selfURL,
 	}
 }
 
@@ -269,7 +271,7 @@ func (h *CampaignHandler) toResponse(c *fiber.Ctx, camp campaign.Campaign, total
 		Status:      string(camp.Status),
 		StartsAt:    camp.StartsAt,
 		EndsAt:      camp.EndsAt,
-		PublicURL:   "/c/" + camp.Slug,
+		PublicURL:   h.selfURL + "/c/" + camp.Slug,
 		CreatedAt:   camp.CreatedAt,
 		Totals: dto.TotalsDTO{
 			RaisedGross:      int64(totals.RaisedGross),

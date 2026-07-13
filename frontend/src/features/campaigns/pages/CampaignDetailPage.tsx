@@ -7,7 +7,6 @@ import {
   usePublishCampaign,
   useUploadCover,
 } from '../hooks/useCampaigns'
-import { absoluteUrl } from '../../../shared/lib/share'
 import { Button, Card, ShareButtons, QrCode } from '../../../shared/ui'
 import { StatusBadge } from '../components/StatusBadge'
 import { TotalsPanel } from '../components/TotalsPanel'
@@ -32,7 +31,10 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   const uploadCover = useUploadCover(campaign)
   const { data: participants, isLoading: isLoadingParticipants } = useParticipants(campaign.id)
 
-  const publicUrl = absoluteUrl(campaign.public_url)
+  // public_url ya viene absoluta desde el backend (Etapa 4: /c/:slug vive en
+  // el dominio del backend, no del frontend — necesario cuando ambos están
+  // en dominios distintos, como en este deploy de prueba en Render).
+  const publicUrl = campaign.public_url
 
   function handleCoverChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
