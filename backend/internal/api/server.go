@@ -45,7 +45,11 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	fiberApp.Use(recover.New())
 	fiberApp.Use(requestid.New())
 	fiberApp.Use(logger.New())
-	fiberApp.Use(cors.New())
+	fiberApp.Use(cors.New(cors.Config{
+		AllowOrigins:     cfg.FrontendURL,
+		AllowCredentials: true,
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, Idempotency-Key",
+	}))
 
 	fiberApp.Get("/healthz", healthzHandler(db))
 	fiberApp.Static("/files", cfg.StorageDir)

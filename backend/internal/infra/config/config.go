@@ -17,6 +17,10 @@ type Config struct {
 	SelfURL           string `envconfig:"SELF_URL" default:"http://localhost:8080"`
 	MockWebhookSecret string `envconfig:"MOCK_WEBHOOK_SECRET" default:"dev-mock-secret"`
 	MockPaymentMode   string `envconfig:"MOCK_PAYMENT_MODE" default:"deferred"`
+
+	// RunMigrationsOnBoot solo se activa en hosting gratuito sin shell (Render);
+	// el VPS real las corre como paso explícito de deploy (Etapa 5/6).
+	RunMigrationsOnBoot bool `envconfig:"RUN_MIGRATIONS_ON_BOOT" default:"false"`
 }
 
 func Load() (Config, error) {

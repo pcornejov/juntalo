@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	juntdb "github.com/pcornejov/juntalo/backend/db"
 	"github.com/pcornejov/juntalo/backend/internal/api"
 	"github.com/pcornejov/juntalo/backend/internal/infra/config"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres"
@@ -13,6 +14,13 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
+	}
+
+	if cfg.RunMigrationsOnBoot {
+		log.Println("running migrations (RUN_MIGRATIONS_ON_BOOT=true)...")
+		if err := juntdb.RunMigrations(cfg.DatabaseURL); err != nil {
+			log.Fatalf("migrations: %v", err)
+		}
 	}
 
 	ctx := context.Background()

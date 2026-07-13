@@ -151,13 +151,23 @@ func (h *AuthHandler) issueSession(c *fiber.Ctx, user identity.User, org identit
 	})
 }
 
+// cookieSameSite returns None in production: frontend y backend viven en
+// dominios distintos (Render, Vercel, etc.) salvo que Caddy los unifique como
+// en el diseño de VPS (Etapa 2). None requiere Secure=true siempre.
+func (h *AuthHandler) cookieSameSite() string {
+	if h.isProd {
+		return fiber.CookieSameSiteNoneMode
+	}
+	return fiber.CookieSameSiteLaxMode
+}
+
 func (h *AuthHandler) setRefreshCookie(c *fiber.Ctx, rawToken string) {
 	c.Cookie(&fiber.Cookie{
 		Name:     refreshCookieKey,
 		Value:    rawToken,
 		HTTPOnly: true,
 		Secure:   h.isProd,
-		SameSite: fiber.CookieSameSiteLaxMode,
+		SameSite: h.cookieSameSite(),
 		Expires:  time.Now().Add(authuc.RefreshTokenTTL),
 		Path:     "/api/v1/auth",
 	})
@@ -169,7 +179,7 @@ func (h *AuthHandler) clearRefreshCookie(c *fiber.Ctx) {
 		Value:    "",
 		HTTPOnly: true,
 		Secure:   h.isProd,
-		SameSite: fiber.CookieSameSiteLaxMode,
+		SameSite: h.cookieSameSite(),
 		Expires:  time.Now().Add(-time.Hour),
 		Path:     "/api/v1/auth",
 	})

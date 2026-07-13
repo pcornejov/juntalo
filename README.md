@@ -15,6 +15,10 @@ Plataforma para crear campañas de recaudación y venta online. Ver el diseño c
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS + React Query
 - **Infra**: Docker Compose, Caddy, Cloudflare-ready
 
+## Probar sin instalar nada
+
+¿Quieres ver el MVP funcionando (incluida la preview de WhatsApp desde tu celular) sin levantar nada localmente? Ver [`docs/deploy-render.md`](./docs/deploy-render.md) — deploy gratis en Render en ~10 minutos.
+
 ## Desarrollo
 
 Requisitos: Docker y Docker Compose.
