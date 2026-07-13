@@ -73,6 +73,22 @@ export function uploadCoverImage(file: File) {
   return apiClient.upload<{ id: string; url: string }>('/files', form)
 }
 
+export interface Participant {
+  contribution_id: string
+  full_name: string
+  email?: string
+  phone?: string
+  amount: number
+  refunded_amount: number
+  is_anonymous: boolean
+  status: 'pending' | 'confirmed' | 'failed' | 'refunded'
+  created_at: string
+}
+
+export function listParticipants(campaignId: string) {
+  return apiClient.get<{ items: Participant[] }>(`/campaigns/${campaignId}/contributions`)
+}
+
 export function attachCover(campaignId: string, coverFileId: string, current: Campaign) {
   return apiClient.patch<Campaign>(`/campaigns/${campaignId}`, {
     title: current.title,

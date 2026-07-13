@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { usePublicCampaign } from '../hooks/usePublicCampaign'
 import { formatCLP } from '../../../shared/lib/clp'
 import { absoluteUrl } from '../../../shared/lib/share'
-import { Button, Card, Progress, ShareButtons, QrCode } from '../../../shared/ui'
+import { Button, Card, Progress, ShareButtons, QrCode, Footer } from '../../../shared/ui'
 import { ContributeSheet } from '../components/ContributeSheet'
 import { ContributeSuccessPanel } from './ContributeSuccessPage'
 import type { StartContributionResult } from '../api'
@@ -67,6 +67,8 @@ export function PublicCampaignPage() {
           <QrCode url={publicUrl} />
         </Card>
       </div>
+
+      <Footer />
 
       <div className="fixed inset-x-0 bottom-0 border-t border-border-default bg-bg-surface p-4">
         <Button

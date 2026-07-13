@@ -54,6 +54,13 @@ export function useUploadCover(campaign: campaignsApi.Campaign) {
   })
 }
 
+export function useParticipants(campaignId: string) {
+  return useQuery({
+    queryKey: ['participants', campaignId],
+    queryFn: () => campaignsApi.listParticipants(campaignId).then((r) => r.items),
+  })
+}
+
 export function useCampaignTransitions() {
   const qc = useQueryClient()
   const invalidate = () => qc.invalidateQueries({ queryKey: campaignsKey })

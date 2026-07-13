@@ -204,3 +204,39 @@ type PaymentRepository interface {
 	// (Etapa 4 §5: idempotente — un evento repetido no debe tener efecto doble).
 	ConfirmByProviderRef(ctx context.Context, provider, providerRef string, newStatus payment.Status) error
 }
+
+// ── Panel del organizador (Hito 4) ──────────────────────────────────────────
+
+// ParticipantRow is the dashboard read model: un aporte con los datos del
+// contribuyente y lo reembolsado, para participantes y export CSV
+// (Etapa 1 riesgo 10: los reembolsos restan en el reporting desde el día 1).
+type ParticipantRow struct {
+	ContributionID uuid.UUID
+	FullName       string
+	Email          string
+	Phone          string
+	Amount         money.CLP
+	RefundedAmount money.CLP
+	IsAnonymous    bool
+	Status         contribution.Status
+	CreatedAt      time.Time
+}
+
+type ParticipantRepository interface {
+	ListByCampaign(ctx context.Context, campaignID uuid.UUID, limit, offset int32) ([]ParticipantRow, error)
+}
+
+// RecordAuditInput carries what AuditRepository.Record persists (Etapa 4 §1,
+// Etapa 5: auditoría enfocada en cambios de estado de campaña).
+type RecordAuditInput struct {
+	ActorUserID    uuid.UUID
+	OrganizationID uuid.UUID
+	Action         string
+	EntityType     string
+	EntityID       uuid.UUID
+	Data           map[string]any
+}
+
+type AuditRepository interface {
+	Record(ctx context.Context, in RecordAuditInput) error
+}

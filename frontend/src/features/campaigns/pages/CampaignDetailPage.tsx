@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import {
   useCampaign,
   useCampaignTransitions,
+  useParticipants,
   usePublishCampaign,
   useUploadCover,
 } from '../hooks/useCampaigns'
@@ -10,6 +11,8 @@ import { absoluteUrl } from '../../../shared/lib/share'
 import { Button, Card, ShareButtons, QrCode } from '../../../shared/ui'
 import { StatusBadge } from '../components/StatusBadge'
 import { TotalsPanel } from '../components/TotalsPanel'
+import { ParticipantsTable } from '../components/ParticipantsTable'
+import { ExportCsvButton } from '../components/ExportCsvButton'
 import type { Campaign } from '../api'
 
 export function CampaignDetailPage() {
@@ -27,6 +30,7 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   const publish = usePublishCampaign()
   const { pause, resume, finish } = useCampaignTransitions()
   const uploadCover = useUploadCover(campaign)
+  const { data: participants, isLoading: isLoadingParticipants } = useParticipants(campaign.id)
 
   const publicUrl = absoluteUrl(campaign.public_url)
 
@@ -95,6 +99,18 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
         <p className="whitespace-pre-wrap text-text-primary">
           {campaign.description || 'Sin descripción.'}
         </p>
+      </Card>
+
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-text-secondary">Participantes</p>
+          <ExportCsvButton campaignId={campaign.id} />
+        </div>
+        {isLoadingParticipants ? (
+          <p className="text-sm text-text-secondary">Cargando…</p>
+        ) : (
+          <ParticipantsTable items={participants ?? []} />
+        )}
       </Card>
     </div>
   )

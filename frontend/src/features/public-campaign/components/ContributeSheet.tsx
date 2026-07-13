@@ -73,6 +73,10 @@ export function ContributeSheet({ slug, cta, onClose, onSuccess }: ContributeShe
             Aportar de forma anónima
           </label>
           {error && <p className="text-sm text-danger">{error}</p>}
+          <p className="text-xs text-text-secondary">
+            Tus datos se usan solo para procesar este aporte y contactarte si es necesario. No
+            los compartimos con terceros.
+          </p>
           <div className="flex gap-2">
             <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
               Cancelar

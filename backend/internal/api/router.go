@@ -17,7 +17,7 @@ func mountAuthRoutes(router fiber.Router, h *handlers.AuthHandler, signer app.To
 	auth.Get("/me", middleware.RequireAuth(signer), h.Me)
 }
 
-func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, fileH *handlers.FileHandler, signer app.TokenSigner) {
+func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, dashH *handlers.DashboardHandler, fileH *handlers.FileHandler, signer app.TokenSigner) {
 	campaigns := router.Group("/campaigns", middleware.RequireAuth(signer))
 	campaigns.Get("/", h.List)
 	campaigns.Post("/", h.Create)
@@ -28,6 +28,8 @@ func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, fileH
 	campaigns.Post("/:id/pause", h.Pause)
 	campaigns.Post("/:id/resume", h.Resume)
 	campaigns.Post("/:id/finish", h.Finish)
+	campaigns.Get("/:id/contributions", dashH.Participants)
+	campaigns.Get("/:id/contributions/export", dashH.ExportCSV)
 
 	router.Post("/files", middleware.RequireAuth(signer), fileH.Upload)
 }

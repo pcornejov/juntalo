@@ -17,6 +17,7 @@ import (
 	authuc "github.com/pcornejov/juntalo/backend/internal/app/auth"
 	campaignsuc "github.com/pcornejov/juntalo/backend/internal/app/campaigns"
 	contributionsuc "github.com/pcornejov/juntalo/backend/internal/app/contributions"
+	dashboarduc "github.com/pcornejov/juntalo/backend/internal/app/dashboard"
 	filesuc "github.com/pcornejov/juntalo/backend/internal/app/files"
 	infraauth "github.com/pcornejov/juntalo/backend/internal/infra/auth"
 	"github.com/pcornejov/juntalo/backend/internal/infra/payments/mock"
@@ -67,6 +68,8 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	contributorRepo := repos.NewContributorRepo(db)
 	contributionRepo := repos.NewContributionRepo(db)
 	paymentRepo := repos.NewPaymentRepo(db)
+	participantRepo := repos.NewParticipantRepo(db)
+	auditRepo := repos.NewAuditRepo(db)
 
 	registerSvc := authuc.NewRegisterService(authRepo, hasher)
 	loginSvc := authuc.NewLoginService(userRepo, authRepo, orgRepo, hasher)
@@ -83,9 +86,12 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	startSvc := contributionsuc.NewStartService(campaignRepo, orgRepo, contributorRepo, contributionRepo, paymentRepo, paymentProvider)
 	confirmSvc := contributionsuc.NewConfirmService(paymentRepo)
 	statusSvc := contributionsuc.NewStatusService(contributionRepo)
+	participantsSvc := dashboarduc.NewParticipantsService(campaignRepo, participantRepo)
+	exportSvc := dashboarduc.NewExportCSVService(campaignRepo, participantRepo)
 
 	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, userRepo, orgRepo, signer, cfg.IsProd)
-	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, uploadSvc, orgRepo, fileRepo, storage)
+	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, uploadSvc, orgRepo, fileRepo, storage, auditRepo)
+	dashboardHandler := handlers.NewDashboardHandler(participantsSvc, exportSvc, orgRepo)
 	fileHandler := handlers.NewFileHandler(uploadSvc, orgRepo)
 	publicHandler := handlers.NewPublicHandler(getSvc, fileRepo, storage, cfg.FrontendURL)
 	contributionHandler := handlers.NewContributionHandler(startSvc, statusSvc)
@@ -93,7 +99,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 
 	v1 := fiberApp.Group("/api/v1")
 	mountAuthRoutes(v1, authHandler, signer)
-	mountCampaignRoutes(v1, campaignHandler, fileHandler, signer)
+	mountCampaignRoutes(v1, campaignHandler, dashboardHandler, fileHandler, signer)
 	mountPublicRoutes(fiberApp, v1, publicHandler)
 	mountContributionRoutes(v1, contributionHandler, middleware.ContributeLimiter())
 	mountWebhookRoutes(v1, webhookHandler)

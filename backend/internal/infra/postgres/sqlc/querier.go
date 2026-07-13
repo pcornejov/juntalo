@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) error
 	CreateCampaign(ctx context.Context, arg CreateCampaignParams) (Campaign, error)
 	CreateContribution(ctx context.Context, arg CreateContributionParams) (Contribution, error)
 	CreateContributor(ctx context.Context, arg CreateContributorParams) (Contributor, error)
@@ -38,6 +39,7 @@ type Querier interface {
 	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
 	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
 	ListContributionsByCampaign(ctx context.Context, arg ListContributionsByCampaignParams) ([]Contribution, error)
+	ListParticipantsByCampaign(ctx context.Context, arg ListParticipantsByCampaignParams) ([]ListParticipantsByCampaignRow, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	SoftDeleteCampaign(ctx context.Context, id uuid.UUID) error
