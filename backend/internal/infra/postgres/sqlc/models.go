@@ -5,23 +5,24 @@
 package sqlc
 
 import (
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type AuditLog struct {
-	ID             pgtype.UUID        `json:"id"`
+	ID             uuid.UUID          `json:"id"`
 	ActorUserID    pgtype.UUID        `json:"actor_user_id"`
 	OrganizationID pgtype.UUID        `json:"organization_id"`
 	Action         string             `json:"action"`
 	EntityType     string             `json:"entity_type"`
-	EntityID       pgtype.UUID        `json:"entity_id"`
+	EntityID       uuid.UUID          `json:"entity_id"`
 	Data           []byte             `json:"data"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
 type Campaign struct {
-	ID             pgtype.UUID        `json:"id"`
-	OrganizationID pgtype.UUID        `json:"organization_id"`
+	ID             uuid.UUID          `json:"id"`
+	OrganizationID uuid.UUID          `json:"organization_id"`
 	TypeKey        string             `json:"type_key"`
 	Title          string             `json:"title"`
 	Slug           string             `json:"slug"`
@@ -39,16 +40,16 @@ type Campaign struct {
 }
 
 type CampaignTotal struct {
-	CampaignID       pgtype.UUID `json:"campaign_id"`
-	RaisedGross      int32       `json:"raised_gross"`
-	RaisedNetApprox  int32       `json:"raised_net_approx"`
-	ContributorCount int64       `json:"contributor_count"`
+	CampaignID       uuid.UUID `json:"campaign_id"`
+	RaisedGross      int32     `json:"raised_gross"`
+	RaisedNetApprox  int32     `json:"raised_net_approx"`
+	ContributorCount int64     `json:"contributor_count"`
 }
 
 type Contribution struct {
-	ID            pgtype.UUID        `json:"id"`
-	CampaignID    pgtype.UUID        `json:"campaign_id"`
-	ContributorID pgtype.UUID        `json:"contributor_id"`
+	ID            uuid.UUID          `json:"id"`
+	CampaignID    uuid.UUID          `json:"campaign_id"`
+	ContributorID uuid.UUID          `json:"contributor_id"`
 	Amount        int64              `json:"amount"`
 	Currency      string             `json:"currency"`
 	IsAnonymous   bool               `json:"is_anonymous"`
@@ -59,7 +60,7 @@ type Contribution struct {
 }
 
 type Contributor struct {
-	ID        pgtype.UUID        `json:"id"`
+	ID        uuid.UUID          `json:"id"`
 	FullName  string             `json:"full_name"`
 	Email     pgtype.Text        `json:"email"`
 	Phone     pgtype.Text        `json:"phone"`
@@ -67,8 +68,8 @@ type Contributor struct {
 }
 
 type File struct {
-	ID             pgtype.UUID        `json:"id"`
-	OrganizationID pgtype.UUID        `json:"organization_id"`
+	ID             uuid.UUID          `json:"id"`
+	OrganizationID uuid.UUID          `json:"organization_id"`
 	Kind           string             `json:"kind"`
 	StorageKey     string             `json:"storage_key"`
 	MimeType       string             `json:"mime_type"`
@@ -77,7 +78,7 @@ type File struct {
 }
 
 type Organization struct {
-	ID                  pgtype.UUID        `json:"id"`
+	ID                  uuid.UUID          `json:"id"`
 	Name                string             `json:"name"`
 	Kind                string             `json:"kind"`
 	CommissionRate      pgtype.Numeric     `json:"commission_rate"`
@@ -91,15 +92,15 @@ type Organization struct {
 }
 
 type OrganizationMember struct {
-	OrganizationID pgtype.UUID        `json:"organization_id"`
-	UserID         pgtype.UUID        `json:"user_id"`
+	OrganizationID uuid.UUID          `json:"organization_id"`
+	UserID         uuid.UUID          `json:"user_id"`
 	Role           string             `json:"role"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
 type Payment struct {
-	ID                    pgtype.UUID        `json:"id"`
-	ContributionID        pgtype.UUID        `json:"contribution_id"`
+	ID                    uuid.UUID          `json:"id"`
+	ContributionID        uuid.UUID          `json:"contribution_id"`
 	IdempotencyKey        string             `json:"idempotency_key"`
 	Provider              string             `json:"provider"`
 	ProviderRef           pgtype.Text        `json:"provider_ref"`
@@ -117,8 +118,8 @@ type Payment struct {
 }
 
 type PaymentRefund struct {
-	ID          pgtype.UUID        `json:"id"`
-	PaymentID   pgtype.UUID        `json:"payment_id"`
+	ID          uuid.UUID          `json:"id"`
+	PaymentID   uuid.UUID          `json:"payment_id"`
 	Amount      int64              `json:"amount"`
 	ProviderRef pgtype.Text        `json:"provider_ref"`
 	Reason      pgtype.Text        `json:"reason"`
@@ -126,8 +127,8 @@ type PaymentRefund struct {
 }
 
 type RefreshToken struct {
-	ID        pgtype.UUID        `json:"id"`
-	UserID    pgtype.UUID        `json:"user_id"`
+	ID        uuid.UUID          `json:"id"`
+	UserID    uuid.UUID          `json:"user_id"`
 	TokenHash string             `json:"token_hash"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
@@ -135,7 +136,7 @@ type RefreshToken struct {
 }
 
 type User struct {
-	ID              pgtype.UUID        `json:"id"`
+	ID              uuid.UUID          `json:"id"`
 	Email           string             `json:"email"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
 	FullName        string             `json:"full_name"`
@@ -145,8 +146,8 @@ type User struct {
 }
 
 type UserIdentity struct {
-	ID              pgtype.UUID        `json:"id"`
-	UserID          pgtype.UUID        `json:"user_id"`
+	ID              uuid.UUID          `json:"id"`
+	UserID          uuid.UUID          `json:"user_id"`
 	Provider        string             `json:"provider"`
 	PasswordHash    pgtype.Text        `json:"password_hash"`
 	ProviderSubject pgtype.Text        `json:"provider_subject"`

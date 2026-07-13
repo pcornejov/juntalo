@@ -11,24 +11,48 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/pcornejov/juntalo/backend/internal/api/handlers"
+	authuc "github.com/pcornejov/juntalo/backend/internal/app/auth"
+	infraauth "github.com/pcornejov/juntalo/backend/internal/infra/auth"
+	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/repos"
 )
 
-func NewServer(db *pgxpool.Pool) *fiber.App {
-	app := fiber.New(fiber.Config{
+type Config struct {
+	JWTSecret string
+	IsProd    bool
+}
+
+func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
+	fiberApp := fiber.New(fiber.Config{
 		AppName: "juntalo-api",
 	})
 
-	app.Use(recover.New())
-	app.Use(requestid.New())
-	app.Use(logger.New())
-	app.Use(cors.New())
+	fiberApp.Use(recover.New())
+	fiberApp.Use(requestid.New())
+	fiberApp.Use(logger.New())
+	fiberApp.Use(cors.New())
 
-	app.Get("/healthz", healthzHandler(db))
+	fiberApp.Get("/healthz", healthzHandler(db))
 
-	api := app.Group("/api/v1")
-	_ = api // rutas de Etapa 4 se montan en hitos siguientes
+	hasher := infraauth.NewArgon2idHasher()
+	signer := infraauth.NewJWTSigner(cfg.JWTSecret)
 
-	return app
+	authRepo := repos.NewAuthRepo(db)
+	userRepo := repos.NewUserRepo(db)
+	orgRepo := repos.NewOrganizationRepo(db)
+	refreshRepo := repos.NewRefreshTokenRepo(db)
+
+	registerSvc := authuc.NewRegisterService(authRepo, hasher)
+	loginSvc := authuc.NewLoginService(userRepo, authRepo, orgRepo, hasher)
+	refreshSvc := authuc.NewRefreshService(refreshRepo)
+
+	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, userRepo, orgRepo, signer, cfg.IsProd)
+
+	v1 := fiberApp.Group("/api/v1")
+	mountAuthRoutes(v1, authHandler, signer)
+
+	return fiberApp
 }
 
 func healthzHandler(db *pgxpool.Pool) fiber.Handler {

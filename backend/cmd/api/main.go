@@ -22,7 +22,10 @@ func main() {
 	}
 	defer db.Close()
 
-	app := api.NewServer(db)
+	app := api.NewServer(db, api.Config{
+		JWTSecret: cfg.JWTSecret,
+		IsProd:    cfg.Env == "production",
+	})
 
 	log.Printf("juntalo-api listening on :%s (env=%s)", cfg.Port, cfg.Env)
 	if err := app.Listen(":" + cfg.Port); err != nil {

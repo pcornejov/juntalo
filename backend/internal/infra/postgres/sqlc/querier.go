@@ -7,13 +7,21 @@ package sqlc
 import (
 	"context"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	CreateOrganization(ctx context.Context, name string) (Organization, error)
+	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
+	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	CreateUserIdentity(ctx context.Context, arg CreateUserIdentityParams) (UserIdentity, error)
+	GetPasswordIdentityByUserID(ctx context.Context, userID uuid.UUID) (UserIdentity, error)
+	GetPersonalOrganizationByUserID(ctx context.Context, userID uuid.UUID) (Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
-	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
+	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
+	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
 }
 
 var _ Querier = (*Queries)(nil)
