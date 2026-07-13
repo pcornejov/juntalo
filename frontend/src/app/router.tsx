@@ -2,6 +2,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { ComponentsShowcasePage } from './ComponentsShowcasePage'
 import { DashboardLayout } from './DashboardLayout'
 import { RequireAuth } from './guard'
+import { NotFoundPage } from './NotFoundPage'
+import { RedirectToPublicCampaign } from './RedirectToPublicCampaign'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { RegisterPage } from '../features/auth/pages/RegisterPage'
 import { CampaignListPage } from '../features/campaigns/pages/CampaignListPage'
@@ -15,6 +17,8 @@ export const router = createBrowserRouter([
   { path: '/register', element: <RegisterPage /> },
   { path: '/design', element: <ComponentsShowcasePage /> },
   { path: '/public/:slug', element: <PublicCampaignPage /> },
+  { path: '/c/:slug', element: <RedirectToPublicCampaign /> },
+  { path: '*', element: <NotFoundPage /> },
   {
     element: <RequireAuth />,
     children: [
