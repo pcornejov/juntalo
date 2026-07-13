@@ -1,7 +1,14 @@
 package repos
 
 import (
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/pcornejov/juntalo/backend/internal/domain/campaign"
 	"github.com/pcornejov/juntalo/backend/internal/domain/identity"
+	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/sqlc"
 )
 
@@ -36,4 +43,40 @@ func mapRefreshToken(t sqlc.RefreshToken) identity.RefreshToken {
 		rt.RevokedAt = &t.RevokedAt.Time
 	}
 	return rt
+}
+
+func mapCampaign(c sqlc.Campaign) campaign.Campaign {
+	out := campaign.Campaign{
+		ID:             c.ID,
+		OrganizationID: c.OrganizationID,
+		TypeKey:        campaign.TypeKey(c.TypeKey),
+		Title:          c.Title,
+		Slug:           c.Slug,
+		Description:    c.Description,
+		Status:         campaign.Status(c.Status),
+		CreatedAt:      c.CreatedAt.Time,
+		UpdatedAt:      c.UpdatedAt.Time,
+	}
+	if c.CoverFileID.Valid {
+		id := uuid.UUID(c.CoverFileID.Bytes)
+		out.CoverFileID = &id
+	}
+	if c.GoalAmount.Valid {
+		amount := money.CLP(c.GoalAmount.Int64)
+		out.GoalAmount = &amount
+	}
+	if c.StartsAt.Valid {
+		out.StartsAt = &c.StartsAt.Time
+	}
+	if c.EndsAt.Valid {
+		out.EndsAt = &c.EndsAt.Time
+	}
+	return out
+}
+
+func toTimestamptz(t *time.Time) pgtype.Timestamptz {
+	if t == nil {
+		return pgtype.Timestamptz{}
+	}
+	return pgtype.Timestamptz{Time: *t, Valid: true}
 }

@@ -9,6 +9,9 @@ type Config struct {
 	DatabaseURL string `envconfig:"DATABASE_URL" required:"true"`
 	JWTSecret   string `envconfig:"JWT_SECRET" required:"true"`
 	Env         string `envconfig:"APP_ENV" default:"development"`
+	StorageDir  string `envconfig:"STORAGE_DIR" default:"./data/files"`
+	StorageURL  string `envconfig:"STORAGE_URL" default:"http://localhost:8080/files"`
+	FrontendURL string `envconfig:"FRONTEND_URL" default:"http://localhost:5173"`
 }
 
 func Load() (Config, error) {

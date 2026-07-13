@@ -23,8 +23,11 @@ func main() {
 	defer db.Close()
 
 	app := api.NewServer(db, api.Config{
-		JWTSecret: cfg.JWTSecret,
-		IsProd:    cfg.Env == "production",
+		JWTSecret:   cfg.JWTSecret,
+		IsProd:      cfg.Env == "production",
+		StorageDir:  cfg.StorageDir,
+		StorageURL:  cfg.StorageURL,
+		FrontendURL: cfg.FrontendURL,
 	})
 
 	log.Printf("juntalo-api listening on :%s (env=%s)", cfg.Port, cfg.Env)

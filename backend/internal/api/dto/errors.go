@@ -21,12 +21,21 @@ type ErrorBody struct {
 
 // codeStatus maps stable domain error codes to HTTP status codes.
 var codeStatus = map[string]int{
-	"weak_password":            fiber.StatusUnprocessableEntity,
-	"email_already_registered": fiber.StatusUnprocessableEntity,
-	"invalid_credentials":      fiber.StatusUnauthorized,
-	"session_expired":          fiber.StatusUnauthorized,
-	"unauthorized":             fiber.StatusUnauthorized,
-	"validation_failed":        fiber.StatusBadRequest,
+	"weak_password":             fiber.StatusUnprocessableEntity,
+	"email_already_registered":  fiber.StatusUnprocessableEntity,
+	"invalid_credentials":       fiber.StatusUnauthorized,
+	"session_expired":           fiber.StatusUnauthorized,
+	"unauthorized":              fiber.StatusUnauthorized,
+	"validation_failed":         fiber.StatusBadRequest,
+	"campaign_not_found":        fiber.StatusNotFound,
+	"unknown_campaign_type":     fiber.StatusUnprocessableEntity,
+	"campaign_type_disabled":    fiber.StatusUnprocessableEntity,
+	"goal_below_raised":         fiber.StatusUnprocessableEntity,
+	"invalid_status_transition": fiber.StatusConflict,
+	"campaign_not_deletable":    fiber.StatusUnprocessableEntity,
+	"campaign_not_active":       fiber.StatusUnprocessableEntity,
+	"file_too_large":            fiber.StatusUnprocessableEntity,
+	"unsupported_file_type":     fiber.StatusUnprocessableEntity,
 }
 
 // WriteError maps err to the stable envelope + HTTP status. Unknown errors never

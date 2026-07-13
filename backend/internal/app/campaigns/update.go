@@ -1,0 +1,66 @@
+package campaigns
+
+import (
+	"context"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/pcornejov/juntalo/backend/internal/app"
+	"github.com/pcornejov/juntalo/backend/internal/domain/campaign"
+	"github.com/pcornejov/juntalo/backend/internal/domain/money"
+)
+
+type UpdateService struct {
+	repo app.CampaignRepository
+}
+
+func NewUpdateService(repo app.CampaignRepository) *UpdateService {
+	return &UpdateService{repo: repo}
+}
+
+type UpdateInput struct {
+	Title       string
+	Description string
+	GoalAmount  *money.CLP
+	StartsAt    *time.Time
+	EndsAt      *time.Time
+	CoverFileID *uuid.UUID
+}
+
+func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in UpdateInput) (campaign.Campaign, error) {
+	existing, found, err := s.repo.GetByIDForOrg(ctx, id, orgID)
+	if err != nil {
+		return campaign.Campaign{}, err
+	}
+	if !found {
+		return campaign.Campaign{}, ErrNotFound
+	}
+
+	if err := campaign.ValidateTitle(in.Title); err != nil {
+		return campaign.Campaign{}, err
+	}
+
+	totals, err := s.repo.GetTotals(ctx, id)
+	if err != nil {
+		return campaign.Campaign{}, err
+	}
+	if err := campaign.ValidateGoalUpdate(in.GoalAmount, totals.RaisedGross); err != nil {
+		return campaign.Campaign{}, err
+	}
+
+	coverFileID := existing.CoverFileID
+	if in.CoverFileID != nil {
+		coverFileID = in.CoverFileID
+	}
+
+	return s.repo.Update(ctx, app.UpdateCampaignInput{
+		ID:          id,
+		Title:       in.Title,
+		Description: in.Description,
+		GoalAmount:  in.GoalAmount,
+		StartsAt:    in.StartsAt,
+		EndsAt:      in.EndsAt,
+		CoverFileID: coverFileID,
+	})
+}

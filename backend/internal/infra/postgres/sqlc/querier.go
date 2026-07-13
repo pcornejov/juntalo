@@ -11,17 +11,29 @@ import (
 )
 
 type Querier interface {
+	CreateCampaign(ctx context.Context, arg CreateCampaignParams) (Campaign, error)
+	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateOrganization(ctx context.Context, name string) (Organization, error)
 	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserIdentity(ctx context.Context, arg CreateUserIdentityParams) (UserIdentity, error)
+	GetCampaignByID(ctx context.Context, id uuid.UUID) (Campaign, error)
+	GetCampaignByIDForOrg(ctx context.Context, arg GetCampaignByIDForOrgParams) (Campaign, error)
+	GetCampaignBySlug(ctx context.Context, slug string) (Campaign, error)
+	GetCampaignTotals(ctx context.Context, campaignID uuid.UUID) (CampaignTotal, error)
+	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
 	GetPasswordIdentityByUserID(ctx context.Context, userID uuid.UUID) (UserIdentity, error)
 	GetPersonalOrganizationByUserID(ctx context.Context, userID uuid.UUID) (Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
+	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
+	SlugExists(ctx context.Context, slug string) (bool, error)
+	SoftDeleteCampaign(ctx context.Context, id uuid.UUID) error
+	UpdateCampaign(ctx context.Context, arg UpdateCampaignParams) (Campaign, error)
+	UpdateCampaignStatus(ctx context.Context, arg UpdateCampaignStatusParams) (Campaign, error)
 }
 
 var _ Querier = (*Queries)(nil)

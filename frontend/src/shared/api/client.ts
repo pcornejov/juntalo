@@ -23,17 +23,7 @@ interface RequestOptions {
   skipAuth?: boolean
 }
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: options.method ?? 'GET',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken && !options.skipAuth ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  })
-
+async function parseResponse<T>(res: Response): Promise<T> {
   if (res.status === 204) {
     return undefined as T
   }
@@ -49,10 +39,36 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return data as T
 }
 
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: options.method ?? 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken && !options.skipAuth ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  })
+  return parseResponse<T>(res)
+}
+
+// upload sends multipart/form-data without JSON-stringifying the body — used
+// for file uploads where the browser sets the Content-Type boundary itself.
+async function upload<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    body: form,
+  })
+  return parseResponse<T>(res)
+}
+
 export const apiClient = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>(path, { method: 'POST', body, ...options }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  upload,
 }
