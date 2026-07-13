@@ -26,3 +26,11 @@ func (r *OrganizationRepo) GetPersonalByUserID(ctx context.Context, userID uuid.
 	}
 	return mapOrganization(o), nil
 }
+
+func (r *OrganizationRepo) GetByID(ctx context.Context, id uuid.UUID) (identity.Organization, error) {
+	o, err := r.q.GetOrganizationByID(ctx, id)
+	if err != nil {
+		return identity.Organization{}, fmt.Errorf("get organization: %w", err)
+	}
+	return mapOrganization(o), nil
+}

@@ -12,6 +12,11 @@ type Config struct {
 	StorageDir  string `envconfig:"STORAGE_DIR" default:"./data/files"`
 	StorageURL  string `envconfig:"STORAGE_URL" default:"http://localhost:8080/files"`
 	FrontendURL string `envconfig:"FRONTEND_URL" default:"http://localhost:5173"`
+
+	// Mock payment provider (Hito 3) — reemplazado por pasarelas reales post-MVP.
+	SelfURL           string `envconfig:"SELF_URL" default:"http://localhost:8080"`
+	MockWebhookSecret string `envconfig:"MOCK_WEBHOOK_SECRET" default:"dev-mock-secret"`
+	MockPaymentMode   string `envconfig:"MOCK_PAYMENT_MODE" default:"deferred"`
 }
 
 func Load() (Config, error) {

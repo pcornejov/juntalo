@@ -36,6 +36,29 @@ func (q *Queries) CreateOrganization(ctx context.Context, name string) (Organiza
 	return i, err
 }
 
+const getOrganizationByID = `-- name: GetOrganizationByID :one
+SELECT id, name, kind, commission_rate, rut, payout_bank, payout_account_type, payout_account_number, payout_holder_name, created_at, updated_at FROM organizations WHERE id = $1
+`
+
+func (q *Queries) GetOrganizationByID(ctx context.Context, id uuid.UUID) (Organization, error) {
+	row := q.db.QueryRow(ctx, getOrganizationByID, id)
+	var i Organization
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Kind,
+		&i.CommissionRate,
+		&i.Rut,
+		&i.PayoutBank,
+		&i.PayoutAccountType,
+		&i.PayoutAccountNumber,
+		&i.PayoutHolderName,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getPersonalOrganizationByUserID = `-- name: GetPersonalOrganizationByUserID :one
 SELECT o.id, o.name, o.kind, o.commission_rate, o.rut, o.payout_bank, o.payout_account_type, o.payout_account_number, o.payout_holder_name, o.created_at, o.updated_at FROM organizations o
 JOIN organization_members om ON om.organization_id = o.id

@@ -1,20 +1,26 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { usePublicCampaign } from '../hooks/usePublicCampaign'
 import { formatCLP } from '../../../shared/lib/clp'
 import { absoluteUrl } from '../../../shared/lib/share'
 import { Button, Card, Progress, ShareButtons, QrCode } from '../../../shared/ui'
+import { ContributeSheet } from '../components/ContributeSheet'
+import { ContributeSuccessPanel } from './ContributeSuccessPage'
+import type { StartContributionResult } from '../api'
 
 // Diseñada mobile-first a 375px: es la página que se abre desde el in-app
 // browser de WhatsApp (Etapa 2 §3, Etapa 5 §3).
 export function PublicCampaignPage() {
   const { slug } = useParams<{ slug: string }>()
   const { data: campaign, isLoading, isError } = usePublicCampaign(slug)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [result, setResult] = useState<StartContributionResult | null>(null)
 
   if (isLoading) {
     return <div className="p-6 text-center text-text-secondary">Cargando…</div>
   }
 
-  if (isError || !campaign) {
+  if (isError || !campaign || !slug) {
     return (
       <div className="p-6 text-center text-text-secondary">
         Esta campaña no existe o ya no está disponible.
@@ -23,6 +29,7 @@ export function PublicCampaignPage() {
   }
 
   const publicUrl = absoluteUrl(`/public/${slug}`)
+  const canContribute = campaign.status === 'active'
 
   return (
     <div className="mx-auto max-w-md pb-24">
@@ -62,10 +69,34 @@ export function PublicCampaignPage() {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 border-t border-border-default bg-bg-surface p-4">
-        <Button className="w-full" disabled title="Los pagos se habilitan en el próximo hito">
-          {campaign.cta}
+        <Button
+          className="w-full"
+          disabled={!canContribute}
+          onClick={() => setIsSheetOpen(true)}
+        >
+          {canContribute ? campaign.cta : 'Campaña no disponible'}
         </Button>
       </div>
+
+      {isSheetOpen && (
+        <ContributeSheet
+          slug={slug}
+          cta={campaign.cta}
+          onClose={() => setIsSheetOpen(false)}
+          onSuccess={(r) => {
+            setIsSheetOpen(false)
+            setResult(r)
+          }}
+        />
+      )}
+
+      {result && (
+        <ContributeSuccessPanel
+          contributionId={result.contribution_id}
+          initialStatus={result.payment.status}
+          onClose={() => setResult(null)}
+        />
+      )}
     </div>
   )
 }

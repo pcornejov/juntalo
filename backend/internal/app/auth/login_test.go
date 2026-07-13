@@ -36,6 +36,15 @@ func (f *fakeOrgRepo) GetPersonalByUserID(_ context.Context, userID uuid.UUID) (
 	return f.byUser[userID], nil
 }
 
+func (f *fakeOrgRepo) GetByID(_ context.Context, id uuid.UUID) (identity.Organization, error) {
+	for _, o := range f.byUser {
+		if o.ID == id {
+			return o, nil
+		}
+	}
+	return identity.Organization{}, nil
+}
+
 func setupLoginFixture(t *testing.T) (*LoginService, identity.User) {
 	t.Helper()
 	authRepo := newFakeAuthRepo()

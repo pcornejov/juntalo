@@ -21,6 +21,7 @@ interface RequestOptions {
   method?: string
   body?: unknown
   skipAuth?: boolean
+  headers?: Record<string, string>
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {
@@ -46,6 +47,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers: {
       'Content-Type': 'application/json',
       ...(accessToken && !options.skipAuth ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...options.headers,
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
   })

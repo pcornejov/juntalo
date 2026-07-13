@@ -37,6 +37,17 @@ func mountPublicRoutes(app fiber.Router, apiV1 fiber.Router, h *handlers.PublicH
 	app.Get("/c/:slug", h.OGPage)
 }
 
+// mountContributionRoutes implements Etapa 4 §4: el endpoint más importante
+// del producto, con rate limit agresivo (10/min por IP).
+func mountContributionRoutes(apiV1 fiber.Router, h *handlers.ContributionHandler, contributeLimiter fiber.Handler) {
+	apiV1.Post("/public/campaigns/:slug/contributions", contributeLimiter, h.Start)
+	apiV1.Get("/public/contributions/:id/status", h.Status)
+}
+
+func mountWebhookRoutes(apiV1 fiber.Router, h *handlers.WebhookHandler) {
+	apiV1.Post("/webhooks/payments/:provider", h.Payments)
+}
+
 func mountMetaRoutes(router fiber.Router) {
 	router.Get("/meta/campaign-types", handlers.CampaignTypes)
 }

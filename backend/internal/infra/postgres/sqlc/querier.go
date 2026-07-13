@@ -12,9 +12,12 @@ import (
 
 type Querier interface {
 	CreateCampaign(ctx context.Context, arg CreateCampaignParams) (Campaign, error)
+	CreateContribution(ctx context.Context, arg CreateContributionParams) (Contribution, error)
+	CreateContributor(ctx context.Context, arg CreateContributorParams) (Contributor, error)
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateOrganization(ctx context.Context, name string) (Organization, error)
 	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
+	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserIdentity(ctx context.Context, arg CreateUserIdentityParams) (UserIdentity, error)
@@ -22,18 +25,26 @@ type Querier interface {
 	GetCampaignByIDForOrg(ctx context.Context, arg GetCampaignByIDForOrgParams) (Campaign, error)
 	GetCampaignBySlug(ctx context.Context, slug string) (Campaign, error)
 	GetCampaignTotals(ctx context.Context, campaignID uuid.UUID) (CampaignTotal, error)
+	GetContributionByID(ctx context.Context, id uuid.UUID) (Contribution, error)
 	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
+	GetOrganizationByID(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetPasswordIdentityByUserID(ctx context.Context, userID uuid.UUID) (UserIdentity, error)
+	GetPaymentByContributionID(ctx context.Context, contributionID uuid.UUID) (Payment, error)
+	GetPaymentByIdempotencyKey(ctx context.Context, idempotencyKey string) (Payment, error)
+	GetPaymentByProviderRefForUpdate(ctx context.Context, arg GetPaymentByProviderRefForUpdateParams) (Payment, error)
 	GetPersonalOrganizationByUserID(ctx context.Context, userID uuid.UUID) (Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
 	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
+	ListContributionsByCampaign(ctx context.Context, arg ListContributionsByCampaignParams) ([]Contribution, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	SoftDeleteCampaign(ctx context.Context, id uuid.UUID) error
 	UpdateCampaign(ctx context.Context, arg UpdateCampaignParams) (Campaign, error)
 	UpdateCampaignStatus(ctx context.Context, arg UpdateCampaignStatusParams) (Campaign, error)
+	UpdateContributionStatus(ctx context.Context, arg UpdateContributionStatusParams) error
+	UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) (Payment, error)
 }
 
 var _ Querier = (*Queries)(nil)
