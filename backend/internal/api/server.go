@@ -25,6 +25,7 @@ import (
 	dashboarduc "github.com/pcornejov/juntalo/backend/internal/app/dashboard"
 	filesuc "github.com/pcornejov/juntalo/backend/internal/app/files"
 	infraauth "github.com/pcornejov/juntalo/backend/internal/infra/auth"
+	"github.com/pcornejov/juntalo/backend/internal/infra/captcha"
 	"github.com/pcornejov/juntalo/backend/internal/infra/email"
 	"github.com/pcornejov/juntalo/backend/internal/infra/payments/mock"
 	"github.com/pcornejov/juntalo/backend/internal/infra/payments/webpay"
@@ -72,6 +73,10 @@ type Config struct {
 	// Backoffice del operador de la plataforma — string separado por comas,
 	// vacío = nadie tiene acceso (ver infra/config).
 	AdminEmails string
+
+	// Captcha (Cloudflare Turnstile) en el registro. Vacío = sin captcha
+	// (ver infra/config).
+	TurnstileSecretKey string
 }
 
 func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
@@ -156,6 +161,12 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	} else {
 		emailSender = email.NewNoopSender()
 	}
+	var captchaVerifier app.CaptchaVerifier
+	if cfg.TurnstileSecretKey != "" {
+		captchaVerifier = captcha.NewTurnstileVerifier(cfg.TurnstileSecretKey)
+	} else {
+		captchaVerifier = captcha.NoopVerifier{}
+	}
 
 	authRepo := repos.NewAuthRepo(db)
 	userRepo := repos.NewUserRepo(db)
@@ -175,7 +186,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 
 	adminEmails := splitAdminEmails(cfg.AdminEmails)
 
-	registerSvc := authuc.NewRegisterService(authRepo, hasher)
+	registerSvc := authuc.NewRegisterService(authRepo, hasher, captchaVerifier)
 	loginSvc := authuc.NewLoginService(userRepo, authRepo, orgRepo, hasher)
 	refreshSvc := authuc.NewRefreshService(refreshRepo)
 	forgotPasswordSvc := authuc.NewForgotPasswordService(userRepo, passwordResetRepo)

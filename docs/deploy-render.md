@@ -64,6 +64,19 @@ Por defecto las imágenes se guardan en el disco del contenedor de `juntalo-api`
 
 Si estas 5 variables quedan vacías, el backend sigue funcionando normal y cae automáticamente al disco local (efímero) — no hace falta configurarlas para que el deploy de prueba funcione, solo para que las imágenes persistan.
 
+## Captcha en el registro (Cloudflare Turnstile)
+
+Por defecto el registro no pide captcha. Para activarlo (frena creación masiva de cuentas por script, sin el checkbox invasivo de reCAPTCHA):
+
+1. En el dashboard de Cloudflare, ve a **Turnstile** → **Add site**. Dominio: el de `juntalo-web` (o `localhost` también, si quieres poder probarlo en dev). Modo: "Managed" (el default) es el más equilibrado.
+2. Te da un **Site Key** (pública) y un **Secret Key** (privada).
+3. En Render:
+   - `juntalo-web` → Environment → `VITE_TURNSTILE_SITE_KEY` = el Site Key (ya está declarada en `render.yaml` con `sync: false`).
+   - `juntalo-api` → Environment → `TURNSTILE_SECRET_KEY` = el Secret Key (también `sync: false`).
+4. Redeploy manual de ambos servicios.
+
+Si `VITE_TURNSTILE_SITE_KEY` queda vacía, el widget ni se renderiza en el formulario de registro. Si `TURNSTILE_SECRET_KEY` queda vacía, el backend aprueba el registro igual sin pedir ni validar ningún token — las dos deben estar configuradas para que el captcha realmente bloquee algo; si solo pones una, el registro sigue funcionando sin fricción (ninguna de las dos rompe el deploy si falta).
+
 ## Diferencia con el despliegue real (Etapa 5/6 del roadmap)
 
 El diseño de producción (`docker/docker-compose.prod.yml` + Caddy + VPS) sirve frontend y backend bajo **un solo dominio**, con Cloudflare delante y backups automáticos — así se evita el tema de cookies/CORS cross-origin que sí existe en este deploy de prueba (frontend y backend viven en subdominios distintos de Render). Por eso el código ahora soporta ambos modos: en desarrollo y en el VPS real, todo es same-origin (cookie `SameSite=Lax`); en este deploy de prueba cross-origin, la cookie de sesión usa `SameSite=None` automáticamente cuando `APP_ENV=production` viene de un dominio distinto al frontend.

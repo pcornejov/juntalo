@@ -51,11 +51,21 @@ type fakeHasher struct{}
 func (fakeHasher) Hash(password string) (string, error) { return "hashed:" + password, nil }
 func (fakeHasher) Verify(password, hash string) bool    { return hash == "hashed:"+password }
 
+// fakeCaptchaVerifier por defecto aprueba siempre (equivalente al NoopVerifier
+// real) — approve=false simula un token de Turnstile rechazado.
+type fakeCaptchaVerifier struct {
+	approve bool
+}
+
+func (f fakeCaptchaVerifier) Verify(context.Context, string, string) (bool, error) {
+	return f.approve, nil
+}
+
 func TestRegisterService_Register(t *testing.T) {
 	repo := newFakeAuthRepo()
-	svc := NewRegisterService(repo, fakeHasher{})
+	svc := NewRegisterService(repo, fakeHasher{}, fakeCaptchaVerifier{approve: true})
 
-	user, org, err := svc.Register(context.Background(), "ana@example.com", "Ana Pérez", "password123")
+	user, org, err := svc.Register(context.Background(), "ana@example.com", "Ana Pérez", "password123", "token", "1.2.3.4")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -69,9 +79,9 @@ func TestRegisterService_Register(t *testing.T) {
 
 func TestRegisterService_WeakPassword(t *testing.T) {
 	repo := newFakeAuthRepo()
-	svc := NewRegisterService(repo, fakeHasher{})
+	svc := NewRegisterService(repo, fakeHasher{}, fakeCaptchaVerifier{approve: true})
 
-	_, _, err := svc.Register(context.Background(), "ana@example.com", "Ana", "short")
+	_, _, err := svc.Register(context.Background(), "ana@example.com", "Ana", "short", "token", "1.2.3.4")
 	if !apperr.Is(err, "weak_password") {
 		t.Fatalf("expected weak_password error, got %v", err)
 	}
@@ -79,15 +89,25 @@ func TestRegisterService_WeakPassword(t *testing.T) {
 
 func TestRegisterService_DuplicateEmail(t *testing.T) {
 	repo := newFakeAuthRepo()
-	svc := NewRegisterService(repo, fakeHasher{})
+	svc := NewRegisterService(repo, fakeHasher{}, fakeCaptchaVerifier{approve: true})
 
-	_, _, err := svc.Register(context.Background(), "ana@example.com", "Ana", "password123")
+	_, _, err := svc.Register(context.Background(), "ana@example.com", "Ana", "password123", "token", "1.2.3.4")
 	if err != nil {
 		t.Fatalf("unexpected error on first register: %v", err)
 	}
 
-	_, _, err = svc.Register(context.Background(), "ana@example.com", "Otra Ana", "password456")
+	_, _, err = svc.Register(context.Background(), "ana@example.com", "Otra Ana", "password456", "token", "1.2.3.4")
 	if !apperr.Is(err, "email_already_registered") {
 		t.Fatalf("expected email_already_registered, got %v", err)
+	}
+}
+
+func TestRegisterService_CaptchaRejected(t *testing.T) {
+	repo := newFakeAuthRepo()
+	svc := NewRegisterService(repo, fakeHasher{}, fakeCaptchaVerifier{approve: false})
+
+	_, _, err := svc.Register(context.Background(), "ana@example.com", "Ana", "password123", "bad-token", "1.2.3.4")
+	if !apperr.Is(err, "captcha_failed") {
+		t.Fatalf("expected captcha_failed, got %v", err)
 	}
 }

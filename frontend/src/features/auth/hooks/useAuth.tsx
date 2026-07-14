@@ -10,7 +10,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>
-  register: (email: string, fullName: string, password: string) => Promise<void>
+  register: (email: string, fullName: string, password: string, captchaToken?: string) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -51,8 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ user: res.user, organization: res.organization, isLoading: false })
   }
 
-  async function register(email: string, fullName: string, password: string) {
-    const res = await authApi.register({ email, full_name: fullName, password })
+  async function register(email: string, fullName: string, password: string, captchaToken?: string) {
+    const res = await authApi.register({ email, full_name: fullName, password, captcha_token: captchaToken })
     setAccessToken(res.access_token)
     setState({ user: res.user, organization: res.organization, isLoading: false })
   }

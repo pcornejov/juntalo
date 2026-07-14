@@ -80,6 +80,10 @@ services:
         sync: false
       - key: R2_PUBLIC_URL
         sync: false
+      # Captcha (Cloudflare Turnstile) en el registro — vacío = sin captcha,
+      # no rompe el deploy (ver docs/deploy-render.md).
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
 
   - type: web
     name: juntalo-web
@@ -92,6 +96,8 @@ services:
         value: https://juntalo-api.onrender.com/api/v1
       - key: VITE_SENTRY_DSN
         sync: false # se completa a mano — DSN del proyecto frontend en Sentry (puede ser el mismo proyecto u otro)
+      - key: VITE_TURNSTILE_SITE_KEY
+        sync: false # site key del widget de Turnstile — es pública (no un secreto), pero igual se deja a mano por deploy
     routes:
       - type: rewrite
         source: /*

@@ -25,7 +25,12 @@ export interface MeResponse {
   organization: Organization
 }
 
-export function register(input: { email: string; full_name: string; password: string }) {
+export function register(input: {
+  email: string
+  full_name: string
+  password: string
+  captcha_token?: string
+}) {
   return apiClient.post<AuthResponse>('/auth/register', input, { skipAuth: true })
 }
 

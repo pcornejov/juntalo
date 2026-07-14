@@ -100,6 +100,14 @@ type TokenSigner interface {
 	Parse(token string) (uuid.UUID, error)
 }
 
+// CaptchaVerifier valida un token de Cloudflare Turnstile antes de crear una
+// cuenta — mismo espíritu que EmailSender: un no-op siempre-true cuando no
+// hay TURNSTILE_SECRET_KEY configurada, para no romper el flujo en
+// desarrollo/test.
+type CaptchaVerifier interface {
+	Verify(ctx context.Context, token, remoteIP string) (bool, error)
+}
+
 // CreateCampaignInput carries everything CampaignRepository.Create needs.
 type CreateCampaignInput struct {
 	OrganizationID uuid.UUID

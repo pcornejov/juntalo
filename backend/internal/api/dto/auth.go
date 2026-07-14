@@ -8,6 +8,10 @@ type RegisterRequest struct {
 	// interceptaba antes y el código weak_password nunca llegaba a
 	// devolverse a la API, pese a estar documentado en errors.go).
 	Password string `json:"password" validate:"required"`
+	// CaptchaToken no lleva "required": cuando TURNSTILE_SECRET_KEY está
+	// vacía (dev/test) el verificador es un no-op que aprueba igual, sin
+	// token — el enforcement real vive en RegisterService, no acá.
+	CaptchaToken string `json:"captcha_token"`
 }
 
 type LoginRequest struct {

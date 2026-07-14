@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { errorMessage } from '../../../shared/api/errors'
+import { isCaptchaEnabled, TurnstileWidget } from '../components/TurnstileWidget'
 import { Button, Card, Input } from '../../../shared/ui'
 
 export function RegisterPage() {
@@ -10,15 +11,17 @@ export function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const captchaRequired = isCaptchaEnabled()
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setIsSubmitting(true)
     try {
-      await register(email, fullName, password)
+      await register(email, fullName, password, captchaToken || undefined)
       navigate('/dashboard')
     } catch (err) {
       setError(errorMessage(err))
@@ -62,8 +65,13 @@ export function RegisterPage() {
             minLength={8}
             autoComplete="new-password"
           />
+          <TurnstileWidget onVerify={setCaptchaToken} />
           {error && <p className="text-sm text-danger">{error}</p>}
-          <Button type="submit" disabled={isSubmitting} className="w-full">
+          <Button
+            type="submit"
+            disabled={isSubmitting || (captchaRequired && !captchaToken)}
+            className="w-full"
+          >
             {isSubmitting ? 'Creando…' : 'Crear cuenta'}
           </Button>
         </form>

@@ -64,6 +64,11 @@ type Config struct {
 	// mismo patrón "vacío = off" que R2/Resend/Sentry/Webpay. Lista separada
 	// por comas de emails con acceso (ver middleware.RequireAdminUser).
 	AdminEmails string `envconfig:"ADMIN_EMAILS" default:""`
+
+	// Captcha (Cloudflare Turnstile) en el registro. Vacío = sin captcha
+	// (mismo patrón "vacío = off"). El site key público lo consume el
+	// frontend directo (VITE_TURNSTILE_SITE_KEY), no pasa por acá.
+	TurnstileSecretKey string `envconfig:"TURNSTILE_SECRET_KEY" default:""`
 }
 
 func Load() (Config, error) {

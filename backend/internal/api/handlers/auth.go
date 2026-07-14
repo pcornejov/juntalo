@@ -83,7 +83,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return dto.WriteError(c, err)
 	}
 
-	user, org, err := h.register.Register(c.Context(), req.Email, req.FullName, req.Password)
+	user, org, err := h.register.Register(c.Context(), req.Email, req.FullName, req.Password, req.CaptchaToken, c.IP())
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
