@@ -78,7 +78,7 @@ func (h *PublicHandler) ListJSON(c *fiber.Ctx) error {
 			coverURL = &images[0]
 		}
 		organizerName, isVerified := h.resolveOrganizer(c, item.Campaign.OrganizationID)
-		resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images)
+		resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images, item.RaffleNumbersSold)
 		resp.PublicURL = h.selfURL + "/c/" + item.Campaign.Slug
 		resp.OrganizerName = organizerName
 		resp.IsVerified = isVerified
@@ -104,7 +104,7 @@ func (h *PublicHandler) Featured(c *fiber.Ctx) error {
 		coverURL = &images[0]
 	}
 	organizerName, isVerified := h.resolveOrganizer(c, item.Campaign.OrganizationID)
-	resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images)
+	resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images, item.RaffleNumbersSold)
 	resp.PublicURL = h.selfURL + "/c/" + item.Campaign.Slug
 	resp.OrganizerName = organizerName
 	resp.IsVerified = isVerified
@@ -163,7 +163,7 @@ func (h *PublicHandler) OrgProfile(c *fiber.Ctx) error {
 		if len(images) > 0 {
 			coverURL = &images[0]
 		}
-		resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images)
+		resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images, item.RaffleNumbersSold)
 		resp.PublicURL = h.selfURL + "/c/" + item.Campaign.Slug
 		resp.OrganizerName = org.Name
 		resp.IsVerified = isVerified
@@ -201,7 +201,13 @@ func (h *PublicHandler) GetJSON(c *fiber.Ctx) error {
 	if len(images) > 0 {
 		coverURL = &images[0]
 	}
-	resp := toPublicCampaignResponse(found, totals, coverURL, images)
+	var raffleSold *int64
+	if found.TypeKey == campaign.TypeRaffle {
+		if sold, err := h.get.GetRaffleNumbersSold(c.Context(), found.ID); err == nil {
+			raffleSold = &sold
+		}
+	}
+	resp := toPublicCampaignResponse(found, totals, coverURL, images, raffleSold)
 	// public_url apunta a /c/:slug en el dominio del backend (donde vive el
 	// render de OG tags), no al dominio del frontend — así, si alguien
 	// re-comparte el link desde la página pública, la preview de WhatsApp
@@ -256,7 +262,7 @@ func resolveCoverURL(c *fiber.Ctx, files app.FileRepository, storage app.FileSto
 	return &url
 }
 
-func toPublicCampaignResponse(c campaign.Campaign, totals campaign.Totals, coverURL *string, images []string) dto.PublicCampaignResponse {
+func toPublicCampaignResponse(c campaign.Campaign, totals campaign.Totals, coverURL *string, images []string, raffleSold *int64) dto.PublicCampaignResponse {
 	def := campaign.Registry[c.TypeKey]
 	resp := dto.PublicCampaignResponse{
 		Slug:        c.Slug,
@@ -278,6 +284,19 @@ func toPublicCampaignResponse(c campaign.Campaign, totals campaign.Totals, cover
 	if c.GoalAmount != nil {
 		v := int64(*c.GoalAmount)
 		resp.GoalAmount = &v
+	}
+	if c.RaffleUnitPrice != nil {
+		v := int64(*c.RaffleUnitPrice)
+		resp.RaffleUnitPrice = &v
+	}
+	resp.RaffleTotalNumbers = c.RaffleTotalNumbers
+	resp.RaffleWinningNumber = c.RaffleWinningNumber
+	if c.RaffleTotalNumbers != nil && raffleSold != nil {
+		available := int64(*c.RaffleTotalNumbers) - *raffleSold
+		if available < 0 {
+			available = 0
+		}
+		resp.RaffleAvailable = &available
 	}
 	return resp
 }

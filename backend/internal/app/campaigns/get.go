@@ -56,6 +56,13 @@ func (s *GetService) GetPublicBySlug(ctx context.Context, slug string) (campaign
 	return c, totals, nil
 }
 
+// GetRaffleNumbersSold expone el conteo de números reservados/vendidos para
+// una campaña de tipo "raffle" — usado por los handlers que muestran
+// disponibilidad (dashboard del organizador y página pública).
+func (s *GetService) GetRaffleNumbersSold(ctx context.Context, campaignID uuid.UUID) (int64, error) {
+	return s.repo.GetRaffleNumbersSold(ctx, campaignID)
+}
+
 var publicStatuses = map[campaign.Status]bool{
 	campaign.StatusActive:   true,
 	campaign.StatusPaused:   true,

@@ -23,6 +23,13 @@ export interface PublicCampaign {
   is_verified?: boolean
   location?: string
   video_url?: string
+  // Campos de rifa: solo vienen cuando type_key="raffle" (no exponemos
+  // type_key acá, así que el frontend usa la presencia de estos campos
+  // como señal de que es una rifa).
+  raffle_unit_price?: number
+  raffle_total_numbers?: number
+  raffle_available?: number
+  raffle_winning_number?: number
 }
 
 export function getPublicCampaign(slug: string) {

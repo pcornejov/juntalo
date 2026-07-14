@@ -81,6 +81,7 @@ func (h *DashboardHandler) Participants(c *fiber.Ctx) error {
 			Status:         string(r.Status),
 			CreatedAt:      r.CreatedAt,
 			Message:        r.Message,
+			RaffleNumber:   r.RaffleNumber,
 		}
 	}
 	return c.JSON(dto.ParticipantsResponse{Items: out, HasMore: hasMore})

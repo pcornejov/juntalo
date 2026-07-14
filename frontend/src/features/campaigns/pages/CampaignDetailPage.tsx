@@ -138,6 +138,81 @@ function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: ()
   )
 }
 
+// RaffleCard: precio/total/vendidos y el campo donde el organizador
+// registra el número ganador tras el sorteo externo (Kino/Loto de una
+// fecha específica) — Juntalo no sortea nada, solo deja constancia.
+function RaffleCard({ campaign }: { campaign: Campaign }) {
+  const update = useUpdateCampaign(campaign.id)
+  const [winningNumber, setWinningNumber] = useState(
+    campaign.raffle_winning_number != null ? String(campaign.raffle_winning_number) : '',
+  )
+  const [error, setError] = useState<string | null>(null)
+  const sold = campaign.raffle_numbers_sold ?? 0
+  const total = campaign.raffle_total_numbers ?? 0
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    const n = Number(winningNumber)
+    if (!winningNumber || Number.isNaN(n)) {
+      setError('Ingresa un número válido.')
+      return
+    }
+    update.mutate(
+      {
+        title: campaign.title,
+        description: campaign.description,
+        category: campaign.category,
+        goal_amount: campaign.goal_amount,
+        starts_at: campaign.starts_at,
+        ends_at: campaign.ends_at,
+        raffle_winning_number: n,
+      },
+      { onError: (err) => setError(errorMessage(err)) },
+    )
+  }
+
+  return (
+    <Card className="space-y-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">Rifa</p>
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-text-secondary">Precio</p>
+          <p className="font-display text-sm font-bold tabular-nums">
+            ${campaign.raffle_unit_price?.toLocaleString('es-CL')}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-text-secondary">Vendidos</p>
+          <p className="font-display text-sm font-bold tabular-nums">{sold}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-text-secondary">Total</p>
+          <p className="font-display text-sm font-bold tabular-nums">{total}</p>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="flex items-end gap-2">
+        <div className="flex-1">
+          <label className="mb-1 block text-sm text-text-secondary">
+            Número ganador (después del sorteo)
+          </label>
+          <Input
+            type="text"
+            inputMode="numeric"
+            value={winningNumber}
+            onChange={(e) => setWinningNumber(e.target.value.replace(/\D/g, ''))}
+            placeholder="Ej: 42"
+          />
+        </div>
+        <Button type="submit" disabled={update.isPending}>
+          {update.isPending ? 'Guardando…' : 'Guardar'}
+        </Button>
+      </form>
+      {error && <p className="text-sm text-danger">{error}</p>}
+    </Card>
+  )
+}
+
 function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   const navigate = useNavigate()
   const publish = usePublishCampaign()
@@ -249,6 +324,8 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
       )}
 
       <TotalsPanel campaign={campaign} />
+
+      {campaign.type_key === 'raffle' && <RaffleCard campaign={campaign} />}
 
       {campaign.status !== 'draft' && (
         <Card className="space-y-3">

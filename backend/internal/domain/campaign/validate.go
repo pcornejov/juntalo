@@ -98,6 +98,57 @@ var (
 	errPublishAtNotDraft = apperr.New("campaign_not_active", "Solo se puede programar la publicación de una campaña en borrador")
 )
 
+var (
+	errRaffleUnitPriceRequired    = apperr.New("validation_failed", "Las rifas necesitan un precio por número")
+	errRaffleTotalNumbersRequired = apperr.New("validation_failed", "Las rifas necesitan un total de números a la venta")
+	errRaffleTotalNumbersTooHigh  = apperr.New("validation_failed", "El total de números no puede superar 100.000")
+)
+
+const maxRaffleTotalNumbers = 100_000
+
+// ValidateRaffleSettings enforces that a raffle campaign has a positive unit
+// price and a total number range within a sane bound — sin esto, el flujo
+// de compra de números no tiene con qué calcular el precio ni el
+// disponible.
+func ValidateRaffleSettings(unitPrice *money.CLP, totalNumbers *int) error {
+	if unitPrice == nil || *unitPrice <= 0 {
+		return errRaffleUnitPriceRequired
+	}
+	if totalNumbers == nil || *totalNumbers <= 0 {
+		return errRaffleTotalNumbersRequired
+	}
+	if *totalNumbers > maxRaffleTotalNumbers {
+		return errRaffleTotalNumbersTooHigh
+	}
+	return nil
+}
+
+var errRaffleLocked = apperr.New("raffle_locked", "El precio y el total de números no se pueden cambiar después de publicar la rifa")
+
+// ValidateRaffleLocked prevents changing unit price / total numbers once a
+// raffle is no longer a draft — ya podría haber números vendidos con el
+// precio/rango anterior, y cambiarlos después corrompería esas ventas.
+func ValidateRaffleLocked(status Status) error {
+	if status != StatusDraft {
+		return errRaffleLocked
+	}
+	return nil
+}
+
+var errRaffleWinningOutOfRange = apperr.New("validation_failed", "El número ganador debe estar dentro del rango de la rifa")
+
+// ValidateRaffleWinningNumber enforces that the winning number the organizer
+// registers actually falls within the raffle's range.
+func ValidateRaffleWinningNumber(winningNumber, totalNumbers *int) error {
+	if winningNumber == nil {
+		return nil
+	}
+	if totalNumbers == nil || *winningNumber < 1 || *winningNumber > *totalNumbers {
+		return errRaffleWinningOutOfRange
+	}
+	return nil
+}
+
 // ValidatePublishAt enforces that a scheduled auto-publish date is only set
 // on a draft campaign and lies in the future — un draft ya publicado o una
 // fecha pasada no tiene sentido para el scheduler en background.

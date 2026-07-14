@@ -26,17 +26,19 @@ func NewCampaignRepo(pool *pgxpool.Pool) *CampaignRepo {
 
 func (r *CampaignRepo) Create(ctx context.Context, in app.CreateCampaignInput) (campaign.Campaign, error) {
 	c, err := r.q.CreateCampaign(ctx, sqlc.CreateCampaignParams{
-		OrganizationID: in.OrganizationID,
-		TypeKey:        string(in.TypeKey),
-		Category:       string(in.Category),
-		Title:          in.Title,
-		Slug:           in.Slug,
-		Description:    in.Description,
-		GoalAmount:     toInt8(in.GoalAmount),
-		StartsAt:       toTimestamptz(in.StartsAt),
-		EndsAt:         toTimestamptz(in.EndsAt),
-		PublishAt:      toTimestamptz(in.PublishAt),
-		VideoUrl:       toPgText(in.VideoURL),
+		OrganizationID:     in.OrganizationID,
+		TypeKey:            string(in.TypeKey),
+		Category:           string(in.Category),
+		Title:              in.Title,
+		Slug:               in.Slug,
+		Description:        in.Description,
+		GoalAmount:         toInt8(in.GoalAmount),
+		StartsAt:           toTimestamptz(in.StartsAt),
+		EndsAt:             toTimestamptz(in.EndsAt),
+		PublishAt:          toTimestamptz(in.PublishAt),
+		VideoUrl:           toPgText(in.VideoURL),
+		RaffleUnitPrice:    toInt8(in.RaffleUnitPrice),
+		RaffleTotalNumbers: toInt4(in.RaffleTotalNumbers),
 	})
 	if err != nil {
 		return campaign.Campaign{}, fmt.Errorf("create campaign: %w", err)
@@ -147,16 +149,19 @@ func (r *CampaignRepo) GetFeatured(ctx context.Context) (campaign.Campaign, bool
 
 func (r *CampaignRepo) Update(ctx context.Context, in app.UpdateCampaignInput) (campaign.Campaign, error) {
 	c, err := r.q.UpdateCampaign(ctx, sqlc.UpdateCampaignParams{
-		ID:          in.ID,
-		Title:       in.Title,
-		Description: in.Description,
-		GoalAmount:  toInt8(in.GoalAmount),
-		StartsAt:    toTimestamptz(in.StartsAt),
-		EndsAt:      toTimestamptz(in.EndsAt),
-		CoverFileID: toPgUUID(in.CoverFileID),
-		PublishAt:   toTimestamptz(in.PublishAt),
-		Category:    string(in.Category),
-		VideoUrl:    toPgText(in.VideoURL),
+		ID:                  in.ID,
+		Title:               in.Title,
+		Description:         in.Description,
+		GoalAmount:          toInt8(in.GoalAmount),
+		StartsAt:            toTimestamptz(in.StartsAt),
+		EndsAt:              toTimestamptz(in.EndsAt),
+		CoverFileID:         toPgUUID(in.CoverFileID),
+		PublishAt:           toTimestamptz(in.PublishAt),
+		Category:            string(in.Category),
+		VideoUrl:            toPgText(in.VideoURL),
+		RaffleUnitPrice:     toInt8(in.RaffleUnitPrice),
+		RaffleTotalNumbers:  toInt4(in.RaffleTotalNumbers),
+		RaffleWinningNumber: toInt4(in.RaffleWinningNumber),
 	})
 	if err != nil {
 		return campaign.Campaign{}, fmt.Errorf("update campaign: %w", err)
@@ -204,6 +209,14 @@ func (r *CampaignRepo) GetTotals(ctx context.Context, id uuid.UUID) (campaign.To
 		RaisedNetApprox:  money.CLP(t.RaisedNetApprox),
 		ContributorCount: t.ContributorCount,
 	}, nil
+}
+
+func (r *CampaignRepo) GetRaffleNumbersSold(ctx context.Context, campaignID uuid.UUID) (int64, error) {
+	count, err := r.q.CountReservedRaffleNumbers(ctx, campaignID)
+	if err != nil {
+		return 0, fmt.Errorf("get raffle numbers sold: %w", err)
+	}
+	return count, nil
 }
 
 func toInt8(v *money.CLP) pgtype.Int8 {

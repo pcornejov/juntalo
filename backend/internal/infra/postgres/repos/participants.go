@@ -46,6 +46,10 @@ func (r *ParticipantRepo) ListByCampaign(ctx context.Context, campaignID uuid.UU
 			CreatedAt:      row.CreatedAt.Time,
 			Message:        row.Message.String,
 		}
+		if row.RaffleNumber.Valid {
+			n := int(row.RaffleNumber.Int32)
+			out[i].RaffleNumber = &n
+		}
 	}
 	return out, nil
 }
@@ -75,6 +79,10 @@ func (r *ParticipantRepo) ListByCampaignFiltered(ctx context.Context, campaignID
 			Status:         contribution.Status(row.Status),
 			CreatedAt:      row.CreatedAt.Time,
 			Message:        row.Message.String,
+		}
+		if row.RaffleNumber.Valid {
+			n := int(row.RaffleNumber.Int32)
+			out[i].RaffleNumber = &n
 		}
 	}
 	return out, nil

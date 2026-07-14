@@ -35,5 +35,8 @@ type Contribution struct {
 	IsAnonymous   bool
 	Message       string
 	Status        Status
-	CreatedAt     time.Time
+	// RaffleNumber: número asignado a esta contribución cuando la campaña es
+	// de tipo "raffle" — nil para el resto de los tipos.
+	RaffleNumber *int
+	CreatedAt    time.Time
 }

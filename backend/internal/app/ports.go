@@ -128,22 +128,27 @@ type CreateCampaignInput struct {
 	EndsAt         *time.Time
 	// PublishAt: si viene seteada, la campaña queda en draft hasta que el
 	// scheduler en background la publique automáticamente (Etapa 4).
-	PublishAt *time.Time
-	VideoURL  *string
+	PublishAt          *time.Time
+	VideoURL           *string
+	RaffleUnitPrice    *money.CLP
+	RaffleTotalNumbers *int
 }
 
 // UpdateCampaignInput carries the editable fields of a campaign (Etapa 4 §3).
 type UpdateCampaignInput struct {
-	ID          uuid.UUID
-	Title       string
-	Description string
-	GoalAmount  *money.CLP
-	StartsAt    *time.Time
-	EndsAt      *time.Time
-	CoverFileID *uuid.UUID
-	PublishAt   *time.Time
-	Category    campaign.Category
-	VideoURL    *string
+	ID                  uuid.UUID
+	Title               string
+	Description         string
+	GoalAmount          *money.CLP
+	StartsAt            *time.Time
+	EndsAt              *time.Time
+	CoverFileID         *uuid.UUID
+	PublishAt           *time.Time
+	Category            campaign.Category
+	VideoURL            *string
+	RaffleUnitPrice     *money.CLP
+	RaffleTotalNumbers  *int
+	RaffleWinningNumber *int
 }
 
 type CampaignRepository interface {
@@ -161,6 +166,10 @@ type CampaignRepository interface {
 	// finished — misma política que GetPublicBySlug) de un organizador, para
 	// su página de perfil persistente (/org/:slug).
 	ListPublicByOrg(ctx context.Context, orgID uuid.UUID, limit, offset int32) ([]campaign.Campaign, error)
+	// GetRaffleNumbersSold cuenta los números reservados/vendidos (pending +
+	// confirmed) de una campaña de tipo "raffle" — total_numbers menos esto
+	// es lo que queda disponible para la venta.
+	GetRaffleNumbersSold(ctx context.Context, campaignID uuid.UUID) (int64, error)
 	// GetFeatured devuelve la campaña activa con el aporte confirmado más
 	// reciente — la "más caliente" (inspirado en Vaki), found=false si
 	// ninguna campaña activa tiene aportes confirmados todavía.
@@ -280,6 +289,12 @@ type CreateContributionInput struct {
 
 type ContributionRepository interface {
 	Create(ctx context.Context, in CreateContributionInput) (contribution.Contribution, error)
+	// CreateRaffleNumbered asigna atómicamente el siguiente número de rifa
+	// disponible (bloqueando la fila de la campaña durante la transacción,
+	// mismo patrón que las transacciones financieras de PaymentRepo) y crea
+	// la contribución con ese número. soldOut=true si ya no quedan números
+	// disponibles dentro de totalNumbers.
+	CreateRaffleNumbered(ctx context.Context, in CreateContributionInput, totalNumbers int) (result contribution.Contribution, soldOut bool, err error)
 	GetByID(ctx context.Context, id uuid.UUID) (contribution.Contribution, bool, error)
 	ListByCampaign(ctx context.Context, campaignID uuid.UUID, limit, offset int32) ([]contribution.Contribution, error)
 }
@@ -333,6 +348,10 @@ type ParticipantRow struct {
 	Status         contribution.Status
 	CreatedAt      time.Time
 	Message        string
+	// RaffleNumber: número asignado cuando la campaña es de tipo "raffle" —
+	// nil para el resto de los tipos. Es lo que el organizador necesita para
+	// identificar al ganador tras el sorteo externo.
+	RaffleNumber *int
 }
 
 type ParticipantRepository interface {

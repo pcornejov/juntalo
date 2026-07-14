@@ -39,12 +39,16 @@ func (s *ExportCSVService) WriteCSV(ctx context.Context, campaignID, orgID uuid.
 	}
 
 	cw := csv.NewWriter(w)
-	header := []string{"fecha", "nombre", "email", "telefono", "monto", "estado", "anonimo", "monto_reembolsado", "mensaje"}
+	header := []string{"fecha", "nombre", "email", "telefono", "monto", "estado", "anonimo", "monto_reembolsado", "mensaje", "numero_rifa"}
 	if err := cw.Write(header); err != nil {
 		return err
 	}
 
 	for _, r := range rows {
+		raffleNumber := ""
+		if r.RaffleNumber != nil {
+			raffleNumber = strconv.Itoa(*r.RaffleNumber)
+		}
 		record := []string{
 			r.CreatedAt.Format("2006-01-02 15:04:05"),
 			r.FullName,
@@ -55,6 +59,7 @@ func (s *ExportCSVService) WriteCSV(ctx context.Context, campaignID, orgID uuid.
 			formatBool(r.IsAnonymous),
 			formatCLPPlain(r.RefundedAmount),
 			r.Message,
+			raffleNumber,
 		}
 		if err := cw.Write(record); err != nil {
 			return err

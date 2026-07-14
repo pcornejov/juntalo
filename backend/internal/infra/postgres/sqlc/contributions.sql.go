@@ -15,7 +15,7 @@ import (
 const createContribution = `-- name: CreateContribution :one
 INSERT INTO contributions (campaign_id, contributor_id, amount, is_anonymous, message)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, campaign_id, contributor_id, amount, currency, is_anonymous, message, status, created_at, updated_at
+RETURNING id, campaign_id, contributor_id, amount, currency, is_anonymous, message, status, created_at, updated_at, raffle_number
 `
 
 type CreateContributionParams struct {
@@ -46,12 +46,86 @@ func (q *Queries) CreateContribution(ctx context.Context, arg CreateContribution
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RaffleNumber,
 	)
 	return i, err
 }
 
+const createRaffleContribution = `-- name: CreateRaffleContribution :one
+INSERT INTO contributions (campaign_id, contributor_id, amount, is_anonymous, message, raffle_number)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, campaign_id, contributor_id, amount, currency, is_anonymous, message, status, created_at, updated_at, raffle_number
+`
+
+type CreateRaffleContributionParams struct {
+	CampaignID    uuid.UUID   `json:"campaign_id"`
+	ContributorID uuid.UUID   `json:"contributor_id"`
+	Amount        int64       `json:"amount"`
+	IsAnonymous   bool        `json:"is_anonymous"`
+	Message       pgtype.Text `json:"message"`
+	RaffleNumber  pgtype.Int4 `json:"raffle_number"`
+}
+
+func (q *Queries) CreateRaffleContribution(ctx context.Context, arg CreateRaffleContributionParams) (Contribution, error) {
+	row := q.db.QueryRow(ctx, createRaffleContribution,
+		arg.CampaignID,
+		arg.ContributorID,
+		arg.Amount,
+		arg.IsAnonymous,
+		arg.Message,
+		arg.RaffleNumber,
+	)
+	var i Contribution
+	err := row.Scan(
+		&i.ID,
+		&i.CampaignID,
+		&i.ContributorID,
+		&i.Amount,
+		&i.Currency,
+		&i.IsAnonymous,
+		&i.Message,
+		&i.Status,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.RaffleNumber,
+	)
+	return i, err
+}
+
+const lockCampaignRow = `-- name: LockCampaignRow :exec
+SELECT id FROM campaigns WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) LockCampaignRow(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, lockCampaignRow, id)
+	return err
+}
+
+const countReservedRaffleNumbers = `-- name: CountReservedRaffleNumbers :one
+SELECT COUNT(*)::bigint FROM contributions
+WHERE campaign_id = $1 AND raffle_number IS NOT NULL AND status IN ('pending', 'confirmed')
+`
+
+func (q *Queries) CountReservedRaffleNumbers(ctx context.Context, campaignID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countReservedRaffleNumbers, campaignID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const nextRaffleNumber = `-- name: NextRaffleNumber :one
+SELECT COALESCE(MAX(raffle_number), 0)::int + 1 FROM contributions WHERE campaign_id = $1
+`
+
+func (q *Queries) NextRaffleNumber(ctx context.Context, campaignID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, nextRaffleNumber, campaignID)
+	var next int32
+	err := row.Scan(&next)
+	return next, err
+}
+
 const getContributionByID = `-- name: GetContributionByID :one
-SELECT id, campaign_id, contributor_id, amount, currency, is_anonymous, message, status, created_at, updated_at FROM contributions WHERE id = $1
+SELECT id, campaign_id, contributor_id, amount, currency, is_anonymous, message, status, created_at, updated_at, raffle_number FROM contributions WHERE id = $1
 `
 
 func (q *Queries) GetContributionByID(ctx context.Context, id uuid.UUID) (Contribution, error) {
@@ -68,12 +142,13 @@ func (q *Queries) GetContributionByID(ctx context.Context, id uuid.UUID) (Contri
 		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.RaffleNumber,
 	)
 	return i, err
 }
 
 const listContributionsByCampaign = `-- name: ListContributionsByCampaign :many
-SELECT id, campaign_id, contributor_id, amount, currency, is_anonymous, message, status, created_at, updated_at FROM contributions
+SELECT id, campaign_id, contributor_id, amount, currency, is_anonymous, message, status, created_at, updated_at, raffle_number FROM contributions
 WHERE campaign_id = $1
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -105,6 +180,7 @@ func (q *Queries) ListContributionsByCampaign(ctx context.Context, arg ListContr
 			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.RaffleNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -127,7 +203,8 @@ SELECT
   c.is_anonymous,
   c.status,
   c.created_at,
-  c.message
+  c.message,
+  c.raffle_number
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
 LEFT JOIN payments p ON p.contribution_id = c.id
@@ -156,6 +233,7 @@ type ListParticipantsByCampaignRow struct {
 	Status              string             `json:"status"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	Message             pgtype.Text        `json:"message"`
+	RaffleNumber        pgtype.Int4        `json:"raffle_number"`
 }
 
 func (q *Queries) ListParticipantsByCampaign(ctx context.Context, arg ListParticipantsByCampaignParams) ([]ListParticipantsByCampaignRow, error) {
@@ -178,6 +256,7 @@ func (q *Queries) ListParticipantsByCampaign(ctx context.Context, arg ListPartic
 			&i.Status,
 			&i.CreatedAt,
 			&i.Message,
+			&i.RaffleNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -200,7 +279,8 @@ SELECT
   c.is_anonymous,
   c.status,
   c.created_at,
-  c.message
+  c.message,
+  c.raffle_number
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
 LEFT JOIN payments p ON p.contribution_id = c.id
@@ -238,6 +318,7 @@ type ListParticipantsByCampaignFilteredRow struct {
 	Status              string             `json:"status"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	Message             pgtype.Text        `json:"message"`
+	RaffleNumber        pgtype.Int4        `json:"raffle_number"`
 }
 
 func (q *Queries) ListParticipantsByCampaignFiltered(ctx context.Context, arg ListParticipantsByCampaignFilteredParams) ([]ListParticipantsByCampaignFilteredRow, error) {
@@ -266,6 +347,7 @@ func (q *Queries) ListParticipantsByCampaignFiltered(ctx context.Context, arg Li
 			&i.Status,
 			&i.CreatedAt,
 			&i.Message,
+			&i.RaffleNumber,
 		); err != nil {
 			return nil, err
 		}

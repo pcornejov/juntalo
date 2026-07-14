@@ -29,8 +29,14 @@ type Campaign struct {
 	// PublishAt: si está seteada y la campaña sigue en draft, el scheduler en
 	// background la publica automáticamente al llegar esa fecha (Etapa 4).
 	PublishAt *time.Time
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	// Campos exclusivos de TypeRaffle: precio fijo por número, rango total, y
+	// el número ganador que el organizador registra tras el sorteo externo
+	// (Juntalo no sortea nada dentro de la plataforma).
+	RaffleUnitPrice     *money.CLP
+	RaffleTotalNumbers  *int
+	RaffleWinningNumber *int
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 // Totals is the read model backed by the campaign_totals view (Etapa 3 §5:

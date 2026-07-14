@@ -93,7 +93,26 @@ func mapCampaign(c sqlc.Campaign) campaign.Campaign {
 	if c.VideoUrl.Valid {
 		out.VideoURL = &c.VideoUrl.String
 	}
+	if c.RaffleUnitPrice.Valid {
+		amount := money.CLP(c.RaffleUnitPrice.Int64)
+		out.RaffleUnitPrice = &amount
+	}
+	if c.RaffleTotalNumbers.Valid {
+		n := int(c.RaffleTotalNumbers.Int32)
+		out.RaffleTotalNumbers = &n
+	}
+	if c.RaffleWinningNumber.Valid {
+		n := int(c.RaffleWinningNumber.Int32)
+		out.RaffleWinningNumber = &n
+	}
 	return out
+}
+
+func toInt4(v *int) pgtype.Int4 {
+	if v == nil {
+		return pgtype.Int4{}
+	}
+	return pgtype.Int4{Int32: int32(*v), Valid: true}
 }
 
 func toTimestamptz(t *time.Time) pgtype.Timestamptz {
@@ -110,7 +129,7 @@ func toNumeric(rate float64) pgtype.Numeric {
 }
 
 func mapContribution(c sqlc.Contribution) contribution.Contribution {
-	return contribution.Contribution{
+	out := contribution.Contribution{
 		ID:            c.ID,
 		CampaignID:    c.CampaignID,
 		ContributorID: c.ContributorID,
@@ -120,6 +139,11 @@ func mapContribution(c sqlc.Contribution) contribution.Contribution {
 		Status:        contribution.Status(c.Status),
 		CreatedAt:     c.CreatedAt.Time,
 	}
+	if c.RaffleNumber.Valid {
+		n := int(c.RaffleNumber.Int32)
+		out.RaffleNumber = &n
+	}
+	return out
 }
 
 func mapPayment(p sqlc.Payment) payment.Payment {

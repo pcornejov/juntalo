@@ -56,6 +56,10 @@ func (f *fakeCampaignRepo) ListPublicByOrg(context.Context, uuid.UUID, int32, in
 	return nil, nil
 }
 
+func (f *fakeCampaignRepo) GetRaffleNumbersSold(context.Context, uuid.UUID) (int64, error) {
+	return 0, nil
+}
+
 func (f *fakeCampaignRepo) ListPublic(context.Context, string, campaign.Category, int32, int32) ([]campaign.Campaign, error) {
 	return nil, nil
 }

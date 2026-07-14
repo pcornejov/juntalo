@@ -26,6 +26,8 @@ export function CampaignFormPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [goalAmount, setGoalAmount] = useState('')
+  const [raffleUnitPrice, setRaffleUnitPrice] = useState('')
+  const [raffleTotalNumbers, setRaffleTotalNumbers] = useState('')
   const [category, setCategory] = useState<string>('')
   const [videoUrl, setVideoUrl] = useState('')
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null)
@@ -40,8 +42,18 @@ export function CampaignFormPage() {
   const selectedType = types?.find((t) => t.key === typeKey) ?? types?.[0]
   const defaultType = selectedType
 
+  const isRaffle = selectedType?.key === 'raffle'
+
   function handleGoalAmountChange(e: ChangeEvent<HTMLInputElement>) {
     setGoalAmount(e.target.value.replace(/\D/g, ''))
+  }
+
+  function handleRaffleUnitPriceChange(e: ChangeEvent<HTMLInputElement>) {
+    setRaffleUnitPrice(e.target.value.replace(/\D/g, ''))
+  }
+
+  function handleRaffleTotalNumbersChange(e: ChangeEvent<HTMLInputElement>) {
+    setRaffleTotalNumbers(e.target.value.replace(/\D/g, ''))
   }
 
   function applyArchetype(id: string) {
@@ -64,6 +76,10 @@ export function CampaignFormPage() {
       setError('El link de video debe ser de YouTube o Vimeo.')
       return
     }
+    if (isRaffle && (!raffleUnitPrice || !raffleTotalNumbers)) {
+      setError('Ingresa el precio por número y el total de números de la rifa.')
+      return
+    }
     setIsSubmitting(true)
     try {
       const created = await createCampaign.mutateAsync({
@@ -74,6 +90,8 @@ export function CampaignFormPage() {
         goal_amount: goalAmount ? Number(goalAmount) : undefined,
         publish_at: publishMode === 'later' ? new Date(publishAt).toISOString() : undefined,
         video_url: videoUrl || undefined,
+        raffle_unit_price: isRaffle ? Number(raffleUnitPrice) : undefined,
+        raffle_total_numbers: isRaffle ? Number(raffleTotalNumbers) : undefined,
       })
       if (publishMode === 'now') {
         await publishCampaign.mutateAsync(created.id)
@@ -199,18 +217,47 @@ export function CampaignFormPage() {
               placeholder="Cuenta de qué se trata tu campaña"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm text-text-secondary">
-              Meta (CLP, opcional)
-            </label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={goalAmount ? formatCLP(Number(goalAmount)) : ''}
-              onChange={handleGoalAmountChange}
-              placeholder="$500.000"
-            />
-          </div>
+          {isRaffle ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm text-text-secondary">
+                  Precio por número (CLP)
+                </label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={raffleUnitPrice ? formatCLP(Number(raffleUnitPrice)) : ''}
+                  onChange={handleRaffleUnitPriceChange}
+                  placeholder="$1.000"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm text-text-secondary">Total de números</label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={raffleTotalNumbers}
+                  onChange={handleRaffleTotalNumbersChange}
+                  placeholder="100"
+                  required
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label className="mb-1 block text-sm text-text-secondary">
+                Meta (CLP, opcional)
+              </label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                value={goalAmount ? formatCLP(Number(goalAmount)) : ''}
+                onChange={handleGoalAmountChange}
+                placeholder="$500.000"
+              />
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-sm text-text-secondary">
               Video (YouTube o Vimeo, opcional)

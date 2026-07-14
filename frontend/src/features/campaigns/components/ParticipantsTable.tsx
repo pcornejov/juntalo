@@ -107,6 +107,7 @@ export function ParticipantsTable({
   hasAnyParticipants: boolean
 }) {
   const [refunding, setRefunding] = useState<string | null>(null)
+  const showRaffleNumber = items.some((p) => p.raffle_number != null)
 
   if (!hasAnyParticipants) {
     return <p className="text-sm text-text-secondary">Todavía no hay participantes.</p>
@@ -153,6 +154,7 @@ export function ParticipantsTable({
                 <th className="py-2 pr-4">Nombre</th>
                 <th className="py-2 pr-4">Contacto</th>
                 <th className="py-2 pr-4">Monto</th>
+                {showRaffleNumber && <th className="py-2 pr-4">N°</th>}
                 <th className="py-2 pr-4">Estado</th>
                 <th className="py-2 pr-4">Fecha</th>
                 <th className="py-2 pr-4"></th>
@@ -186,6 +188,9 @@ export function ParticipantsTable({
                         </span>
                       )}
                     </td>
+                    {showRaffleNumber && (
+                      <td className="py-2 pr-4 tabular-nums">{p.raffle_number ?? '—'}</td>
+                    )}
                     <td className="py-2 pr-4">
                       <Badge tone={statusTone[p.status]}>{statusLabel[p.status]}</Badge>
                     </td>
@@ -205,7 +210,7 @@ export function ParticipantsTable({
                   </tr>
                   {refunding === p.contribution_id && (
                     <tr className="border-b border-border-default last:border-0 bg-bg-subtle">
-                      <td colSpan={6} className="px-2">
+                      <td colSpan={showRaffleNumber ? 7 : 6} className="px-2">
                         <RefundForm
                           campaignId={campaignId}
                           p={p}

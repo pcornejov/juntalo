@@ -29,6 +29,11 @@ export interface Campaign {
   totals: Totals
   created_at: string
   video_url?: string
+  // Campos de rifa: solo vienen cuando type_key="raffle".
+  raffle_unit_price?: number
+  raffle_total_numbers?: number
+  raffle_numbers_sold?: number
+  raffle_winning_number?: number
 }
 
 export interface CampaignType {
@@ -66,6 +71,8 @@ export function createCampaign(input: {
   goal_amount?: number
   publish_at?: string
   video_url?: string
+  raffle_unit_price?: number
+  raffle_total_numbers?: number
 }) {
   return apiClient.post<Campaign>('/campaigns', input)
 }
@@ -89,6 +96,9 @@ export function updateCampaign(
     ends_at?: string
     video_url?: string
     clear_video_url?: boolean
+    raffle_unit_price?: number
+    raffle_total_numbers?: number
+    raffle_winning_number?: number
   },
 ) {
   return apiClient.patch<Campaign>(`/campaigns/${id}`, input)
@@ -147,6 +157,7 @@ export interface Participant {
   status: 'pending' | 'confirmed' | 'failed' | 'refunded'
   created_at: string
   message?: string
+  raffle_number?: number
 }
 
 export const PARTICIPANTS_PAGE_SIZE = 20

@@ -108,23 +108,25 @@ func (h *CampaignHandler) Create(c *fiber.Ctx) error {
 	}
 
 	created, err := h.create.Create(c.Context(), campaignsuc.CreateInput{
-		OrganizationID: orgID,
-		TypeKey:        campaign.TypeKey(req.TypeKey),
-		Category:       campaign.Category(req.Category),
-		Title:          req.Title,
-		Description:    req.Description,
-		GoalAmount:     goalFromRequest(req.GoalAmount),
-		StartsAt:       req.StartsAt,
-		EndsAt:         req.EndsAt,
-		PublishAt:      req.PublishAt,
-		VideoURL:       req.VideoURL,
+		OrganizationID:     orgID,
+		TypeKey:            campaign.TypeKey(req.TypeKey),
+		Category:           campaign.Category(req.Category),
+		Title:              req.Title,
+		Description:        req.Description,
+		GoalAmount:         goalFromRequest(req.GoalAmount),
+		StartsAt:           req.StartsAt,
+		EndsAt:             req.EndsAt,
+		PublishAt:          req.PublishAt,
+		VideoURL:           req.VideoURL,
+		RaffleUnitPrice:    goalFromRequest(req.RaffleUnitPrice),
+		RaffleTotalNumbers: req.RaffleTotalNumbers,
 	})
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
 	h.recordAudit(c, orgID, auditcat.ActionCampaignCreated, created.ID, map[string]any{"title": created.Title})
 
-	return c.Status(fiber.StatusCreated).JSON(h.toResponse(c, created, campaign.Totals{}))
+	return c.Status(fiber.StatusCreated).JSON(h.toResponse(c, created, campaign.Totals{}, nil))
 }
 
 func (h *CampaignHandler) CancelSchedule(c *fiber.Ctx) error {
@@ -145,7 +147,7 @@ func (h *CampaignHandler) CancelSchedule(c *fiber.Ctx) error {
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
-	return c.JSON(h.toResponse(c, updated, totals))
+	return c.JSON(h.toResponse(c, updated, totals, h.raffleSoldFor(c.Context(), updated)))
 }
 
 func (h *CampaignHandler) Clone(c *fiber.Ctx) error {
@@ -164,7 +166,7 @@ func (h *CampaignHandler) Clone(c *fiber.Ctx) error {
 	}
 	h.recordAudit(c, orgID, auditcat.ActionCampaignCreated, cloned.ID, map[string]any{"title": cloned.Title, "cloned_from": id.String()})
 
-	return c.Status(fiber.StatusCreated).JSON(h.toResponse(c, cloned, campaign.Totals{}))
+	return c.Status(fiber.StatusCreated).JSON(h.toResponse(c, cloned, campaign.Totals{}, nil))
 }
 
 func (h *CampaignHandler) List(c *fiber.Ctx) error {
@@ -196,7 +198,7 @@ func (h *CampaignHandler) List(c *fiber.Ctx) error {
 
 	out := make([]dto.CampaignResponse, len(items))
 	for i, item := range items {
-		out[i] = h.toResponse(c, item.Campaign, item.Totals)
+		out[i] = h.toResponse(c, item.Campaign, item.Totals, item.RaffleNumbersSold)
 	}
 	return c.JSON(dto.CampaignListResponse{Items: out, HasMore: hasMore})
 }
@@ -215,7 +217,7 @@ func (h *CampaignHandler) Get(c *fiber.Ctx) error {
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
-	return c.JSON(h.toResponse(c, found, totals))
+	return c.JSON(h.toResponse(c, found, totals, h.raffleSoldFor(c.Context(), found)))
 }
 
 func (h *CampaignHandler) Update(c *fiber.Ctx) error {
@@ -246,17 +248,20 @@ func (h *CampaignHandler) Update(c *fiber.Ctx) error {
 	}
 
 	if _, err := h.update.Update(c.Context(), id, orgID, campaignsuc.UpdateInput{
-		Title:          req.Title,
-		Description:    req.Description,
-		Category:       campaign.Category(req.Category),
-		GoalAmount:     goalFromRequest(req.GoalAmount),
-		StartsAt:       req.StartsAt,
-		EndsAt:         req.EndsAt,
-		CoverFileID:    coverFileID,
-		PublishAt:      req.PublishAt,
-		ClearPublishAt: req.ClearPublishAt,
-		VideoURL:       req.VideoURL,
-		ClearVideoURL:  req.ClearVideoURL,
+		Title:               req.Title,
+		Description:         req.Description,
+		Category:            campaign.Category(req.Category),
+		GoalAmount:          goalFromRequest(req.GoalAmount),
+		StartsAt:            req.StartsAt,
+		EndsAt:              req.EndsAt,
+		CoverFileID:         coverFileID,
+		PublishAt:           req.PublishAt,
+		ClearPublishAt:      req.ClearPublishAt,
+		VideoURL:            req.VideoURL,
+		ClearVideoURL:       req.ClearVideoURL,
+		RaffleUnitPrice:     goalFromRequest(req.RaffleUnitPrice),
+		RaffleTotalNumbers:  req.RaffleTotalNumbers,
+		RaffleWinningNumber: req.RaffleWinningNumber,
 	}); err != nil {
 		return dto.WriteError(c, err)
 	}
@@ -265,7 +270,7 @@ func (h *CampaignHandler) Update(c *fiber.Ctx) error {
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
-	return c.JSON(h.toResponse(c, updated, totals))
+	return c.JSON(h.toResponse(c, updated, totals, h.raffleSoldFor(c.Context(), updated)))
 }
 
 func (h *CampaignHandler) Publish(c *fiber.Ctx) error {
@@ -304,7 +309,7 @@ func (h *CampaignHandler) doTransition(c *fiber.Ctx, action func(ctx context.Con
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
-	return c.JSON(h.toResponse(c, updated, totals))
+	return c.JSON(h.toResponse(c, updated, totals, h.raffleSoldFor(c.Context(), updated)))
 }
 
 func (h *CampaignHandler) Delete(c *fiber.Ctx) error {
@@ -440,7 +445,7 @@ func (h *CampaignHandler) ReorderImages(c *fiber.Ctx) error {
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
-	return c.JSON(h.toResponse(c, updated, totals))
+	return c.JSON(h.toResponse(c, updated, totals, h.raffleSoldFor(c.Context(), updated)))
 }
 
 func goalFromRequest(v *int64) *money.CLP {
@@ -451,7 +456,7 @@ func goalFromRequest(v *int64) *money.CLP {
 	return &amount
 }
 
-func (h *CampaignHandler) toResponse(c *fiber.Ctx, camp campaign.Campaign, totals campaign.Totals) dto.CampaignResponse {
+func (h *CampaignHandler) toResponse(c *fiber.Ctx, camp campaign.Campaign, totals campaign.Totals, raffleSold *int64) dto.CampaignResponse {
 	images := resolveGalleryImages(c.Context(), h.images, h.storage, camp.ID)
 	coverURL := resolveCoverURL(c, h.files, h.storage, camp.CoverFileID)
 	if len(images) > 0 {
@@ -483,5 +488,25 @@ func (h *CampaignHandler) toResponse(c *fiber.Ctx, camp campaign.Campaign, total
 		v := int64(*camp.GoalAmount)
 		resp.GoalAmount = &v
 	}
+	if camp.RaffleUnitPrice != nil {
+		v := int64(*camp.RaffleUnitPrice)
+		resp.RaffleUnitPrice = &v
+	}
+	resp.RaffleTotalNumbers = camp.RaffleTotalNumbers
+	resp.RaffleNumbersSold = raffleSold
+	resp.RaffleWinningNumber = camp.RaffleWinningNumber
 	return resp
+}
+
+// raffleSoldFor is best-effort: solo consulta el conteo cuando la campaña es
+// una rifa, para no pagar una query extra en el resto de los tipos.
+func (h *CampaignHandler) raffleSoldFor(ctx context.Context, camp campaign.Campaign) *int64 {
+	if camp.TypeKey != campaign.TypeRaffle {
+		return nil
+	}
+	sold, err := h.get.GetRaffleNumbersSold(ctx, camp.ID)
+	if err != nil {
+		return nil
+	}
+	return &sold
 }

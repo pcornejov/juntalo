@@ -22,16 +22,18 @@ func NewCreateService(repo app.CampaignRepository) *CreateService {
 }
 
 type CreateInput struct {
-	OrganizationID uuid.UUID
-	TypeKey        campaign.TypeKey
-	Category       campaign.Category
-	Title          string
-	Description    string
-	GoalAmount     *money.CLP
-	StartsAt       *time.Time
-	EndsAt         *time.Time
-	PublishAt      *time.Time
-	VideoURL       *string
+	OrganizationID     uuid.UUID
+	TypeKey            campaign.TypeKey
+	Category           campaign.Category
+	Title              string
+	Description        string
+	GoalAmount         *money.CLP
+	StartsAt           *time.Time
+	EndsAt             *time.Time
+	PublishAt          *time.Time
+	VideoURL           *string
+	RaffleUnitPrice    *money.CLP
+	RaffleTotalNumbers *int
 }
 
 // Create validates the type + title, generates a server-side unique slug, and
@@ -58,6 +60,11 @@ func (s *CreateService) Create(ctx context.Context, in CreateInput) (campaign.Ca
 			return campaign.Campaign{}, err
 		}
 	}
+	if in.TypeKey == campaign.TypeRaffle {
+		if err := campaign.ValidateRaffleSettings(in.RaffleUnitPrice, in.RaffleTotalNumbers); err != nil {
+			return campaign.Campaign{}, err
+		}
+	}
 
 	slug, err := s.uniqueSlug(ctx, campaign.Slugify(in.Title))
 	if err != nil {
@@ -65,17 +72,19 @@ func (s *CreateService) Create(ctx context.Context, in CreateInput) (campaign.Ca
 	}
 
 	return s.repo.Create(ctx, app.CreateCampaignInput{
-		OrganizationID: in.OrganizationID,
-		TypeKey:        in.TypeKey,
-		Category:       category,
-		Title:          strings.TrimSpace(in.Title),
-		Slug:           slug,
-		Description:    in.Description,
-		GoalAmount:     in.GoalAmount,
-		StartsAt:       in.StartsAt,
-		EndsAt:         in.EndsAt,
-		PublishAt:      in.PublishAt,
-		VideoURL:       in.VideoURL,
+		OrganizationID:     in.OrganizationID,
+		TypeKey:            in.TypeKey,
+		Category:           category,
+		Title:              strings.TrimSpace(in.Title),
+		Slug:               slug,
+		Description:        in.Description,
+		GoalAmount:         in.GoalAmount,
+		StartsAt:           in.StartsAt,
+		EndsAt:             in.EndsAt,
+		PublishAt:          in.PublishAt,
+		VideoURL:           in.VideoURL,
+		RaffleUnitPrice:    in.RaffleUnitPrice,
+		RaffleTotalNumbers: in.RaffleTotalNumbers,
 	})
 }
 

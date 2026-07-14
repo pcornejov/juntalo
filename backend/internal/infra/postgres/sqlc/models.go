@@ -21,25 +21,28 @@ type AuditLog struct {
 }
 
 type Campaign struct {
-	ID             uuid.UUID          `json:"id"`
-	OrganizationID uuid.UUID          `json:"organization_id"`
-	TypeKey        string             `json:"type_key"`
-	Title          string             `json:"title"`
-	Slug           string             `json:"slug"`
-	Description    string             `json:"description"`
-	CoverFileID    pgtype.UUID        `json:"cover_file_id"`
-	GoalAmount     pgtype.Int8        `json:"goal_amount"`
-	Currency       string             `json:"currency"`
-	Status         string             `json:"status"`
-	StartsAt       pgtype.Timestamptz `json:"starts_at"`
-	EndsAt         pgtype.Timestamptz `json:"ends_at"`
-	Settings       []byte             `json:"settings"`
-	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-	PublishAt      pgtype.Timestamptz `json:"publish_at"`
-	Category       string             `json:"category"`
-	VideoUrl       pgtype.Text        `json:"video_url"`
+	ID                  uuid.UUID          `json:"id"`
+	OrganizationID      uuid.UUID          `json:"organization_id"`
+	TypeKey             string             `json:"type_key"`
+	Title               string             `json:"title"`
+	Slug                string             `json:"slug"`
+	Description         string             `json:"description"`
+	CoverFileID         pgtype.UUID        `json:"cover_file_id"`
+	GoalAmount          pgtype.Int8        `json:"goal_amount"`
+	Currency            string             `json:"currency"`
+	Status              string             `json:"status"`
+	StartsAt            pgtype.Timestamptz `json:"starts_at"`
+	EndsAt              pgtype.Timestamptz `json:"ends_at"`
+	Settings            []byte             `json:"settings"`
+	DeletedAt           pgtype.Timestamptz `json:"deleted_at"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	PublishAt           pgtype.Timestamptz `json:"publish_at"`
+	Category            string             `json:"category"`
+	VideoUrl            pgtype.Text        `json:"video_url"`
+	RaffleUnitPrice     pgtype.Int8        `json:"raffle_unit_price"`
+	RaffleTotalNumbers  pgtype.Int4        `json:"raffle_total_numbers"`
+	RaffleWinningNumber pgtype.Int4        `json:"raffle_winning_number"`
 }
 
 type CampaignImage struct {
@@ -68,6 +71,7 @@ type Contribution struct {
 	Status        string             `json:"status"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	RaffleNumber  pgtype.Int4        `json:"raffle_number"`
 }
 
 type Contributor struct {

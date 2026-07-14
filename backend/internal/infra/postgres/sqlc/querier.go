@@ -15,6 +15,10 @@ type Querier interface {
 	CreateCampaign(ctx context.Context, arg CreateCampaignParams) (Campaign, error)
 	CreateCampaignImage(ctx context.Context, arg CreateCampaignImageParams) (CampaignImage, error)
 	CreateContribution(ctx context.Context, arg CreateContributionParams) (Contribution, error)
+	CreateRaffleContribution(ctx context.Context, arg CreateRaffleContributionParams) (Contribution, error)
+	LockCampaignRow(ctx context.Context, id uuid.UUID) error
+	CountReservedRaffleNumbers(ctx context.Context, campaignID uuid.UUID) (int64, error)
+	NextRaffleNumber(ctx context.Context, campaignID uuid.UUID) (int32, error)
 	CreateContributor(ctx context.Context, arg CreateContributorParams) (Contributor, error)
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) error
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)

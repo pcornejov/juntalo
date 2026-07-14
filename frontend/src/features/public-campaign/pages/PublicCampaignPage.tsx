@@ -67,7 +67,9 @@ export function PublicCampaignPage() {
   // WhatsApp/Facebook/etc.) — no se reconstruye en el frontend para que
   // re-compartir desde aquí siga mostrando preview con imagen y título.
   const publicUrl = campaign.public_url
-  const canContribute = campaign.status === 'active'
+  const isRaffle = campaign.raffle_unit_price !== undefined
+  const raffleSoldOut = isRaffle && campaign.raffle_available === 0
+  const canContribute = campaign.status === 'active' && !raffleSoldOut
   const hasGoal = Boolean(campaign.goal_amount)
   // Campos aditivos que el backend actual no siempre envía: la UI se
   // degrada mostrando menos, nunca inventando un dato que no llegó.
@@ -187,6 +189,38 @@ export function PublicCampaignPage() {
           </div>
         </div>
 
+        {isRaffle && (
+          <div className="flex items-center justify-between rounded-2xl border border-border-default p-3">
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                Precio por número
+              </p>
+              <p className="font-display text-lg font-bold tabular-nums text-brand-hover">
+                {formatCLP(campaign.raffle_unit_price!)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                Disponibles
+              </p>
+              <p className="font-display text-lg font-bold tabular-nums">
+                {campaign.raffle_available ?? 0} / {campaign.raffle_total_numbers}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isRaffle && campaign.raffle_winning_number !== undefined && (
+          <div className="rounded-2xl border border-accent-tint bg-accent-tint p-3 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-hover">
+              Número ganador
+            </p>
+            <p className="font-display text-xl font-bold text-brand-hover">
+              {campaign.raffle_winning_number}
+            </p>
+          </div>
+        )}
+
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
             Sobre esta campaña
@@ -227,7 +261,7 @@ export function PublicCampaignPage() {
           disabled={!canContribute}
           onClick={() => setIsSheetOpen(true)}
         >
-          {canContribute ? campaign.cta : 'Campaña no disponible'}
+          {raffleSoldOut ? 'Sin números disponibles' : canContribute ? campaign.cta : 'Campaña no disponible'}
           {canContribute && <ArrowRight className="h-4 w-4" strokeWidth={1.75} />}
         </Button>
       </div>
@@ -241,6 +275,8 @@ export function PublicCampaignPage() {
             setIsSheetOpen(false)
             setResult(r)
           }}
+          raffleUnitPrice={campaign.raffle_unit_price}
+          raffleAvailable={campaign.raffle_available}
         />
       )}
 

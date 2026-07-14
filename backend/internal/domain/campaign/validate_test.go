@@ -56,3 +56,58 @@ func TestValidatePublishAt(t *testing.T) {
 		t.Errorf("publish_at on non-draft should error, got %v", err)
 	}
 }
+
+func TestValidateRaffleSettings(t *testing.T) {
+	price := money.CLP(1000)
+	total := 100
+	zero := 0
+
+	if err := ValidateRaffleSettings(nil, &total); err == nil {
+		t.Error("nil unit price should error")
+	}
+	if err := ValidateRaffleSettings(&price, nil); err == nil {
+		t.Error("nil total numbers should error")
+	}
+	if err := ValidateRaffleSettings(&price, &zero); err == nil {
+		t.Error("zero total numbers should error")
+	}
+	tooMany := maxRaffleTotalNumbers + 1
+	if err := ValidateRaffleSettings(&price, &tooMany); err == nil {
+		t.Error("total numbers above the cap should error")
+	}
+	if err := ValidateRaffleSettings(&price, &total); err != nil {
+		t.Errorf("valid settings should not error: %v", err)
+	}
+}
+
+func TestValidateRaffleLocked(t *testing.T) {
+	if err := ValidateRaffleLocked(StatusDraft); err != nil {
+		t.Errorf("draft should not be locked: %v", err)
+	}
+	if err := ValidateRaffleLocked(StatusActive); !apperr.Is(err, "raffle_locked") {
+		t.Errorf("active should be locked, got %v", err)
+	}
+}
+
+func TestValidateRaffleWinningNumber(t *testing.T) {
+	total := 10
+	inRange := 5
+	outOfRange := 11
+	zero := 0
+
+	if err := ValidateRaffleWinningNumber(nil, &total); err != nil {
+		t.Errorf("nil winning number should not error: %v", err)
+	}
+	if err := ValidateRaffleWinningNumber(&inRange, &total); err != nil {
+		t.Errorf("in-range winning number should not error: %v", err)
+	}
+	if err := ValidateRaffleWinningNumber(&outOfRange, &total); err == nil {
+		t.Error("out-of-range winning number should error")
+	}
+	if err := ValidateRaffleWinningNumber(&zero, &total); err == nil {
+		t.Error("winning number below 1 should error")
+	}
+	if err := ValidateRaffleWinningNumber(&inRange, nil); err == nil {
+		t.Error("winning number without a total range should error")
+	}
+}

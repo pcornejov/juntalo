@@ -20,6 +20,26 @@ func NewListService(repo app.CampaignRepository) *ListService {
 type CampaignWithTotals struct {
 	Campaign campaign.Campaign
 	Totals   campaign.Totals
+	// RaffleNumbersSold: solo se completa para TypeRaffle — números
+	// reservados (pending) o vendidos (confirmed). El disponible se calcula
+	// como RaffleTotalNumbers - RaffleNumbersSold.
+	RaffleNumbersSold *int64
+}
+
+func (s *ListService) withTotals(ctx context.Context, c campaign.Campaign) (CampaignWithTotals, error) {
+	totals, err := s.repo.GetTotals(ctx, c.ID)
+	if err != nil {
+		return CampaignWithTotals{}, err
+	}
+	out := CampaignWithTotals{Campaign: c, Totals: totals}
+	if c.TypeKey == campaign.TypeRaffle {
+		sold, err := s.repo.GetRaffleNumbersSold(ctx, c.ID)
+		if err != nil {
+			return CampaignWithTotals{}, err
+		}
+		out.RaffleNumbersSold = &sold
+	}
+	return out, nil
 }
 
 // List uses offset pagination: a single organizer has at most a handful of
@@ -33,11 +53,11 @@ func (s *ListService) List(ctx context.Context, orgID uuid.UUID, limit, offset i
 
 	out := make([]CampaignWithTotals, 0, len(items))
 	for _, c := range items {
-		totals, err := s.repo.GetTotals(ctx, c.ID)
+		cwt, err := s.withTotals(ctx, c)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, CampaignWithTotals{Campaign: c, Totals: totals})
+		out = append(out, cwt)
 	}
 	return out, nil
 }
@@ -53,11 +73,11 @@ func (s *ListService) ListPublic(ctx context.Context, search string, category ca
 
 	out := make([]CampaignWithTotals, 0, len(items))
 	for _, c := range items {
-		totals, err := s.repo.GetTotals(ctx, c.ID)
+		cwt, err := s.withTotals(ctx, c)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, CampaignWithTotals{Campaign: c, Totals: totals})
+		out = append(out, cwt)
 	}
 	return out, nil
 }
@@ -72,11 +92,11 @@ func (s *ListService) ListPublicByOrg(ctx context.Context, orgID uuid.UUID, limi
 
 	out := make([]CampaignWithTotals, 0, len(items))
 	for _, c := range items {
-		totals, err := s.repo.GetTotals(ctx, c.ID)
+		cwt, err := s.withTotals(ctx, c)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, CampaignWithTotals{Campaign: c, Totals: totals})
+		out = append(out, cwt)
 	}
 	return out, nil
 }
@@ -89,9 +109,9 @@ func (s *ListService) GetFeatured(ctx context.Context) (CampaignWithTotals, bool
 	if err != nil || !found {
 		return CampaignWithTotals{}, false, err
 	}
-	totals, err := s.repo.GetTotals(ctx, c.ID)
+	cwt, err := s.withTotals(ctx, c)
 	if err != nil {
 		return CampaignWithTotals{}, false, err
 	}
-	return CampaignWithTotals{Campaign: c, Totals: totals}, true, nil
+	return cwt, true, nil
 }

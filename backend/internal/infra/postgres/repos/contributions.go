@@ -16,11 +16,12 @@ import (
 )
 
 type ContributionRepo struct {
-	q *sqlc.Queries
+	q    *sqlc.Queries
+	pool *pgxpool.Pool
 }
 
 func NewContributionRepo(pool *pgxpool.Pool) *ContributionRepo {
-	return &ContributionRepo{q: sqlc.New(pool)}
+	return &ContributionRepo{q: sqlc.New(pool), pool: pool}
 }
 
 func (r *ContributionRepo) Create(ctx context.Context, in app.CreateContributionInput) (contribution.Contribution, error) {
@@ -35,6 +36,57 @@ func (r *ContributionRepo) Create(ctx context.Context, in app.CreateContribution
 		return contribution.Contribution{}, fmt.Errorf("create contribution: %w", err)
 	}
 	return mapContribution(c), nil
+}
+
+// CreateRaffleNumbered asigna atómicamente el siguiente número de rifa
+// disponible: bloquea la fila de la campaña (FOR UPDATE) para serializar la
+// asignación entre compras concurrentes, verifica que queden números dentro
+// de totalNumbers, y crea la contribución con ese número — todo en una sola
+// transacción (mismo patrón que las transacciones financieras de
+// PaymentRepo).
+func (r *ContributionRepo) CreateRaffleNumbered(ctx context.Context, in app.CreateContributionInput, totalNumbers int) (contribution.Contribution, bool, error) {
+	var result contribution.Contribution
+	soldOut := false
+
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		q := sqlc.New(tx)
+
+		if err := q.LockCampaignRow(ctx, in.CampaignID); err != nil {
+			return fmt.Errorf("lock campaign row: %w", err)
+		}
+
+		reserved, err := q.CountReservedRaffleNumbers(ctx, in.CampaignID)
+		if err != nil {
+			return fmt.Errorf("count reserved raffle numbers: %w", err)
+		}
+		if reserved >= int64(totalNumbers) {
+			soldOut = true
+			return nil
+		}
+
+		next, err := q.NextRaffleNumber(ctx, in.CampaignID)
+		if err != nil {
+			return fmt.Errorf("next raffle number: %w", err)
+		}
+
+		c, err := q.CreateRaffleContribution(ctx, sqlc.CreateRaffleContributionParams{
+			CampaignID:    in.CampaignID,
+			ContributorID: in.ContributorID,
+			Amount:        int64(in.Amount),
+			IsAnonymous:   in.IsAnonymous,
+			Message:       pgtype.Text{String: in.Message, Valid: in.Message != ""},
+			RaffleNumber:  pgtype.Int4{Int32: next, Valid: true},
+		})
+		if err != nil {
+			return fmt.Errorf("create raffle contribution: %w", err)
+		}
+		result = mapContribution(c)
+		return nil
+	})
+	if err != nil {
+		return contribution.Contribution{}, false, err
+	}
+	return result, soldOut, nil
 }
 
 func (r *ContributionRepo) GetByID(ctx context.Context, id uuid.UUID) (contribution.Contribution, bool, error) {

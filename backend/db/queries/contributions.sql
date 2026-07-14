@@ -3,6 +3,32 @@ INSERT INTO contributions (campaign_id, contributor_id, amount, is_anonymous, me
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
+-- name: CreateRaffleContribution :one
+-- Igual que CreateContribution, pero con el número de rifa ya asignado —
+-- ver LockCampaignRow / CountReservedRaffleNumbers / NextRaffleNumber, que
+-- se corren en la misma transacción para asignarlo sin colisiones.
+INSERT INTO contributions (campaign_id, contributor_id, amount, is_anonymous, message, raffle_number)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING *;
+
+-- name: LockCampaignRow :exec
+-- Serializa la asignación de números de rifa: mientras una transacción
+-- tiene este lock, ninguna otra puede contar/asignar el siguiente número
+-- de la misma campaña (mismo patrón FOR UPDATE que las transacciones
+-- financieras de payments).
+SELECT id FROM campaigns WHERE id = $1 FOR UPDATE;
+
+-- name: CountReservedRaffleNumbers :one
+-- Números ya reservados (pending) o vendidos (confirmed) de una rifa —
+-- total_numbers menos esto es lo disponible para la venta.
+SELECT COUNT(*)::bigint FROM contributions
+WHERE campaign_id = $1 AND raffle_number IS NOT NULL AND status IN ('pending', 'confirmed');
+
+-- name: NextRaffleNumber :one
+-- Contador monótono por campaña — nunca reutiliza un número, incluso si
+-- una compra anterior falló, para no arriesgar una colisión.
+SELECT COALESCE(MAX(raffle_number), 0)::int + 1 FROM contributions WHERE campaign_id = $1;
+
 -- name: GetContributionByID :one
 SELECT * FROM contributions WHERE id = $1;
 
@@ -26,7 +52,8 @@ SELECT
   c.is_anonymous,
   c.status,
   c.created_at,
-  c.message
+  c.message,
+  c.raffle_number
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
 LEFT JOIN payments p ON p.contribution_id = c.id
@@ -51,7 +78,8 @@ SELECT
   c.is_anonymous,
   c.status,
   c.created_at,
-  c.message
+  c.message,
+  c.raffle_number
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
 LEFT JOIN payments p ON p.contribution_id = c.id

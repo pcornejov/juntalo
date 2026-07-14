@@ -11,16 +11,31 @@ interface ContributeSheetProps {
   cta: string
   onClose: () => void
   onSuccess: (result: StartContributionResult) => void
+  // Rifa: precio fijo por número (no monto libre) y cuántos quedan — si
+  // raffleAvailable llega en 0, el formulario se deshabilita en vez de
+  // dejar que el usuario intente comprar un número que ya no existe.
+  raffleUnitPrice?: number
+  raffleAvailable?: number
 }
 
 // Bottom-sheet: el aporte ocurre sin salir de la página, clave en el in-app
 // browser de WhatsApp (Etapa 5 §3).
-export function ContributeSheet({ slug, cta, onClose, onSuccess }: ContributeSheetProps) {
+export function ContributeSheet({
+  slug,
+  cta,
+  onClose,
+  onSuccess,
+  raffleUnitPrice,
+  raffleAvailable,
+}: ContributeSheetProps) {
   const { mutateAsync, isPending } = useContribute(slug)
+  const isRaffle = raffleUnitPrice !== undefined
+  const soldOut = isRaffle && raffleAvailable === 0
   const [fullName, setFullName] = useState('')
   // amount guarda solo dígitos (fuente de verdad); el input muestra el
-  // monto formateado como CLP ($7.777) mientras se escribe.
-  const [amount, setAmount] = useState('')
+  // monto formateado como CLP ($7.777) mientras se escribe. En una rifa el
+  // precio es fijo, así que arranca ya con ese valor y no se puede editar.
+  const [amount, setAmount] = useState(isRaffle ? String(raffleUnitPrice) : '')
   const [isAnonymous, setIsAnonymous] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -65,14 +80,26 @@ export function ContributeSheet({ slug, cta, onClose, onSuccess }: ContributeShe
             onChange={(e) => setFullName(e.target.value)}
             required
           />
-          <Input
-            type="text"
-            inputMode="numeric"
-            placeholder="Monto en CLP"
-            value={amount ? formatCLP(Number(amount)) : ''}
-            onChange={handleAmountChange}
-            required
-          />
+          {isRaffle ? (
+            <div className="rounded-lg border border-border-default bg-bg-subtle px-3 py-2 text-sm">
+              <span className="text-text-secondary">Precio por número: </span>
+              <span className="font-semibold text-text-primary">{formatCLP(raffleUnitPrice!)}</span>
+              {raffleAvailable !== undefined && (
+                <p className="mt-0.5 text-xs text-text-secondary">
+                  {soldOut ? 'No quedan números disponibles' : `Quedan ${raffleAvailable} números disponibles`}
+                </p>
+              )}
+            </div>
+          ) : (
+            <Input
+              type="text"
+              inputMode="numeric"
+              placeholder="Monto en CLP"
+              value={amount ? formatCLP(Number(amount)) : ''}
+              onChange={handleAmountChange}
+              required
+            />
+          )}
           <textarea
             className="w-full rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-brand"
             placeholder="Mensaje (opcional)"
@@ -101,8 +128,8 @@ export function ContributeSheet({ slug, cta, onClose, onSuccess }: ContributeShe
             <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending} className="flex-1">
-              {isPending ? 'Procesando…' : cta}
+            <Button type="submit" disabled={isPending || soldOut} className="flex-1">
+              {isPending ? 'Procesando…' : soldOut ? 'Sin números disponibles' : cta}
             </Button>
           </div>
         </form>

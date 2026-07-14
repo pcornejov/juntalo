@@ -13,6 +13,9 @@ type CreateCampaignRequest struct {
 	PublishAt   *time.Time `json:"publish_at"`
 	// VideoURL es un link externo a YouTube o Vimeo — Juntalo no aloja video.
 	VideoURL *string `json:"video_url"`
+	// RaffleUnitPrice/RaffleTotalNumbers solo aplican a type_key="raffle".
+	RaffleUnitPrice    *int64 `json:"raffle_unit_price"`
+	RaffleTotalNumbers *int   `json:"raffle_total_numbers"`
 }
 
 type UpdateCampaignRequest struct {
@@ -29,6 +32,12 @@ type UpdateCampaignRequest struct {
 	// ClearVideoURL es el único camino para quitar un video ya asociado.
 	VideoURL      *string `json:"video_url"`
 	ClearVideoURL bool    `json:"clear_video_url"`
+	// RaffleUnitPrice/RaffleTotalNumbers solo se pueden cambiar mientras la
+	// campaña sigue en draft. RaffleWinningNumber se registra después del
+	// sorteo externo, en cualquier estado.
+	RaffleUnitPrice     *int64 `json:"raffle_unit_price"`
+	RaffleTotalNumbers  *int   `json:"raffle_total_numbers"`
+	RaffleWinningNumber *int   `json:"raffle_winning_number"`
 }
 
 type CampaignResponse struct {
@@ -49,6 +58,11 @@ type CampaignResponse struct {
 	Totals      TotalsDTO               `json:"totals"`
 	CreatedAt   time.Time               `json:"created_at"`
 	VideoURL    *string                 `json:"video_url,omitempty"`
+	// Campos de rifa: solo vienen cuando type_key="raffle".
+	RaffleUnitPrice     *int64 `json:"raffle_unit_price,omitempty"`
+	RaffleTotalNumbers  *int   `json:"raffle_total_numbers,omitempty"`
+	RaffleNumbersSold   *int64 `json:"raffle_numbers_sold,omitempty"`
+	RaffleWinningNumber *int   `json:"raffle_winning_number,omitempty"`
 }
 
 type CampaignImageResponse struct {
@@ -89,6 +103,13 @@ type PublicCampaignResponse struct {
 	OrganizerName string    `json:"organizer_name,omitempty"`
 	IsVerified    bool      `json:"is_verified"`
 	VideoURL      *string   `json:"video_url,omitempty"`
+	// Campos de rifa: solo vienen cuando type_key="raffle". RaffleAvailable
+	// es lo único relevante para quien va a comprar — cuántos números
+	// quedan, sin exponer el conteo interno de vendidos.
+	RaffleUnitPrice     *int64 `json:"raffle_unit_price,omitempty"`
+	RaffleTotalNumbers  *int   `json:"raffle_total_numbers,omitempty"`
+	RaffleAvailable     *int64 `json:"raffle_available,omitempty"`
+	RaffleWinningNumber *int   `json:"raffle_winning_number,omitempty"`
 }
 
 type PublicCampaignListResponse struct {

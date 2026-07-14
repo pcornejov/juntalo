@@ -17,7 +17,11 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/domain/payment"
 )
 
-var errCampaignNotActive = apperr.New("campaign_not_active", "Esta campaña no está recibiendo aportes en este momento")
+var (
+	errCampaignNotActive   = apperr.New("campaign_not_active", "Esta campaña no está recibiendo aportes en este momento")
+	errInvalidRaffleAmount = apperr.New("invalid_raffle_amount", "El monto debe ser exactamente el precio por número")
+	errRaffleSoldOut       = apperr.New("raffle_sold_out", "Ya no quedan números disponibles en esta rifa")
+)
 
 type StartService struct {
 	campaigns     app.CampaignRepository
@@ -99,6 +103,16 @@ func (s *StartService) Start(ctx context.Context, in StartInput) (StartResult, e
 		return StartResult{}, errCampaignNotActive
 	}
 
+	// Las rifas venden números a precio fijo, no montos libres — el monto
+	// tiene que calzar exacto con raffle_unit_price, y el número se asigna
+	// atómicamente (sin selector visual: evita que dos personas vean la
+	// misma "grilla" al mismo tiempo).
+	if camp.TypeKey == campaign.TypeRaffle {
+		if camp.RaffleUnitPrice == nil || in.Amount != *camp.RaffleUnitPrice {
+			return StartResult{}, errInvalidRaffleAmount
+		}
+	}
+
 	org, err := s.organizations.GetByID(ctx, camp.OrganizationID)
 	if err != nil {
 		return StartResult{}, err
@@ -113,15 +127,29 @@ func (s *StartService) Start(ctx context.Context, in StartInput) (StartResult, e
 		return StartResult{}, err
 	}
 
-	newContribution, err := s.contributions.Create(ctx, app.CreateContributionInput{
+	createInput := app.CreateContributionInput{
 		CampaignID:    camp.ID,
 		ContributorID: contributorID,
 		Amount:        in.Amount,
 		IsAnonymous:   in.IsAnonymous,
 		Message:       in.Message,
-	})
-	if err != nil {
-		return StartResult{}, err
+	}
+
+	var newContribution contribution.Contribution
+	if camp.TypeKey == campaign.TypeRaffle {
+		var soldOut bool
+		newContribution, soldOut, err = s.contributions.CreateRaffleNumbered(ctx, createInput, *camp.RaffleTotalNumbers)
+		if err != nil {
+			return StartResult{}, err
+		}
+		if soldOut {
+			return StartResult{}, errRaffleSoldOut
+		}
+	} else {
+		newContribution, err = s.contributions.Create(ctx, createInput)
+		if err != nil {
+			return StartResult{}, err
+		}
 	}
 
 	commissionAmount, netAmount := payment.ComputeCommission(in.Amount, org.CommissionRate)

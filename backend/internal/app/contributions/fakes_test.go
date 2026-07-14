@@ -60,6 +60,10 @@ func (f *fakeCampaignRepo) ListPublicByOrg(context.Context, uuid.UUID, int32, in
 	return nil, nil
 }
 
+func (f *fakeCampaignRepo) GetRaffleNumbersSold(context.Context, uuid.UUID) (int64, error) {
+	return 0, nil
+}
+
 func (f *fakeCampaignRepo) ListPublic(context.Context, string, campaign.Category, int32, int32) ([]campaign.Campaign, error) {
 	return nil, nil
 }
@@ -140,6 +144,30 @@ func (f *fakeContributionRepo) Create(_ context.Context, in app.CreateContributi
 	}
 	f.byID[c.ID] = c
 	return c, nil
+}
+
+func (f *fakeContributionRepo) CreateRaffleNumbered(_ context.Context, in app.CreateContributionInput, totalNumbers int) (contribution.Contribution, bool, error) {
+	f.mu.Lock()
+	sold := 0
+	for _, c := range f.byID {
+		if c.CampaignID == in.CampaignID && c.RaffleNumber != nil {
+			sold++
+		}
+	}
+	f.mu.Unlock()
+	if sold >= totalNumbers {
+		return contribution.Contribution{}, true, nil
+	}
+	num := sold + 1
+	c, err := f.Create(context.Background(), in)
+	if err != nil {
+		return contribution.Contribution{}, false, err
+	}
+	f.mu.Lock()
+	c.RaffleNumber = &num
+	f.byID[c.ID] = c
+	f.mu.Unlock()
+	return c, false, nil
 }
 
 func (f *fakeContributionRepo) GetByID(_ context.Context, id uuid.UUID) (contribution.Contribution, bool, error) {

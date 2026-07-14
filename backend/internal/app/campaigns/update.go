@@ -37,6 +37,13 @@ type UpdateInput struct {
 	// ClearVideoURL es el único camino para quitar un video ya asociado.
 	VideoURL      *string
 	ClearVideoURL bool
+	// RaffleUnitPrice/RaffleTotalNumbers solo se pueden cambiar mientras la
+	// campaña sigue en draft (ValidateRaffleLocked). RaffleWinningNumber es
+	// la excepción: se registra justamente después de publicar y correr la
+	// rifa, así que no tiene esa restricción.
+	RaffleUnitPrice     *money.CLP
+	RaffleTotalNumbers  *int
+	RaffleWinningNumber *int
 }
 
 func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in UpdateInput) (campaign.Campaign, error) {
@@ -92,17 +99,47 @@ func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in Upda
 		videoURL = in.VideoURL
 	}
 
+	raffleUnitPrice := existing.RaffleUnitPrice
+	raffleTotalNumbers := existing.RaffleTotalNumbers
+	if in.RaffleUnitPrice != nil || in.RaffleTotalNumbers != nil {
+		if err := campaign.ValidateRaffleLocked(existing.Status); err != nil {
+			return campaign.Campaign{}, err
+		}
+		if in.RaffleUnitPrice != nil {
+			raffleUnitPrice = in.RaffleUnitPrice
+		}
+		if in.RaffleTotalNumbers != nil {
+			raffleTotalNumbers = in.RaffleTotalNumbers
+		}
+		if existing.TypeKey == campaign.TypeRaffle {
+			if err := campaign.ValidateRaffleSettings(raffleUnitPrice, raffleTotalNumbers); err != nil {
+				return campaign.Campaign{}, err
+			}
+		}
+	}
+
+	raffleWinningNumber := existing.RaffleWinningNumber
+	if in.RaffleWinningNumber != nil {
+		if err := campaign.ValidateRaffleWinningNumber(in.RaffleWinningNumber, raffleTotalNumbers); err != nil {
+			return campaign.Campaign{}, err
+		}
+		raffleWinningNumber = in.RaffleWinningNumber
+	}
+
 	return s.repo.Update(ctx, app.UpdateCampaignInput{
-		ID:          id,
-		Title:       in.Title,
-		Description: in.Description,
-		GoalAmount:  in.GoalAmount,
-		StartsAt:    in.StartsAt,
-		EndsAt:      in.EndsAt,
-		CoverFileID: coverFileID,
-		PublishAt:   publishAt,
-		Category:    category,
-		VideoURL:    videoURL,
+		ID:                  id,
+		Title:               in.Title,
+		Description:         in.Description,
+		GoalAmount:          in.GoalAmount,
+		StartsAt:            in.StartsAt,
+		EndsAt:              in.EndsAt,
+		CoverFileID:         coverFileID,
+		PublishAt:           publishAt,
+		Category:            category,
+		VideoURL:            videoURL,
+		RaffleUnitPrice:     raffleUnitPrice,
+		RaffleTotalNumbers:  raffleTotalNumbers,
+		RaffleWinningNumber: raffleWinningNumber,
 	})
 }
 
@@ -120,15 +157,18 @@ func (s *UpdateService) CancelSchedule(ctx context.Context, id, orgID uuid.UUID)
 	}
 
 	return s.repo.Update(ctx, app.UpdateCampaignInput{
-		ID:          id,
-		Title:       existing.Title,
-		Description: existing.Description,
-		GoalAmount:  existing.GoalAmount,
-		StartsAt:    existing.StartsAt,
-		EndsAt:      existing.EndsAt,
-		CoverFileID: existing.CoverFileID,
-		PublishAt:   nil,
-		Category:    existing.Category,
-		VideoURL:    existing.VideoURL,
+		ID:                  id,
+		Title:               existing.Title,
+		Description:         existing.Description,
+		GoalAmount:          existing.GoalAmount,
+		StartsAt:            existing.StartsAt,
+		EndsAt:              existing.EndsAt,
+		CoverFileID:         existing.CoverFileID,
+		PublishAt:           nil,
+		Category:            existing.Category,
+		VideoURL:            existing.VideoURL,
+		RaffleUnitPrice:     existing.RaffleUnitPrice,
+		RaffleTotalNumbers:  existing.RaffleTotalNumbers,
+		RaffleWinningNumber: existing.RaffleWinningNumber,
 	})
 }
