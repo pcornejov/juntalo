@@ -19,3 +19,18 @@ func ContributeLimiter() fiber.Handler {
 		},
 	})
 }
+
+// AuthLimiter caps login/register/forgot-password/reset-password attempts
+// per IP (auditoría de seguridad: estas rutas no tenían ningún rate limit,
+// habilitando fuerza bruta de contraseñas y creación masiva de cuentas).
+// 10/min por IP es suficientemente laxo para uso legítimo (reintentos tras
+// un typo) y suficientemente estricto para frenar fuerza bruta automatizada.
+func AuthLimiter() fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+	})
+}

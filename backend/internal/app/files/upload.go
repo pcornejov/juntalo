@@ -5,6 +5,7 @@ package files
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/google/uuid"
 
@@ -50,7 +51,14 @@ func (s *UploadService) Upload(ctx context.Context, in UploadInput) (UploadResul
 	if len(in.Data) > maxSizeBytes {
 		return UploadResult{}, errTooLarge
 	}
-	if !allowedMimeTypes[in.MimeType] {
+
+	// El Content-Type que manda el cliente en el multipart es solo una
+	// declaración, no una garantía (auditoría de seguridad: un archivo HTML/SVG
+	// disfrazado de "image/png" pasaba la validación anterior). Se detecta el
+	// tipo real a partir de los primeros bytes y ESE es el que se valida y se
+	// guarda — el header del cliente se ignora por completo para este chequeo.
+	detected := http.DetectContentType(in.Data)
+	if !allowedMimeTypes[detected] {
 		return UploadResult{}, errUnsupportedType
 	}
 
@@ -63,7 +71,7 @@ func (s *UploadService) Upload(ctx context.Context, in UploadInput) (UploadResul
 		OrganizationID: in.OrganizationID,
 		Kind:           in.Kind,
 		StorageKey:     key,
-		MimeType:       in.MimeType,
+		MimeType:       detected,
 		SizeBytes:      int64(len(in.Data)),
 	})
 	if err != nil {

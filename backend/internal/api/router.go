@@ -8,14 +8,18 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/app"
 )
 
+// mountAuthRoutes: register/login/forgot-password/reset-password llevan
+// AuthLimiter (auditoría de seguridad: sin esto, fuerza bruta de contraseñas
+// y creación masiva de cuentas quedaban sin fricción alguna).
 func mountAuthRoutes(router fiber.Router, h *handlers.AuthHandler, signer app.TokenSigner) {
+	authLimiter := middleware.AuthLimiter()
 	auth := router.Group("/auth")
-	auth.Post("/register", h.Register)
-	auth.Post("/login", h.Login)
+	auth.Post("/register", authLimiter, h.Register)
+	auth.Post("/login", authLimiter, h.Login)
 	auth.Post("/refresh", h.Refresh)
 	auth.Post("/logout", h.Logout)
-	auth.Post("/forgot-password", h.ForgotPassword)
-	auth.Post("/reset-password", h.ResetPassword)
+	auth.Post("/forgot-password", authLimiter, h.ForgotPassword)
+	auth.Post("/reset-password", authLimiter, h.ResetPassword)
 	auth.Post("/verify-email", h.VerifyEmail)
 	auth.Post("/resend-verification", middleware.RequireAuth(signer), h.ResendVerification)
 	auth.Get("/me", middleware.RequireAuth(signer), h.Me)

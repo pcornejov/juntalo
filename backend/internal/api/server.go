@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/contrib/fibersentry"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
@@ -69,6 +70,20 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 		AllowCredentials: true,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, Idempotency-Key",
 	}))
+	// Auditoría de seguridad: el backend no seteaba ningún header de defensa
+	// HTTP (el frontend sí los trae gratis de Render). CrossOriginResourcePolicy
+	// se fuerza a "cross-origin" porque las imágenes de campaña se sirven desde
+	// este dominio (juntalo-api) pero se embeben en <img> desde el dominio del
+	// frontend (juntalo-web) — el default "same-origin" del middleware las
+	// bloquearía. HSTS solo se activa en producción (Render sí sirve HTTPS).
+	helmetCfg := helmet.Config{
+		XFrameOptions:             "DENY",
+		CrossOriginResourcePolicy: "cross-origin",
+	}
+	if cfg.IsProd {
+		helmetCfg.HSTSMaxAge = 15552000 // 180 días
+	}
+	fiberApp.Use(helmet.New(helmetCfg))
 
 	fiberApp.Get("/healthz", healthzHandler(db))
 	fiberApp.Static("/files", cfg.StorageDir)

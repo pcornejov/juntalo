@@ -23,15 +23,24 @@ func NewWebhookHandler(confirm *contributionsuc.ConfirmService, mockSecret strin
 // la firma; eventos con firma inválida se rechazan, eventos desconocidos con
 // firma válida se aceptan como no-op (200) para no amplificar reintentos del
 // proveedor. Idempotente por construcción (ConfirmByProviderRef en dominio).
+//
+// El :provider en la URL es allowlist explícita (default-deny), no un "si
+// coincide con 'mock' valido, si no dejo pasar" — auditoría de seguridad:
+// la versión anterior aceptaba sin validar firma cualquier :provider que no
+// fuera literalmente "mock", un patrón frágil para cuando se agregue un
+// proveedor real y alguien olvide replicar la verificación.
 func (h *WebhookHandler) Payments(c *fiber.Ctx) error {
 	provider := c.Params("provider")
 	body := c.Body()
 
-	if provider == "mock" {
+	switch provider {
+	case "mock":
 		expected := mock.Sign(h.mockSecret, body)
 		if !hmac.Equal([]byte(c.Get("X-Signature")), []byte(expected)) {
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
+	default:
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 
 	var payload dto.WebhookPayload

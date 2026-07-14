@@ -15,10 +15,17 @@ type LoginService struct {
 	auth   app.AuthRepository
 	orgs   app.OrganizationRepository
 	hasher app.PasswordHasher
+	// dummyHash: un hash argon2id válido sobre el que corremos Verify cuando
+	// el email no existe, para que el tiempo de respuesta no delate si una
+	// cuenta existe o no (auditoría de seguridad — antes se retornaba de
+	// inmediato sin correr el hash, dejando un canal de timing medible en un
+	// endpoint sin rate limit).
+	dummyHash string
 }
 
 func NewLoginService(users app.UserRepository, auth app.AuthRepository, orgs app.OrganizationRepository, hasher app.PasswordHasher) *LoginService {
-	return &LoginService{users: users, auth: auth, orgs: orgs, hasher: hasher}
+	dummyHash, _ := hasher.Hash("dummy-password-for-timing-safety")
+	return &LoginService{users: users, auth: auth, orgs: orgs, hasher: hasher, dummyHash: dummyHash}
 }
 
 // Login never reveals whether the email exists (Etapa 4 §2): every failure
@@ -29,6 +36,7 @@ func (s *LoginService) Login(ctx context.Context, email, password string) (ident
 		return identity.User{}, identity.Organization{}, err
 	}
 	if !found {
+		s.hasher.Verify(password, s.dummyHash)
 		return identity.User{}, identity.Organization{}, errInvalidCredentials
 	}
 

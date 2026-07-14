@@ -1,5 +1,6 @@
 # Backend
 backend/tmp/
+backend/data/
 *.env
 .env
 
