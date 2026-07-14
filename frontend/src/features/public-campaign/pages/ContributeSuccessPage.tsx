@@ -1,9 +1,7 @@
 import { Card } from '../../../shared/ui'
-import { useContributionStatus } from '../hooks/useContribute'
 
 interface ContributeSuccessPanelProps {
-  contributionId: string
-  initialStatus: string
+  status: string
   onClose: () => void
 }
 
@@ -13,11 +11,11 @@ const statusCopy: Record<string, { title: string; description: string }> = {
   failed: { title: 'El pago no se pudo procesar', description: 'Intenta nuevamente.' },
 }
 
-// Pantalla de confirmación con polling (Etapa 4 §4): el flujo de pago del
-// mock es asíncrono vía webhook, así que el estado real llega poco después.
-export function ContributeSuccessPanel({ contributionId, initialStatus, onClose }: ContributeSuccessPanelProps) {
-  const { data } = useContributionStatus(contributionId, initialStatus)
-  const status = data?.status ?? initialStatus
+// Pantalla de confirmación (Etapa 4 §4): el flujo de pago del mock es
+// asíncrono vía webhook, así que el estado real llega poco después. El
+// polling vive en PublicCampaignPage para poder también reflejar el
+// "actualizando…" en el total recaudado mientras el pago sigue pendiente.
+export function ContributeSuccessPanel({ status, onClose }: ContributeSuccessPanelProps) {
   const copy = statusCopy[status] ?? statusCopy.pending
 
   return (

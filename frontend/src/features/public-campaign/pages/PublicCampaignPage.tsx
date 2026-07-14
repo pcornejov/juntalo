@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Calendar, MapPin, Share2, Link2, ArrowRight, ShieldCheck, Users } from 'lucide-react'
 import { usePublicCampaign } from '../hooks/usePublicCampaign'
+import { useContributionStatus } from '../hooks/useContribute'
 import { formatCLP } from '../../../shared/lib/clp'
 import { relativeDate } from '../../../shared/lib/date'
 import { Button, Card, Progress, ShareButtons, QrCode, Footer } from '../../../shared/ui'
@@ -21,6 +22,17 @@ export function PublicCampaignPage() {
   const { data: campaign, isLoading, isError } = usePublicCampaign(slug)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [result, setResult] = useState<StartContributionResult | null>(null)
+  const { data: statusData } = useContributionStatus(
+    slug ?? '',
+    result?.contribution_id,
+    result?.payment.status,
+  )
+  const contributionStatus = statusData?.status ?? result?.payment.status
+  // Mientras el pago del aporte recién hecho sigue 'pending', el total y el
+  // contador de aportantes que devuelve el backend todavía no lo incluyen
+  // (solo cuentan pagos confirmados) — se marcan como "actualizando" en vez
+  // de mostrar una cifra que el propio usuario sabe que está desactualizada.
+  const isConfirmingContribution = Boolean(result) && contributionStatus === 'pending'
 
   if (isLoading) {
     return <div className="p-6 text-center text-text-secondary">Cargando…</div>
@@ -87,60 +99,70 @@ export function PublicCampaignPage() {
           )}
         </div>
 
-        {hasGoal ? (
-          <div className="overflow-hidden rounded-2xl border border-border-default">
-            <div className="grid grid-cols-3 divide-x divide-border-default">
-              <div className="p-3">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
-                  Recaudado
-                </p>
-                <p className="font-display text-base font-bold tabular-nums text-brand-hover">
-                  {formatCLP(campaign.totals.raised_gross)}
-                </p>
+        <div>
+          {isConfirmingContribution && (
+            <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium text-text-secondary">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
+              Actualizando con tu aporte…
+            </p>
+          )}
+          <div className={isConfirmingContribution ? 'animate-pulse opacity-50' : undefined}>
+            {hasGoal ? (
+              <div className="overflow-hidden rounded-2xl border border-border-default">
+                <div className="grid grid-cols-3 divide-x divide-border-default">
+                  <div className="p-3">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                      Recaudado
+                    </p>
+                    <p className="font-display text-base font-bold tabular-nums text-brand-hover">
+                      {formatCLP(campaign.totals.raised_gross)}
+                    </p>
+                  </div>
+                  <div className="p-3">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                      Meta
+                    </p>
+                    <p className="font-display text-base font-bold tabular-nums">
+                      {formatCLP(campaign.goal_amount!)}
+                    </p>
+                  </div>
+                  <div className="p-3">
+                    <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                      <Users className="h-2.5 w-2.5" strokeWidth={1.75} />
+                      {campaign.unit}
+                    </p>
+                    <p className="font-display text-base font-bold tabular-nums">
+                      {campaign.totals.contributor_count}
+                    </p>
+                  </div>
+                </div>
+                <div className="px-3 pb-3 pt-1">
+                  <Progress value={campaign.totals.raised_gross} max={campaign.goal_amount!} />
+                </div>
               </div>
-              <div className="p-3">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
-                  Meta
-                </p>
-                <p className="font-display text-base font-bold tabular-nums">
-                  {formatCLP(campaign.goal_amount!)}
-                </p>
+            ) : (
+              <div className="flex items-center justify-between rounded-2xl border border-border-default p-3">
+                <div>
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                    Recaudado
+                  </p>
+                  <p className="font-display text-lg font-bold tabular-nums text-brand-hover">
+                    {formatCLP(campaign.totals.raised_gross)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="mb-1 flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                    <Users className="h-2.5 w-2.5" strokeWidth={1.75} />
+                    {campaign.unit}
+                  </p>
+                  <p className="font-display text-lg font-bold tabular-nums">
+                    {campaign.totals.contributor_count}
+                  </p>
+                </div>
               </div>
-              <div className="p-3">
-                <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
-                  <Users className="h-2.5 w-2.5" strokeWidth={1.75} />
-                  {campaign.unit}
-                </p>
-                <p className="font-display text-base font-bold tabular-nums">
-                  {campaign.totals.contributor_count}
-                </p>
-              </div>
-            </div>
-            <div className="px-3 pb-3 pt-1">
-              <Progress value={campaign.totals.raised_gross} max={campaign.goal_amount!} />
-            </div>
+            )}
           </div>
-        ) : (
-          <div className="flex items-center justify-between rounded-2xl border border-border-default p-3">
-            <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
-                Recaudado
-              </p>
-              <p className="font-display text-lg font-bold tabular-nums text-brand-hover">
-                {formatCLP(campaign.totals.raised_gross)}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="mb-1 flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
-                <Users className="h-2.5 w-2.5" strokeWidth={1.75} />
-                {campaign.unit}
-              </p>
-              <p className="font-display text-lg font-bold tabular-nums">
-                {campaign.totals.contributor_count}
-              </p>
-            </div>
-          </div>
-        )}
+        </div>
 
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
@@ -203,8 +225,7 @@ export function PublicCampaignPage() {
 
       {result && (
         <ContributeSuccessPanel
-          contributionId={result.contribution_id}
-          initialStatus={result.payment.status}
+          status={contributionStatus ?? result.payment.status}
           onClose={() => setResult(null)}
         />
       )}
