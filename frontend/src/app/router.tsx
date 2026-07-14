@@ -14,6 +14,7 @@ import { VerifyEmailPage } from '../features/auth/pages/VerifyEmailPage'
 import { CampaignListPage } from '../features/campaigns/pages/CampaignListPage'
 import { CampaignFormPage } from '../features/campaigns/pages/CampaignFormPage'
 import { CampaignDetailPage } from '../features/campaigns/pages/CampaignDetailPage'
+import { ExploreCampaignsPage } from '../features/public-campaign/pages/ExploreCampaignsPage'
 import { PublicCampaignPage } from '../features/public-campaign/pages/PublicCampaignPage'
 
 export const router = createBrowserRouter([
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
   { path: '/verify-email', element: <VerifyEmailPage /> },
   { path: '/design', element: <ComponentsShowcasePage /> },
   { path: '/privacidad', element: <PrivacyPage /> },
+  { path: '/explorar', element: <ExploreCampaignsPage /> },
   { path: '/public/:slug', element: <PublicCampaignPage /> },
   { path: '/c/:slug', element: <RedirectToPublicCampaign /> },
   { path: '*', element: <NotFoundPage /> },

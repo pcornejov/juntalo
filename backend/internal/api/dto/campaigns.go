@@ -64,6 +64,7 @@ type CampaignListResponse struct {
 }
 
 type PublicCampaignResponse struct {
+	Slug        string    `json:"slug"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	CoverURL    *string   `json:"cover_url,omitempty"`
@@ -74,6 +75,11 @@ type PublicCampaignResponse struct {
 	CTA         string    `json:"cta"`
 	Unit        string    `json:"unit"`
 	PublicURL   string    `json:"public_url"`
+}
+
+type PublicCampaignListResponse struct {
+	Items   []PublicCampaignResponse `json:"items"`
+	HasMore bool                     `json:"has_more"`
 }
 
 type CampaignTypeResponse struct {

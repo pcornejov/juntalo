@@ -106,3 +106,7 @@ func (f *fakeCampaignRepo) GetTotals(_ context.Context, id uuid.UUID) (campaign.
 func (f *fakeCampaignRepo) PublishDueCampaigns(context.Context) ([]campaign.Campaign, error) {
 	return nil, nil
 }
+
+func (f *fakeCampaignRepo) ListPublic(context.Context, string, int32, int32) ([]campaign.Campaign, error) {
+	return nil, nil
+}

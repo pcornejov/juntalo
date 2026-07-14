@@ -48,6 +48,7 @@ type Querier interface {
 	GetValidEmailVerificationTokenByHash(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
 	GetValidPasswordResetTokenByHash(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
+	ListActiveCampaigns(ctx context.Context, arg ListActiveCampaignsParams) ([]Campaign, error)
 	ListCampaignImages(ctx context.Context, campaignID uuid.UUID) ([]ListCampaignImagesRow, error)
 	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
 	ListContributionsByCampaign(ctx context.Context, arg ListContributionsByCampaignParams) ([]Contribution, error)

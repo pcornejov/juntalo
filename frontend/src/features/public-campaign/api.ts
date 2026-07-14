@@ -2,6 +2,7 @@ import { apiClient } from '../../shared/api/client'
 import type { Totals } from '../campaigns/api'
 
 export interface PublicCampaign {
+  slug: string
   title: string
   description: string
   cover_url?: string
@@ -24,6 +25,19 @@ export interface PublicCampaign {
 
 export function getPublicCampaign(slug: string) {
   return apiClient.get<PublicCampaign>(`/public/campaigns/${slug}`)
+}
+
+export const EXPLORE_CAMPAIGNS_PAGE_SIZE = 12
+
+// listPublicCampaigns backs la sección "Explorar campañas": cualquier
+// visitante puede navegar campañas activas de cualquier organizador, no
+// solo entrar por un link directo (Etapa 4).
+export function listPublicCampaigns(offset = 0, limit = EXPLORE_CAMPAIGNS_PAGE_SIZE, search = '') {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+  if (search) params.set('q', search)
+  return apiClient.get<{ items: PublicCampaign[]; has_more: boolean }>(
+    `/public/campaigns?${params.toString()}`,
+  )
 }
 
 export interface StartContributionInput {

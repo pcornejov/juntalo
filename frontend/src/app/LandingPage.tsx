@@ -75,7 +75,13 @@ export function LandingPage() {
     <div className="min-h-screen bg-bg-subtle">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-5">
         <span className="font-display text-lg font-bold tracking-tight">Juntalo</span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/explorar"
+            className="text-sm font-medium text-text-secondary hover:text-text-primary"
+          >
+            Explorar campañas
+          </Link>
           <ThemeToggle />
           <Link to="/login" className="text-sm font-medium text-text-secondary hover:text-text-primary">
             Ingresar

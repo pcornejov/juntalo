@@ -49,6 +49,7 @@ func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, dashH
 }
 
 func mountPublicRoutes(app fiber.Router, apiV1 fiber.Router, h *handlers.PublicHandler) {
+	apiV1.Get("/public/campaigns", h.ListJSON)
 	apiV1.Get("/public/campaigns/:slug", h.GetJSON)
 	app.Get("/c/:slug", h.OGPage)
 }

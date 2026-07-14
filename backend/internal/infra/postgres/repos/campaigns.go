@@ -99,6 +99,22 @@ func (r *CampaignRepo) ListByOrg(ctx context.Context, orgID uuid.UUID, limit, of
 	return out, nil
 }
 
+func (r *CampaignRepo) ListPublic(ctx context.Context, search string, limit, offset int32) ([]campaign.Campaign, error) {
+	rows, err := r.q.ListActiveCampaigns(ctx, sqlc.ListActiveCampaignsParams{
+		Limit:  limit,
+		Offset: offset,
+		Search: pgtype.Text{String: search, Valid: search != ""},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list public campaigns: %w", err)
+	}
+	out := make([]campaign.Campaign, len(rows))
+	for i, c := range rows {
+		out[i] = mapCampaign(c)
+	}
+	return out, nil
+}
+
 func (r *CampaignRepo) Update(ctx context.Context, in app.UpdateCampaignInput) (campaign.Campaign, error) {
 	c, err := r.q.UpdateCampaign(ctx, sqlc.UpdateCampaignParams{
 		ID:          in.ID,

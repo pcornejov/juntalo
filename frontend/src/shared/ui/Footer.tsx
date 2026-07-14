@@ -8,9 +8,14 @@ export function Footer() {
         por sus usuarios, quienes son responsables de su contenido y del uso de los fondos
         recaudados.
       </p>
-      <Link to="/privacidad" className="mt-2 inline-block underline">
-        Política de privacidad
-      </Link>
+      <p className="mt-2 flex items-center justify-center gap-3">
+        <Link to="/explorar" className="underline">
+          Explorar campañas
+        </Link>
+        <Link to="/privacidad" className="underline">
+          Política de privacidad
+        </Link>
+      </p>
     </footer>
   )
 }

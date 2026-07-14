@@ -48,6 +48,16 @@ UPDATE campaigns SET deleted_at = now() WHERE id = $1;
 -- name: GetCampaignTotals :one
 SELECT * FROM campaign_totals WHERE campaign_id = $1;
 
+-- name: ListActiveCampaigns :many
+-- Sección pública "Campañas activas" (Etapa 4): cualquier visitante puede
+-- explorar campañas para aportar, no solo entrar por un link directo. $3
+-- en NULL desactiva el filtro de búsqueda por título.
+SELECT * FROM campaigns
+WHERE status = 'active' AND deleted_at IS NULL
+  AND ($3::text IS NULL OR title ILIKE '%' || $3 || '%')
+ORDER BY created_at DESC
+LIMIT $1 OFFSET $2;
+
 -- name: PublishDueCampaigns :many
 -- El scheduler en background (ver cmd/api) llama esto cada minuto: publica
 -- atómicamente todo draft cuya publish_at ya venció, sin condición de

@@ -23,6 +23,7 @@ var botUserAgents = []string{
 
 type PublicHandler struct {
 	get         *campaignsuc.GetService
+	list        *campaignsuc.ListService
 	files       app.FileRepository
 	images      app.CampaignImageRepository
 	storage     app.FileStorage
@@ -30,8 +31,50 @@ type PublicHandler struct {
 	selfURL     string
 }
 
-func NewPublicHandler(get *campaignsuc.GetService, files app.FileRepository, images app.CampaignImageRepository, storage app.FileStorage, frontendURL, selfURL string) *PublicHandler {
-	return &PublicHandler{get: get, files: files, images: images, storage: storage, frontendURL: frontendURL, selfURL: selfURL}
+func NewPublicHandler(get *campaignsuc.GetService, list *campaignsuc.ListService, files app.FileRepository, images app.CampaignImageRepository, storage app.FileStorage, frontendURL, selfURL string) *PublicHandler {
+	return &PublicHandler{get: get, list: list, files: files, images: images, storage: storage, frontendURL: frontendURL, selfURL: selfURL}
+}
+
+const (
+	defaultPublicListLimit = 12
+	maxPublicListLimit     = 50
+)
+
+// ListJSON implements GET /public/campaigns: la sección pública de
+// "Campañas activas" (Etapa 4) — cualquier visitante puede explorar
+// campañas para aportar, no solo entrar por un link directo.
+func (h *PublicHandler) ListJSON(c *fiber.Ctx) error {
+	limit := c.QueryInt("limit", defaultPublicListLimit)
+	if limit <= 0 || limit > maxPublicListLimit {
+		limit = defaultPublicListLimit
+	}
+	offset := c.QueryInt("offset", 0)
+	if offset < 0 {
+		offset = 0
+	}
+	search := c.Query("q")
+
+	items, err := h.list.ListPublic(c.Context(), search, int32(limit+1), int32(offset))
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	hasMore := len(items) > limit
+	if hasMore {
+		items = items[:limit]
+	}
+
+	out := make([]dto.PublicCampaignResponse, len(items))
+	for i, item := range items {
+		images := resolveGalleryURLs(c.Context(), h.images, h.storage, item.Campaign.ID)
+		coverURL := resolveCoverURL(c, h.files, h.storage, item.Campaign.CoverFileID)
+		if len(images) > 0 {
+			coverURL = &images[0]
+		}
+		resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images)
+		resp.PublicURL = h.selfURL + "/c/" + item.Campaign.Slug
+		out[i] = resp
+	}
+	return c.JSON(dto.PublicCampaignListResponse{Items: out, HasMore: hasMore})
 }
 
 // GetJSON is consumed by the SPA's public campaign page (Etapa 4 §4).
@@ -113,6 +156,7 @@ func resolveCoverURL(c *fiber.Ctx, files app.FileRepository, storage app.FileSto
 func toPublicCampaignResponse(c campaign.Campaign, totals campaign.Totals, coverURL *string, images []string) dto.PublicCampaignResponse {
 	def := campaign.Registry[c.TypeKey]
 	resp := dto.PublicCampaignResponse{
+		Slug:        c.Slug,
 		Title:       c.Title,
 		Description: c.Description,
 		CoverURL:    coverURL,

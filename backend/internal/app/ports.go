@@ -130,6 +130,10 @@ type CampaignRepository interface {
 	GetBySlug(ctx context.Context, slug string) (campaign.Campaign, bool, error)
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	ListByOrg(ctx context.Context, orgID uuid.UUID, limit, offset int32) ([]campaign.Campaign, error)
+	// ListPublic lista campañas activas de cualquier organización, para la
+	// sección pública de "Campañas activas" (Etapa 4) — search vacío
+	// desactiva el filtro de búsqueda por título.
+	ListPublic(ctx context.Context, search string, limit, offset int32) ([]campaign.Campaign, error)
 	Update(ctx context.Context, in UpdateCampaignInput) (campaign.Campaign, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status campaign.Status) (campaign.Campaign, error)
 	SoftDelete(ctx context.Context, id uuid.UUID) error

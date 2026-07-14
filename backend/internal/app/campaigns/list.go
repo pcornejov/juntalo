@@ -41,3 +41,23 @@ func (s *ListService) List(ctx context.Context, orgID uuid.UUID, limit, offset i
 	}
 	return out, nil
 }
+
+// ListPublic backs la sección pública de "Campañas activas" (Etapa 4): a
+// diferencia de List, no filtra por organización — cualquier visitante debe
+// poder explorar campañas de cualquier organizador para aportar.
+func (s *ListService) ListPublic(ctx context.Context, search string, limit, offset int32) ([]CampaignWithTotals, error) {
+	items, err := s.repo.ListPublic(ctx, search, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]CampaignWithTotals, 0, len(items))
+	for _, c := range items {
+		totals, err := s.repo.GetTotals(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, CampaignWithTotals{Campaign: c, Totals: totals})
+	}
+	return out, nil
+}
