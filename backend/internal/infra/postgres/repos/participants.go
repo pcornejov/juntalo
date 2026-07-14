@@ -44,6 +44,7 @@ func (r *ParticipantRepo) ListByCampaign(ctx context.Context, campaignID uuid.UU
 			IsAnonymous:    row.IsAnonymous,
 			Status:         contribution.Status(row.Status),
 			CreatedAt:      row.CreatedAt.Time,
+			Message:        row.Message.String,
 		}
 	}
 	return out, nil
@@ -73,6 +74,7 @@ func (r *ParticipantRepo) ListByCampaignFiltered(ctx context.Context, campaignID
 			IsAnonymous:    row.IsAnonymous,
 			Status:         contribution.Status(row.Status),
 			CreatedAt:      row.CreatedAt.Time,
+			Message:        row.Message.String,
 		}
 	}
 	return out, nil

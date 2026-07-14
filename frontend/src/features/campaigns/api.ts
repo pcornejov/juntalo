@@ -146,6 +146,7 @@ export interface Participant {
   is_anonymous: boolean
   status: 'pending' | 'confirmed' | 'failed' | 'refunded'
   created_at: string
+  message?: string
 }
 
 export const PARTICIPANTS_PAGE_SIZE = 20

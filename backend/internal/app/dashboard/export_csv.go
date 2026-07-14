@@ -39,7 +39,7 @@ func (s *ExportCSVService) WriteCSV(ctx context.Context, campaignID, orgID uuid.
 	}
 
 	cw := csv.NewWriter(w)
-	header := []string{"fecha", "nombre", "email", "telefono", "monto", "estado", "anonimo", "monto_reembolsado"}
+	header := []string{"fecha", "nombre", "email", "telefono", "monto", "estado", "anonimo", "monto_reembolsado", "mensaje"}
 	if err := cw.Write(header); err != nil {
 		return err
 	}
@@ -54,6 +54,7 @@ func (s *ExportCSVService) WriteCSV(ctx context.Context, campaignID, orgID uuid.
 			string(r.Status),
 			formatBool(r.IsAnonymous),
 			formatCLPPlain(r.RefundedAmount),
+			r.Message,
 		}
 		if err := cw.Write(record); err != nil {
 			return err

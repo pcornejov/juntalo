@@ -163,11 +163,18 @@ export function ParticipantsTable({
                 <Fragment key={p.contribution_id}>
                   <tr className="border-b border-border-default last:border-0">
                     <td className="py-2 pr-4">
-                      {p.full_name}
-                      {p.is_anonymous && (
-                        <span className="ml-1 text-xs text-text-secondary">
-                          (anónimo en público)
-                        </span>
+                      <div>
+                        {p.full_name}
+                        {p.is_anonymous && (
+                          <span className="ml-1 text-xs text-text-secondary">
+                            (anónimo en público)
+                          </span>
+                        )}
+                      </div>
+                      {p.message && (
+                        <p className="mt-0.5 max-w-xs whitespace-pre-wrap text-xs italic text-text-secondary">
+                          “{p.message}”
+                        </p>
                       )}
                     </td>
                     <td className="py-2 pr-4 text-text-secondary">{p.email || p.phone || '—'}</td>

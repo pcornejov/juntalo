@@ -80,6 +80,7 @@ func (h *DashboardHandler) Participants(c *fiber.Ctx) error {
 			IsAnonymous:    r.IsAnonymous,
 			Status:         string(r.Status),
 			CreatedAt:      r.CreatedAt,
+			Message:        r.Message,
 		}
 	}
 	return c.JSON(dto.ParticipantsResponse{Items: out, HasMore: hasMore})

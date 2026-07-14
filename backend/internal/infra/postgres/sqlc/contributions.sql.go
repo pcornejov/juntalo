@@ -126,7 +126,8 @@ SELECT
   COALESCE(r.refunded, 0)::bigint AS refunded_amount,
   c.is_anonymous,
   c.status,
-  c.created_at
+  c.created_at,
+  c.message
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
 LEFT JOIN payments p ON p.contribution_id = c.id
@@ -154,6 +155,7 @@ type ListParticipantsByCampaignRow struct {
 	IsAnonymous         bool               `json:"is_anonymous"`
 	Status              string             `json:"status"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	Message             pgtype.Text        `json:"message"`
 }
 
 func (q *Queries) ListParticipantsByCampaign(ctx context.Context, arg ListParticipantsByCampaignParams) ([]ListParticipantsByCampaignRow, error) {
@@ -175,6 +177,7 @@ func (q *Queries) ListParticipantsByCampaign(ctx context.Context, arg ListPartic
 			&i.IsAnonymous,
 			&i.Status,
 			&i.CreatedAt,
+			&i.Message,
 		); err != nil {
 			return nil, err
 		}
@@ -196,7 +199,8 @@ SELECT
   COALESCE(r.refunded, 0)::bigint AS refunded_amount,
   c.is_anonymous,
   c.status,
-  c.created_at
+  c.created_at,
+  c.message
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
 LEFT JOIN payments p ON p.contribution_id = c.id
@@ -233,6 +237,7 @@ type ListParticipantsByCampaignFilteredRow struct {
 	IsAnonymous         bool               `json:"is_anonymous"`
 	Status              string             `json:"status"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	Message             pgtype.Text        `json:"message"`
 }
 
 func (q *Queries) ListParticipantsByCampaignFiltered(ctx context.Context, arg ListParticipantsByCampaignFilteredParams) ([]ListParticipantsByCampaignFilteredRow, error) {
@@ -260,6 +265,7 @@ func (q *Queries) ListParticipantsByCampaignFiltered(ctx context.Context, arg Li
 			&i.IsAnonymous,
 			&i.Status,
 			&i.CreatedAt,
+			&i.Message,
 		); err != nil {
 			return nil, err
 		}

@@ -70,6 +70,26 @@ async function upload<T>(path: string, form: FormData): Promise<T> {
   return parseResponse<T>(res)
 }
 
+// download fetches a non-JSON response (CSV, etc.) as a Blob — goes through
+// API_BASE like every other call instead of a bare relative path, which
+// only resolves correctly in local dev (Vite's /api/v1 proxy); in
+// producción, frontend y backend viven en dominios distintos.
+async function download(path: string): Promise<Blob> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    credentials: 'include',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => null)
+    throw new ApiError(
+      data?.error?.code ?? 'unknown_error',
+      data?.error?.message ?? 'Ocurrió un error inesperado',
+      res.status,
+    )
+  }
+  return res.blob()
+}
+
 export const apiClient = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
@@ -77,4 +97,5 @@ export const apiClient = {
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   upload,
+  download,
 }

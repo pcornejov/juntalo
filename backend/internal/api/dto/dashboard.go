@@ -12,6 +12,7 @@ type ParticipantResponse struct {
 	IsAnonymous    bool      `json:"is_anonymous"`
 	Status         string    `json:"status"`
 	CreatedAt      time.Time `json:"created_at"`
+	Message        string    `json:"message,omitempty"`
 }
 
 type ParticipantsResponse struct {

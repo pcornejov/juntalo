@@ -25,7 +25,8 @@ SELECT
   COALESCE(r.refunded, 0)::bigint AS refunded_amount,
   c.is_anonymous,
   c.status,
-  c.created_at
+  c.created_at,
+  c.message
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
 LEFT JOIN payments p ON p.contribution_id = c.id
@@ -49,7 +50,8 @@ SELECT
   COALESCE(r.refunded, 0)::bigint AS refunded_amount,
   c.is_anonymous,
   c.status,
-  c.created_at
+  c.created_at,
+  c.message
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
 LEFT JOIN payments p ON p.contribution_id = c.id

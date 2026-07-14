@@ -313,6 +313,7 @@ type ParticipantRow struct {
 	IsAnonymous    bool
 	Status         contribution.Status
 	CreatedAt      time.Time
+	Message        string
 }
 
 type ParticipantRepository interface {
