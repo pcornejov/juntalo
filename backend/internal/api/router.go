@@ -93,5 +93,6 @@ func mountAdminRoutes(router fiber.Router, h *handlers.AdminHandler, signer app.
 	admin.Get("/metrics", h.Metrics)
 	admin.Get("/users", h.Users)
 	admin.Get("/campaigns", h.Campaigns)
+	admin.Delete("/campaigns/:id", h.DeleteCampaign)
 	admin.Get("/payments", h.Payments)
 }

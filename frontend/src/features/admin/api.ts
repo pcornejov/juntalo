@@ -69,6 +69,13 @@ export function listAdminCampaigns(offset = 0, limit = ADMIN_PAGE_SIZE) {
   )
 }
 
+// deleteAdminCampaign es la herramienta de moderación del backoffice: a
+// diferencia del borrado propio del organizador (solo borradores), un admin
+// puede eliminar cualquier campaña sin importar su estado.
+export function deleteAdminCampaign(id: string) {
+  return apiClient.delete<void>(`/admin/campaigns/${id}`)
+}
+
 export function listAdminPayments(offset = 0, limit = ADMIN_PAGE_SIZE) {
   return apiClient.get<{ items: AdminPayment[]; has_more: boolean }>(
     `/admin/payments?limit=${limit}&offset=${offset}`,

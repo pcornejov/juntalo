@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 
 	"github.com/pcornejov/juntalo/backend/internal/api/dto"
 	adminuc "github.com/pcornejov/juntalo/backend/internal/app/admin"
@@ -106,6 +107,21 @@ func (h *AdminHandler) Campaigns(c *fiber.Ctx) error {
 		}
 	}
 	return c.JSON(dto.AdminCampaignListResponse{Items: out, HasMore: hasMore})
+}
+
+// DeleteCampaign implements DELETE /admin/campaigns/:id: la herramienta de
+// moderación del backoffice — elimina cualquier campaña de cualquier
+// organización, sin restricción de estado (a diferencia del borrado propio
+// del organizador, que solo permite borradores).
+func (h *AdminHandler) DeleteCampaign(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return dto.WriteError(c, adminuc.ErrCampaignNotFound)
+	}
+	if err := h.svc.DeleteCampaign(c.Context(), id); err != nil {
+		return dto.WriteError(c, err)
+	}
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *AdminHandler) Payments(c *fiber.Ctx) error {

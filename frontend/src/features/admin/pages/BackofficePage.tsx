@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Users, Megaphone, Wallet, TrendingUp } from 'lucide-react'
-import { useAdminMetrics, useAdminUsers, useAdminCampaigns, useAdminPayments } from '../hooks/useAdmin'
+import { Trash2, Users, Megaphone, Wallet, TrendingUp } from 'lucide-react'
+import {
+  useAdminMetrics,
+  useAdminUsers,
+  useAdminCampaigns,
+  useAdminPayments,
+  useDeleteAdminCampaign,
+} from '../hooks/useAdmin'
 import { formatCLP } from '../../../shared/lib/clp'
 import { typeLabels } from '../../campaigns/typeMeta'
 import { Badge, Button, Card } from '../../../shared/ui'
@@ -83,6 +89,13 @@ function UsersTable({ items }: { items: AdminUser[] }) {
 }
 
 function CampaignsTable({ items }: { items: AdminCampaign[] }) {
+  const deleteCampaign = useDeleteAdminCampaign()
+
+  function handleDelete(c: AdminCampaign) {
+    if (!window.confirm(`¿Eliminar "${c.title}"? Esta acción no se puede deshacer.`)) return
+    deleteCampaign.mutate(c.id)
+  }
+
   if (items.length === 0) return <p className="text-sm text-text-secondary">Sin campañas todavía.</p>
   return (
     <div className="overflow-x-auto">
@@ -95,6 +108,7 @@ function CampaignsTable({ items }: { items: AdminCampaign[] }) {
             <th className="py-2 pr-4">Estado</th>
             <th className="py-2 pr-4">Recaudado</th>
             <th className="py-2 pr-4">Aportantes</th>
+            <th className="py-2 pr-4" />
           </tr>
         </thead>
         <tbody>
@@ -112,6 +126,17 @@ function CampaignsTable({ items }: { items: AdminCampaign[] }) {
               </td>
               <td className="py-2 pr-4 tabular-nums">{formatCLP(c.raised_gross)}</td>
               <td className="py-2 pr-4 tabular-nums">{c.contributor_count}</td>
+              <td className="py-2 pr-4">
+                <button
+                  type="button"
+                  onClick={() => handleDelete(c)}
+                  disabled={deleteCampaign.isPending}
+                  className="text-text-secondary hover:text-danger disabled:opacity-50"
+                  title="Eliminar campaña"
+                >
+                  <Trash2 className="h-4 w-4" strokeWidth={1.75} />
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

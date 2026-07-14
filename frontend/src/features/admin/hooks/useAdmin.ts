@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as adminApi from '../api'
 
 export function useAdminMetrics() {
@@ -28,6 +28,17 @@ export function useAdminCampaigns() {
       lastPage.has_more ? allPages.length * adminApi.ADMIN_PAGE_SIZE : undefined,
   })
   return { ...query, items: query.data?.pages.flatMap((p) => p.items) ?? [] }
+}
+
+export function useDeleteAdminCampaign() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => adminApi.deleteAdminCampaign(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'campaigns'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'metrics'] })
+    },
+  })
 }
 
 export function useAdminPayments() {
