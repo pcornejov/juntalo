@@ -111,6 +111,10 @@ func (f *fakeCampaignRepo) ListPublic(context.Context, string, campaign.Category
 	return nil, nil
 }
 
+func (f *fakeCampaignRepo) ListPublicByOrg(context.Context, uuid.UUID, int32, int32) ([]campaign.Campaign, error) {
+	return nil, nil
+}
+
 func (f *fakeCampaignRepo) GetFeatured(context.Context) (campaign.Campaign, bool, error) {
 	return campaign.Campaign{}, false, nil
 }

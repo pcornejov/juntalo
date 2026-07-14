@@ -83,3 +83,21 @@ export function startContribution(slug: string, idempotencyKey: string, input: S
 export function getContributionStatus(id: string) {
   return apiClient.get<{ status: string }>(`/public/contributions/${id}/status`)
 }
+
+export interface OrgProfile {
+  name: string
+  slug: string
+  is_verified: boolean
+  campaigns: PublicCampaign[]
+  has_more: boolean
+}
+
+export const ORG_PROFILE_PAGE_SIZE = 12
+
+// getOrgProfile backs la página pública persistente del organizador
+// (/org/:slug) — inspirada en el link único de por vida de Ceneka: a
+// diferencia de una campaña puntual, lista todas sus campañas visibles.
+export function getOrgProfile(slug: string, offset = 0, limit = ORG_PROFILE_PAGE_SIZE) {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+  return apiClient.get<OrgProfile>(`/public/organizations/${slug}?${params.toString()}`)
+}

@@ -64,6 +64,9 @@ type UserRepository interface {
 type OrganizationRepository interface {
 	GetPersonalByUserID(ctx context.Context, userID uuid.UUID) (identity.Organization, error)
 	GetByID(ctx context.Context, id uuid.UUID) (identity.Organization, error)
+	// GetBySlug resuelve la página pública persistente del organizador
+	// (/org/:slug) — inspirada en el link único de por vida de Ceneka.
+	GetBySlug(ctx context.Context, slug string) (identity.Organization, bool, error)
 	// GetOwnerEmail se usa para notificar al organizador de nuevos aportes
 	// (Hito "notificaciones") — no requiere UI de equipos, solo el dueño.
 	GetOwnerEmail(ctx context.Context, id uuid.UUID) (email, fullName string, err error)
@@ -150,6 +153,10 @@ type CampaignRepository interface {
 	// sección pública de "Campañas activas" (Etapa 4) — search/category
 	// vacíos desactivan cada filtro.
 	ListPublic(ctx context.Context, search string, category campaign.Category, limit, offset int32) ([]campaign.Campaign, error)
+	// ListPublicByOrg lista las campañas visibles públicamente (active/paused/
+	// finished — misma política que GetPublicBySlug) de un organizador, para
+	// su página de perfil persistente (/org/:slug).
+	ListPublicByOrg(ctx context.Context, orgID uuid.UUID, limit, offset int32) ([]campaign.Campaign, error)
 	// GetFeatured devuelve la campaña activa con el aporte confirmado más
 	// reciente — la "más caliente" (inspirado en Vaki), found=false si
 	// ninguna campaña activa tiene aportes confirmados todavía.

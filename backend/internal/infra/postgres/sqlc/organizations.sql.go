@@ -13,13 +13,18 @@ import (
 )
 
 const createOrganization = `-- name: CreateOrganization :one
-INSERT INTO organizations (name, kind)
-VALUES ($1, 'personal')
-RETURNING id, name, kind, commission_rate, rut, payout_bank, payout_account_type, payout_account_number, payout_holder_name, created_at, updated_at
+INSERT INTO organizations (name, kind, slug)
+VALUES ($1, 'personal', $2)
+RETURNING id, name, kind, commission_rate, rut, payout_bank, payout_account_type, payout_account_number, payout_holder_name, created_at, updated_at, slug
 `
 
-func (q *Queries) CreateOrganization(ctx context.Context, name string) (Organization, error) {
-	row := q.db.QueryRow(ctx, createOrganization, name)
+type CreateOrganizationParams struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
+func (q *Queries) CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error) {
+	row := q.db.QueryRow(ctx, createOrganization, arg.Name, arg.Slug)
 	var i Organization
 	err := row.Scan(
 		&i.ID,
@@ -33,12 +38,13 @@ func (q *Queries) CreateOrganization(ctx context.Context, name string) (Organiza
 		&i.PayoutHolderName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Slug,
 	)
 	return i, err
 }
 
 const getOrganizationByID = `-- name: GetOrganizationByID :one
-SELECT id, name, kind, commission_rate, rut, payout_bank, payout_account_type, payout_account_number, payout_holder_name, created_at, updated_at FROM organizations WHERE id = $1
+SELECT id, name, kind, commission_rate, rut, payout_bank, payout_account_type, payout_account_number, payout_holder_name, created_at, updated_at, slug FROM organizations WHERE id = $1
 `
 
 func (q *Queries) GetOrganizationByID(ctx context.Context, id uuid.UUID) (Organization, error) {
@@ -56,12 +62,37 @@ func (q *Queries) GetOrganizationByID(ctx context.Context, id uuid.UUID) (Organi
 		&i.PayoutHolderName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Slug,
+	)
+	return i, err
+}
+
+const getOrganizationBySlug = `-- name: GetOrganizationBySlug :one
+SELECT id, name, kind, commission_rate, rut, payout_bank, payout_account_type, payout_account_number, payout_holder_name, created_at, updated_at, slug FROM organizations WHERE slug = $1
+`
+
+func (q *Queries) GetOrganizationBySlug(ctx context.Context, slug string) (Organization, error) {
+	row := q.db.QueryRow(ctx, getOrganizationBySlug, slug)
+	var i Organization
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Kind,
+		&i.CommissionRate,
+		&i.Rut,
+		&i.PayoutBank,
+		&i.PayoutAccountType,
+		&i.PayoutAccountNumber,
+		&i.PayoutHolderName,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Slug,
 	)
 	return i, err
 }
 
 const getPersonalOrganizationByUserID = `-- name: GetPersonalOrganizationByUserID :one
-SELECT o.id, o.name, o.kind, o.commission_rate, o.rut, o.payout_bank, o.payout_account_type, o.payout_account_number, o.payout_holder_name, o.created_at, o.updated_at FROM organizations o
+SELECT o.id, o.name, o.kind, o.commission_rate, o.rut, o.payout_bank, o.payout_account_type, o.payout_account_number, o.payout_holder_name, o.created_at, o.updated_at, o.slug FROM organizations o
 JOIN organization_members om ON om.organization_id = o.id
 WHERE om.user_id = $1 AND o.kind = 'personal'
 LIMIT 1
@@ -82,6 +113,7 @@ func (q *Queries) GetPersonalOrganizationByUserID(ctx context.Context, userID uu
 		&i.PayoutHolderName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Slug,
 	)
 	return i, err
 }

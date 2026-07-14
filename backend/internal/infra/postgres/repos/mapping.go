@@ -32,6 +32,7 @@ func mapOrganization(o sqlc.Organization) identity.Organization {
 	return identity.Organization{
 		ID:             o.ID,
 		Name:           o.Name,
+		Slug:           o.Slug,
 		Kind:           o.Kind,
 		CommissionRate: rate.Float64,
 	}

@@ -21,6 +21,16 @@ WHERE organization_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3;
 
+-- name: ListPublicCampaignsByOrg :many
+-- Página pública persistente del organizador (/org/:slug): misma política de
+-- visibilidad que GetPublicBySlug (active/paused/finished quedan visibles,
+-- draft/suspended no).
+SELECT * FROM campaigns
+WHERE organization_id = $1 AND deleted_at IS NULL
+  AND status IN ('active', 'paused', 'finished')
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
 -- name: UpdateCampaign :one
 UPDATE campaigns SET
   title = $2,

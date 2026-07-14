@@ -274,6 +274,60 @@ func (q *Queries) ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrg
 	return items, nil
 }
 
+const listPublicCampaignsByOrg = `-- name: ListPublicCampaignsByOrg :many
+SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url FROM campaigns
+WHERE organization_id = $1 AND deleted_at IS NULL
+  AND status IN ('active', 'paused', 'finished')
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListPublicCampaignsByOrgParams struct {
+	OrganizationID uuid.UUID `json:"organization_id"`
+	Limit          int32     `json:"limit"`
+	Offset         int32     `json:"offset"`
+}
+
+func (q *Queries) ListPublicCampaignsByOrg(ctx context.Context, arg ListPublicCampaignsByOrgParams) ([]Campaign, error) {
+	rows, err := q.db.Query(ctx, listPublicCampaignsByOrg, arg.OrganizationID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Campaign
+	for rows.Next() {
+		var i Campaign
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrganizationID,
+			&i.TypeKey,
+			&i.Title,
+			&i.Slug,
+			&i.Description,
+			&i.CoverFileID,
+			&i.GoalAmount,
+			&i.Currency,
+			&i.Status,
+			&i.StartsAt,
+			&i.EndsAt,
+			&i.Settings,
+			&i.DeletedAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.PublishAt,
+			&i.Category,
+			&i.VideoUrl,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listActiveCampaigns = `-- name: ListActiveCampaigns :many
 SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url FROM campaigns
 WHERE status = 'active' AND deleted_at IS NULL

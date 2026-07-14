@@ -1,23 +1,10 @@
+import { useQuery } from '@tanstack/react-query'
 import { Navigate, Link } from 'react-router-dom'
 import { MessageCircleHeart, Rocket, ShieldCheck, Sparkles, ArrowRight, QrCode, Users } from 'lucide-react'
 import { useAuth } from '../features/auth/hooks/useAuth'
-import { Button, Progress, Footer, ThemeToggle } from '../shared/ui'
-
-// Clases completas y literales a propósito: Tailwind arma su CSS
-// escaneando el código fuente en busca de nombres de clase exactos, así
-// que construir "bg-gradient-to-" + variable en runtime no generaría el
-// estilo en el build de producción.
-const gradientClasses = {
-  br: 'bg-gradient-to-br',
-  tr: 'bg-gradient-to-tr',
-  b: 'bg-gradient-to-b',
-} as const
-
-const showcaseCards = [
-  { label: 'Colecta', title: 'Techo nuevo para la sede vecinal', amount: 340000, goal: 500000, people: 28, angle: 'br' },
-  { label: 'Venta', title: 'Empanadas para el viaje de curso', amount: 210000, goal: 300000, people: 41, angle: 'tr' },
-  { label: 'Evento', title: 'Bono para la fiesta de fin de año', amount: 180000, goal: 250000, people: 19, angle: 'b' },
-] as const satisfies { label: string; title: string; amount: number; goal: number; people: number; angle: keyof typeof gradientClasses }[]
+import { listPublicCampaigns } from '../features/public-campaign/api'
+import { CampaignExploreCard } from '../features/public-campaign/components/CampaignExploreCard'
+import { Button, Footer, ThemeToggle } from '../shared/ui'
 
 const avatarInitials = ['MJ', 'PC', 'FS', 'AV', 'RT']
 
@@ -63,6 +50,15 @@ const highlights = [
 // venta y no como pantalla de trabajo.
 export function LandingPage() {
   const { user, isLoading } = useAuth()
+  // Vitrina con campañas reales (inspirado en la galería de creadores de
+  // Ceneka) en vez de tarjetas fabricadas: evita mostrar montos y nombres
+  // inventados en la home, y da algo genuino que compartir.
+  const { data: showcase } = useQuery({
+    queryKey: ['landing-showcase'],
+    queryFn: () => listPublicCampaigns(0, 3),
+    enabled: !isLoading && !user,
+  })
+  const showcaseCampaigns = showcase?.items ?? []
 
   if (isLoading) {
     return <div className="p-6 text-center text-text-secondary">Cargando…</div>
@@ -165,39 +161,18 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-5xl px-6 pb-16">
-        <div className="grid gap-4 sm:grid-cols-3">
-          {showcaseCards.map((c) => (
-            <div
-              key={c.label}
-              className="overflow-hidden rounded-2xl border border-border-default bg-bg-surface shadow-sm"
-            >
-              <div className={`relative h-24 ${gradientClasses[c.angle]} from-brand to-brand-hover`}>
-                <span className="absolute left-3 top-3 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
-                  {c.label}
-                </span>
-              </div>
-              <div className="space-y-3 p-4">
-                <p className="font-display text-sm font-bold">{c.title}</p>
-                <Progress value={c.amount} max={c.goal} />
-                <div className="flex items-center justify-between text-xs text-text-secondary">
-                  <span>
-                    <strong className="text-text-primary">${c.amount.toLocaleString('es-CL')}</strong> de $
-                    {c.goal.toLocaleString('es-CL')}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="h-3 w-3" strokeWidth={1.75} />
-                    {c.people}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-3 text-center text-xs text-text-secondary">
-          Así se ven las campañas cuando las comparten — claras y directo al grano.
-        </p>
-      </section>
+      {showcaseCampaigns.length > 0 && (
+        <section className="mx-auto max-w-5xl px-6 pb-16">
+          <div className="grid gap-4 sm:grid-cols-3">
+            {showcaseCampaigns.map((c) => (
+              <CampaignExploreCard key={c.slug} campaign={c} />
+            ))}
+          </div>
+          <p className="mt-3 text-center text-xs text-text-secondary">
+            Campañas reales que ya están recibiendo aportes ahora mismo.
+          </p>
+        </section>
+      )}
 
       <section className="mx-auto max-w-5xl px-6 pb-16">
         <h2 className="mb-8 text-center font-display text-2xl font-bold tracking-tight">

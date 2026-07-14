@@ -325,7 +325,7 @@ func (h *AuthHandler) toUserResponse(u identity.User) dto.UserResponse {
 }
 
 func toOrganizationResponse(o identity.Organization) dto.OrganizationResponse {
-	return dto.OrganizationResponse{ID: o.ID.String(), Name: o.Name, Kind: o.Kind}
+	return dto.OrganizationResponse{ID: o.ID.String(), Name: o.Name, Slug: o.Slug, Kind: o.Kind}
 }
 
 func sessionExpired() error {

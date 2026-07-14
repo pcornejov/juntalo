@@ -52,6 +52,7 @@ func mountPublicRoutes(app fiber.Router, apiV1 fiber.Router, h *handlers.PublicH
 	apiV1.Get("/public/campaigns", h.ListJSON)
 	apiV1.Get("/public/campaigns/featured", h.Featured)
 	apiV1.Get("/public/campaigns/:slug", h.GetJSON)
+	apiV1.Get("/public/organizations/:slug", h.OrgProfile)
 	app.Get("/c/:slug", h.OGPage)
 }
 

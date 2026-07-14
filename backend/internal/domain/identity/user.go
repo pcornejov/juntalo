@@ -19,6 +19,7 @@ type User struct {
 type Organization struct {
 	ID             uuid.UUID
 	Name           string
+	Slug           string
 	Kind           string
 	CommissionRate float64
 }

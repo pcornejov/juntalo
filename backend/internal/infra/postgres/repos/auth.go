@@ -15,6 +15,16 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/sqlc"
 )
 
+// orgSlugSuffixLen mirrors campaign.WithSuffix's 4-char UUID suffix, but
+// generamos el slug de organización siempre con sufijo (no lo intentamos
+// primero sin él): el nombre por defecto "Organización de <nombre>" repite
+// mucho entre usuarios distintos, así que la colisión sin sufijo sería
+// frecuente en vez de excepcional.
+func newOrgSlug(name string) string {
+	base := identity.SlugifyOrgName(name)
+	return fmt.Sprintf("%s-%s", base, uuid.New().String()[:6])
+}
+
 // AuthRepo implements app.AuthRepository. Register runs the user+identity+
 // organization+membership transaction described in Etapa 3 §2.
 type AuthRepo struct {
@@ -48,7 +58,11 @@ func (r *AuthRepo) Register(ctx context.Context, in app.RegisterInput) (identity
 			return fmt.Errorf("create identity: %w", err)
 		}
 
-		o, err := q.CreateOrganization(ctx, "Organización de "+in.FullName)
+		orgName := "Organización de " + in.FullName
+		o, err := q.CreateOrganization(ctx, sqlc.CreateOrganizationParams{
+			Name: orgName,
+			Slug: newOrgSlug(orgName),
+		})
 		if err != nil {
 			return fmt.Errorf("create organization: %w", err)
 		}

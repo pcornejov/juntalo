@@ -109,6 +109,7 @@ type Organization struct {
 	PayoutHolderName    pgtype.Text        `json:"payout_holder_name"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	Slug                string             `json:"slug"`
 }
 
 type OrganizationMember struct {

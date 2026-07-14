@@ -96,6 +96,16 @@ type PublicCampaignListResponse struct {
 	HasMore bool                     `json:"has_more"`
 }
 
+// OrgProfileResponse backs la página pública persistente del organizador
+// (/org/:slug), inspirada en el link único de por vida de Ceneka.
+type OrgProfileResponse struct {
+	Name       string                   `json:"name"`
+	Slug       string                   `json:"slug"`
+	IsVerified bool                     `json:"is_verified"`
+	Campaigns  []PublicCampaignResponse `json:"campaigns"`
+	HasMore    bool                     `json:"has_more"`
+}
+
 type CampaignTypeResponse struct {
 	Key                string `json:"key"`
 	Name               string `json:"name"`

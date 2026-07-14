@@ -16,7 +16,10 @@ import { CampaignListPage } from '../features/campaigns/pages/CampaignListPage'
 import { CampaignFormPage } from '../features/campaigns/pages/CampaignFormPage'
 import { CampaignDetailPage } from '../features/campaigns/pages/CampaignDetailPage'
 import { ExploreCampaignsPage } from '../features/public-campaign/pages/ExploreCampaignsPage'
+import { OrgProfilePage } from '../features/public-campaign/pages/OrgProfilePage'
 import { PublicCampaignPage } from '../features/public-campaign/pages/PublicCampaignPage'
+import { BlogIndexPage } from '../features/blog/pages/BlogIndexPage'
+import { BlogArticlePage } from '../features/blog/pages/BlogArticlePage'
 import { BackofficePage } from '../features/admin/pages/BackofficePage'
 
 export const router = createBrowserRouter([
@@ -30,6 +33,9 @@ export const router = createBrowserRouter([
   { path: '/privacidad', element: <PrivacyPage /> },
   { path: '/como-funciona', element: <HowItWorksPage /> },
   { path: '/explorar', element: <ExploreCampaignsPage /> },
+  { path: '/org/:slug', element: <OrgProfilePage /> },
+  { path: '/consejos', element: <BlogIndexPage /> },
+  { path: '/consejos/:slug', element: <BlogArticlePage /> },
   { path: '/public/:slug', element: <PublicCampaignPage /> },
   { path: '/c/:slug', element: <RedirectToPublicCampaign /> },
   { path: '*', element: <NotFoundPage /> },

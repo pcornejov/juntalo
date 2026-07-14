@@ -62,6 +62,25 @@ func (s *ListService) ListPublic(ctx context.Context, search string, category ca
 	return out, nil
 }
 
+// ListPublicByOrg backs la página pública persistente del organizador
+// (/org/:slug): igual que ListPublic pero acotado a una sola organización.
+func (s *ListService) ListPublicByOrg(ctx context.Context, orgID uuid.UUID, limit, offset int32) ([]CampaignWithTotals, error) {
+	items, err := s.repo.ListPublicByOrg(ctx, orgID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]CampaignWithTotals, 0, len(items))
+	for _, c := range items {
+		totals, err := s.repo.GetTotals(ctx, c.ID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, CampaignWithTotals{Campaign: c, Totals: totals})
+	}
+	return out, nil
+}
+
 // GetFeatured backs la tarjeta "campaña destacada" en la sección pública
 // (inspirado en Vaki): la campaña activa con el aporte confirmado más
 // reciente. found=false si ninguna todavía tiene aportes confirmados.

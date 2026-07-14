@@ -34,6 +34,7 @@ type UserResponse struct {
 type OrganizationResponse struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+	Slug string `json:"slug"`
 	Kind string `json:"kind"`
 }
 

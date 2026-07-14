@@ -49,6 +49,10 @@ func (f *fakeOrgRepo) GetByID(_ context.Context, id uuid.UUID) (identity.Organiz
 	return identity.Organization{}, nil
 }
 
+func (f *fakeOrgRepo) GetBySlug(context.Context, string) (identity.Organization, bool, error) {
+	return identity.Organization{}, false, nil
+}
+
 func (f *fakeOrgRepo) GetOwnerEmail(context.Context, uuid.UUID) (string, string, error) {
 	return "", "", nil
 }

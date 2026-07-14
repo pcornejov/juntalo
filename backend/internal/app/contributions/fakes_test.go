@@ -56,6 +56,10 @@ func (f *fakeCampaignRepo) PublishDueCampaigns(context.Context) ([]campaign.Camp
 	return nil, nil
 }
 
+func (f *fakeCampaignRepo) ListPublicByOrg(context.Context, uuid.UUID, int32, int32) ([]campaign.Campaign, error) {
+	return nil, nil
+}
+
 func (f *fakeCampaignRepo) ListPublic(context.Context, string, campaign.Category, int32, int32) ([]campaign.Campaign, error) {
 	return nil, nil
 }
@@ -76,6 +80,10 @@ func (f *fakeOrgRepo) GetPersonalByUserID(context.Context, uuid.UUID) (identity.
 func (f *fakeOrgRepo) GetByID(_ context.Context, id uuid.UUID) (identity.Organization, error) {
 	return identity.Organization{ID: id, CommissionRate: f.byID[id]}, nil
 }
+func (f *fakeOrgRepo) GetBySlug(context.Context, string) (identity.Organization, bool, error) {
+	return identity.Organization{}, false, nil
+}
+
 func (f *fakeOrgRepo) GetOwnerEmail(context.Context, uuid.UUID) (string, string, error) {
 	return "", "", nil
 }

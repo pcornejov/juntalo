@@ -11,8 +11,13 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/api/dto"
 	"github.com/pcornejov/juntalo/backend/internal/app"
 	campaignsuc "github.com/pcornejov/juntalo/backend/internal/app/campaigns"
+	"github.com/pcornejov/juntalo/backend/internal/domain/apperr"
 	"github.com/pcornejov/juntalo/backend/internal/domain/campaign"
 )
+
+// errOrgNotFound: un slug de organización inexistente responde 404 igual que
+// una campaña ajena — no confirma ni niega su existencia.
+var errOrgNotFound = apperr.New("organization_not_found", "Organización no encontrada")
 
 // botUserAgents identifies link-preview crawlers that need server-rendered OG
 // tags without executing JS (Etapa 2 §1, Etapa 4 §4).
@@ -115,6 +120,63 @@ func (h *PublicHandler) resolveOrganizer(c *fiber.Ctx, orgID uuid.UUID) (name st
 		return "", false
 	}
 	return name, verified
+}
+
+// OrgProfile implements GET /public/organizations/:slug: la página pública
+// persistente del organizador (inspirada en el link único de por vida de
+// Ceneka) — a diferencia de una campaña puntual, lista todas las campañas
+// visibles (active/paused/finished) de esa organización.
+func (h *PublicHandler) OrgProfile(c *fiber.Ctx) error {
+	slug := c.Params("slug")
+	org, found, err := h.orgs.GetBySlug(c.Context(), slug)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	if !found {
+		return dto.WriteError(c, errOrgNotFound)
+	}
+
+	limit := c.QueryInt("limit", defaultPublicListLimit)
+	if limit <= 0 || limit > maxPublicListLimit {
+		limit = defaultPublicListLimit
+	}
+	offset := c.QueryInt("offset", 0)
+	if offset < 0 {
+		offset = 0
+	}
+
+	items, err := h.list.ListPublicByOrg(c.Context(), org.ID, int32(limit+1), int32(offset))
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	hasMore := len(items) > limit
+	if hasMore {
+		items = items[:limit]
+	}
+
+	_, isVerified := h.resolveOrganizer(c, org.ID)
+
+	campaigns := make([]dto.PublicCampaignResponse, len(items))
+	for i, item := range items {
+		images := resolveGalleryURLs(c.Context(), h.images, h.storage, item.Campaign.ID)
+		coverURL := resolveCoverURL(c, h.files, h.storage, item.Campaign.CoverFileID)
+		if len(images) > 0 {
+			coverURL = &images[0]
+		}
+		resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images)
+		resp.PublicURL = h.selfURL + "/c/" + item.Campaign.Slug
+		resp.OrganizerName = org.Name
+		resp.IsVerified = isVerified
+		campaigns[i] = resp
+	}
+
+	return c.JSON(dto.OrgProfileResponse{
+		Name:       org.Name,
+		Slug:       org.Slug,
+		IsVerified: isVerified,
+		Campaigns:  campaigns,
+		HasMore:    hasMore,
+	})
 }
 
 // GetJSON is consumed by the SPA's public campaign page (Etapa 4 §4).

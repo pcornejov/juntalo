@@ -2,9 +2,11 @@ package repos
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/pcornejov/juntalo/backend/internal/domain/identity"
@@ -33,6 +35,17 @@ func (r *OrganizationRepo) GetByID(ctx context.Context, id uuid.UUID) (identity.
 		return identity.Organization{}, fmt.Errorf("get organization: %w", err)
 	}
 	return mapOrganization(o), nil
+}
+
+func (r *OrganizationRepo) GetBySlug(ctx context.Context, slug string) (identity.Organization, bool, error) {
+	o, err := r.q.GetOrganizationBySlug(ctx, slug)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return identity.Organization{}, false, nil
+		}
+		return identity.Organization{}, false, fmt.Errorf("get organization by slug: %w", err)
+	}
+	return mapOrganization(o), true, nil
 }
 
 // GetOwnerEmail busca el dueño ('owner') de la organización — a esta escala

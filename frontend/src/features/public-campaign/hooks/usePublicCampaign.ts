@@ -2,8 +2,10 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import {
   EXPLORE_CAMPAIGNS_PAGE_SIZE,
   getFeaturedCampaign,
+  getOrgProfile,
   getPublicCampaign,
   listPublicCampaigns,
+  ORG_PROFILE_PAGE_SIZE,
 } from '../api'
 
 export function usePublicCampaign(slug: string | undefined) {
@@ -37,4 +39,26 @@ export function useFeaturedCampaign() {
     queryKey: ['featured-campaign'],
     queryFn: getFeaturedCampaign,
   })
+}
+
+// useOrgProfile pagina las campañas del organizador con el mismo patrón que
+// useExploreCampaigns; nombre/slug/verificación se toman de la última
+// página cargada (son constantes entre páginas de la misma organización).
+export function useOrgProfile(slug: string | undefined) {
+  const query = useInfiniteQuery({
+    queryKey: ['org-profile', slug],
+    queryFn: ({ pageParam }) => getOrgProfile(slug!, pageParam, ORG_PROFILE_PAGE_SIZE),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.has_more ? allPages.length * ORG_PROFILE_PAGE_SIZE : undefined,
+    enabled: !!slug,
+  })
+  const lastPage = query.data?.pages[query.data.pages.length - 1]
+  return {
+    ...query,
+    name: lastPage?.name,
+    orgSlug: lastPage?.slug,
+    isVerified: lastPage?.is_verified ?? false,
+    campaigns: query.data?.pages.flatMap((p) => p.campaigns) ?? [],
+  }
 }

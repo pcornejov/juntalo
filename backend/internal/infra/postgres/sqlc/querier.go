@@ -18,7 +18,7 @@ type Querier interface {
 	CreateContributor(ctx context.Context, arg CreateContributorParams) (Contributor, error)
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) error
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
-	CreateOrganization(ctx context.Context, name string) (Organization, error)
+	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
 	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
@@ -37,6 +37,7 @@ type Querier interface {
 	GetContributorByID(ctx context.Context, id uuid.UUID) (Contributor, error)
 	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
 	GetOrganizationByID(ctx context.Context, id uuid.UUID) (Organization, error)
+	GetOrganizationBySlug(ctx context.Context, slug string) (Organization, error)
 	GetOrganizationOwnerByOrgID(ctx context.Context, organizationID uuid.UUID) (GetOrganizationOwnerByOrgIDRow, error)
 	GetPasswordIdentityByUserID(ctx context.Context, userID uuid.UUID) (UserIdentity, error)
 	GetPaymentByContributionID(ctx context.Context, contributionID uuid.UUID) (Payment, error)
@@ -56,6 +57,7 @@ type Querier interface {
 	ListAdminUsers(ctx context.Context, arg ListAdminUsersParams) ([]ListAdminUsersRow, error)
 	ListCampaignImages(ctx context.Context, campaignID uuid.UUID) ([]ListCampaignImagesRow, error)
 	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
+	ListPublicCampaignsByOrg(ctx context.Context, arg ListPublicCampaignsByOrgParams) ([]Campaign, error)
 	ListContributionsByCampaign(ctx context.Context, arg ListContributionsByCampaignParams) ([]Contribution, error)
 	ListParticipantsByCampaign(ctx context.Context, arg ListParticipantsByCampaignParams) ([]ListParticipantsByCampaignRow, error)
 	ListParticipantsByCampaignFiltered(ctx context.Context, arg ListParticipantsByCampaignFilteredParams) ([]ListParticipantsByCampaignFilteredRow, error)

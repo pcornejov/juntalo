@@ -118,6 +118,22 @@ func (r *CampaignRepo) ListPublic(ctx context.Context, search string, category c
 	return out, nil
 }
 
+func (r *CampaignRepo) ListPublicByOrg(ctx context.Context, orgID uuid.UUID, limit, offset int32) ([]campaign.Campaign, error) {
+	rows, err := r.q.ListPublicCampaignsByOrg(ctx, sqlc.ListPublicCampaignsByOrgParams{
+		OrganizationID: orgID,
+		Limit:          limit,
+		Offset:         offset,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list public campaigns by org: %w", err)
+	}
+	out := make([]campaign.Campaign, len(rows))
+	for i, c := range rows {
+		out[i] = mapCampaign(c)
+	}
+	return out, nil
+}
+
 func (r *CampaignRepo) GetFeatured(ctx context.Context) (campaign.Campaign, bool, error) {
 	c, err := r.q.GetFeaturedCampaign(ctx)
 	if err != nil {

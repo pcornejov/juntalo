@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Search } from 'lucide-react'
+import { Link2, Plus, Search } from 'lucide-react'
 import { useCampaigns } from '../hooks/useCampaigns'
+import { useAuth } from '../../auth/hooks/useAuth'
 import { Button, Input } from '../../../shared/ui'
 import { CampaignCard } from '../components/CampaignCard'
 import { normalizeForSearch } from '../../../shared/lib/search'
@@ -18,8 +19,18 @@ const statusOptions: { value: Campaign['status'] | 'all'; label: string }[] = [
 
 export function CampaignListPage() {
   const { campaigns, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCampaigns()
+  const { organization } = useAuth()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<Campaign['status'] | 'all'>('all')
+  const [copied, setCopied] = useState(false)
+
+  async function copyOrgLink() {
+    if (!organization) return
+    const url = `${window.location.origin}/org/${organization.slug}`
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const filtered = useMemo(() => {
     const query = normalizeForSearch(search.trim())
@@ -34,12 +45,20 @@ export function CampaignListPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold tracking-tight">Mis campañas</h1>
-        <Link to="/dashboard/campaigns/new">
-          <Button className="flex items-center gap-1.5">
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Nueva campaña
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {organization && (
+            <Button variant="secondary" className="flex items-center gap-1.5" onClick={copyOrgLink}>
+              <Link2 className="h-4 w-4" strokeWidth={2} />
+              {copied ? 'Link copiado' : 'Compartir mi página'}
+            </Button>
+          )}
+          <Link to="/dashboard/campaigns/new">
+            <Button className="flex items-center gap-1.5">
+              <Plus className="h-4 w-4" strokeWidth={2} />
+              Nueva campaña
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {isLoading && <p className="text-text-secondary">Cargando…</p>}

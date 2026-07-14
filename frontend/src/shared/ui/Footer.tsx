@@ -15,6 +15,9 @@ export function Footer() {
         <Link to="/como-funciona" className="underline">
           Cómo funciona
         </Link>
+        <Link to="/consejos" className="underline">
+          Consejos
+        </Link>
         <Link to="/privacidad" className="underline">
           Política de privacidad
         </Link>
