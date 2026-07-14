@@ -3,6 +3,24 @@ import { MessageCircleHeart, Rocket, ShieldCheck, Sparkles, ArrowRight, QrCode, 
 import { useAuth } from '../features/auth/hooks/useAuth'
 import { Button, Progress, Footer } from '../shared/ui'
 
+// Clases completas y literales a propósito: Tailwind arma su CSS
+// escaneando el código fuente en busca de nombres de clase exactos, así
+// que construir "bg-gradient-to-" + variable en runtime no generaría el
+// estilo en el build de producción.
+const gradientClasses = {
+  br: 'bg-gradient-to-br',
+  tr: 'bg-gradient-to-tr',
+  b: 'bg-gradient-to-b',
+} as const
+
+const showcaseCards = [
+  { label: 'Colecta', title: 'Techo nuevo para la sede vecinal', amount: 340000, goal: 500000, people: 28, angle: 'br' },
+  { label: 'Venta', title: 'Empanadas para el viaje de curso', amount: 210000, goal: 300000, people: 41, angle: 'tr' },
+  { label: 'Evento', title: 'Bono para la fiesta de fin de año', amount: 180000, goal: 250000, people: 19, angle: 'b' },
+] as const satisfies { label: string; title: string; amount: number; goal: number; people: number; angle: keyof typeof gradientClasses }[]
+
+const avatarInitials = ['MJ', 'PC', 'FS', 'AV', 'RT']
+
 const steps = [
   {
     icon: Rocket,
@@ -62,54 +80,107 @@ export function LandingPage() {
         </Link>
       </header>
 
-      <section className="mx-auto max-w-3xl px-6 pb-16 pt-10 text-center sm:pt-16">
-        <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-accent-tint px-3 py-1 text-xs font-semibold text-brand-hover">
-          <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />
-          Crea y comparte en minutos
-        </span>
-        <h1 className="text-balance font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
-          Junta plata con tu gente,
-          <br className="hidden sm:block" /> sin vueltas
-        </h1>
-        <p className="mx-auto mt-5 max-w-lg text-balance text-base leading-relaxed text-text-secondary sm:text-lg">
-          Colectas, ventas y rifas con un link que se ve bien en WhatsApp. Tú organizas, ellos
-          aportan desde el celular — sin apps, sin cuentas, sin fricción.
-        </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link to="/register" className="w-full sm:w-auto">
-            <Button variant="cta" className="flex w-full items-center justify-center gap-2 sm:w-auto">
-              Crear mi campaña gratis
-              <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
-            </Button>
-          </Link>
-          <Link
-            to="/login"
-            className="text-sm font-medium text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
-          >
-            Ya tengo cuenta
-          </Link>
+      <section className="relative overflow-hidden">
+        {/* Blobs decorativos + grilla de puntos: sin fotos random (probamos
+            picsum y salían fotos sin relación, tipo cerros o escaleras) —
+            esto se ve intencional en cualquier tema y no depende de bajar
+            ni alojar imágenes de terceros. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.4]"
+          style={{
+            backgroundImage: 'radial-gradient(var(--color-border-default) 1px, transparent 1px)',
+            backgroundSize: '28px 28px',
+            maskImage: 'linear-gradient(to bottom, black, transparent)',
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-brand opacity-20 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 top-20 h-64 w-64 rounded-full bg-brand-hover opacity-20 blur-3xl"
+        />
+
+        <div className="relative mx-auto max-w-3xl px-6 pb-10 pt-10 text-center sm:pt-16">
+          <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-accent-tint px-3 py-1 text-xs font-semibold text-brand-hover">
+            <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Crea y comparte en minutos
+          </span>
+          <h1 className="text-balance font-display text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+            Junta plata con tu gente,
+            <br className="hidden sm:block" /> sin vueltas
+          </h1>
+          <p className="mx-auto mt-5 max-w-lg text-balance text-base leading-relaxed text-text-secondary sm:text-lg">
+            Colectas, ventas y rifas con un link que se ve bien en WhatsApp. Tú organizas, ellos
+            aportan desde el celular — sin apps, sin cuentas, sin fricción.
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link to="/register" className="w-full sm:w-auto">
+              <Button variant="cta" className="flex w-full items-center justify-center gap-2 sm:w-auto">
+                Crear mi campaña gratis
+                <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+              </Button>
+            </Link>
+            <Link
+              to="/login"
+              className="text-sm font-medium text-text-secondary underline-offset-4 hover:text-text-primary hover:underline"
+            >
+              Ya tengo cuenta
+            </Link>
+          </div>
+
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <div className="flex -space-x-2">
+              {avatarInitials.map((initials, i) => (
+                <div
+                  key={initials}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-bg-subtle text-[10px] font-bold text-white"
+                  style={{ backgroundColor: i % 2 === 0 ? 'var(--color-brand)' : 'var(--color-brand-hover)' }}
+                >
+                  {initials}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-text-secondary">
+              Familias, cursos y juntas de vecinos ya están juntando plata así
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-md px-6 pb-16">
-        <div className="overflow-hidden rounded-2xl border border-border-default bg-bg-surface shadow-sm">
-          <div className="h-28 bg-gradient-to-br from-brand to-brand-hover" />
-          <div className="space-y-3 p-4">
-            <p className="font-display text-sm font-bold">Techo nuevo para la sede vecinal</p>
-            <Progress value={340000} max={500000} />
-            <div className="flex items-center justify-between text-xs text-text-secondary">
-              <span>
-                <strong className="text-text-primary">$340.000</strong> de $500.000
-              </span>
-              <span className="flex items-center gap-1">
-                <Users className="h-3 w-3" strokeWidth={1.75} />
-                28 aportantes
-              </span>
+      <section className="mx-auto max-w-5xl px-6 pb-16">
+        <div className="grid gap-4 sm:grid-cols-3">
+          {showcaseCards.map((c) => (
+            <div
+              key={c.label}
+              className="overflow-hidden rounded-2xl border border-border-default bg-bg-surface shadow-sm"
+            >
+              <div className={`relative h-24 ${gradientClasses[c.angle]} from-brand to-brand-hover`}>
+                <span className="absolute left-3 top-3 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
+                  {c.label}
+                </span>
+              </div>
+              <div className="space-y-3 p-4">
+                <p className="font-display text-sm font-bold">{c.title}</p>
+                <Progress value={c.amount} max={c.goal} />
+                <div className="flex items-center justify-between text-xs text-text-secondary">
+                  <span>
+                    <strong className="text-text-primary">${c.amount.toLocaleString('es-CL')}</strong> de $
+                    {c.goal.toLocaleString('es-CL')}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" strokeWidth={1.75} />
+                    {c.people}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
+          ))}
         </div>
         <p className="mt-3 text-center text-xs text-text-secondary">
-          Así se ve tu campaña cuando la comparten — clara y directo al grano.
+          Así se ven las campañas cuando las comparten — claras y directo al grano.
         </p>
       </section>
 
