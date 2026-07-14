@@ -67,6 +67,10 @@ type OrganizationRepository interface {
 	// GetOwnerEmail se usa para notificar al organizador de nuevos aportes
 	// (Hito "notificaciones") — no requiere UI de equipos, solo el dueño.
 	GetOwnerEmail(ctx context.Context, id uuid.UUID) (email, fullName string, err error)
+	// GetOwnerInfo agrega IsVerified (email del dueño verificado) sobre
+	// GetOwnerEmail — proxy honesto para el badge de verificación de la
+	// página pública (inspirado en Vaki), sin cola de revisión manual.
+	GetOwnerInfo(ctx context.Context, id uuid.UUID) (fullName string, isVerified bool, err error)
 }
 
 type RefreshTokenRepository interface {
@@ -100,6 +104,7 @@ type TokenSigner interface {
 type CreateCampaignInput struct {
 	OrganizationID uuid.UUID
 	TypeKey        campaign.TypeKey
+	Category       campaign.Category
 	Title          string
 	Slug           string
 	Description    string
@@ -121,6 +126,7 @@ type UpdateCampaignInput struct {
 	EndsAt      *time.Time
 	CoverFileID *uuid.UUID
 	PublishAt   *time.Time
+	Category    campaign.Category
 }
 
 type CampaignRepository interface {
@@ -131,9 +137,13 @@ type CampaignRepository interface {
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	ListByOrg(ctx context.Context, orgID uuid.UUID, limit, offset int32) ([]campaign.Campaign, error)
 	// ListPublic lista campañas activas de cualquier organización, para la
-	// sección pública de "Campañas activas" (Etapa 4) — search vacío
-	// desactiva el filtro de búsqueda por título.
-	ListPublic(ctx context.Context, search string, limit, offset int32) ([]campaign.Campaign, error)
+	// sección pública de "Campañas activas" (Etapa 4) — search/category
+	// vacíos desactivan cada filtro.
+	ListPublic(ctx context.Context, search string, category campaign.Category, limit, offset int32) ([]campaign.Campaign, error)
+	// GetFeatured devuelve la campaña activa con el aporte confirmado más
+	// reciente — la "más caliente" (inspirado en Vaki), found=false si
+	// ninguna campaña activa tiene aportes confirmados todavía.
+	GetFeatured(ctx context.Context) (campaign.Campaign, bool, error)
 	Update(ctx context.Context, in UpdateCampaignInput) (campaign.Campaign, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status campaign.Status) (campaign.Campaign, error)
 	SoftDelete(ctx context.Context, id uuid.UUID) error

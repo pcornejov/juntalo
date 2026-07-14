@@ -32,6 +32,7 @@ type Querier interface {
 	GetCampaignBySlug(ctx context.Context, slug string) (Campaign, error)
 	GetCampaignTotals(ctx context.Context, campaignID uuid.UUID) (CampaignTotal, error)
 	GetContributionByID(ctx context.Context, id uuid.UUID) (Contribution, error)
+	GetFeaturedCampaign(ctx context.Context) (Campaign, error)
 	GetContributorByID(ctx context.Context, id uuid.UUID) (Contributor, error)
 	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
 	GetOrganizationByID(ctx context.Context, id uuid.UUID) (Organization, error)

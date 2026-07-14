@@ -14,6 +14,7 @@ export interface CampaignImage {
 export interface Campaign {
   id: string
   type_key: string
+  category: string
   title: string
   slug: string
   description: string
@@ -38,6 +39,12 @@ export interface CampaignType {
   allows_free_amount: boolean
 }
 
+export interface CampaignCategory {
+  key: string
+  label: string
+  icon: string
+}
+
 export const CAMPAIGNS_PAGE_SIZE = 20
 
 export function listCampaigns(offset = 0, limit = CAMPAIGNS_PAGE_SIZE) {
@@ -52,6 +59,7 @@ export function getCampaign(id: string) {
 
 export function createCampaign(input: {
   type_key: string
+  category?: string
   title: string
   description?: string
   goal_amount?: number
@@ -73,6 +81,7 @@ export function updateCampaign(
   input: {
     title: string
     description: string
+    category?: string
     goal_amount?: number
     starts_at?: string
     ends_at?: string
@@ -103,6 +112,10 @@ export function cloneCampaign(id: string) {
 
 export function listCampaignTypes() {
   return apiClient.get<{ items: CampaignType[] }>('/meta/campaign-types')
+}
+
+export function listCampaignCategories() {
+  return apiClient.get<{ items: CampaignCategory[] }>('/meta/campaign-categories')
 }
 
 export function addCampaignImage(campaignId: string, file: File) {

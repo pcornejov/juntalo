@@ -1,6 +1,6 @@
 -- name: CreateCampaign :one
-INSERT INTO campaigns (organization_id, type_key, title, slug, description, goal_amount, starts_at, ends_at, publish_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO campaigns (organization_id, type_key, title, slug, description, goal_amount, starts_at, ends_at, publish_at, category)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING *;
 
 -- name: GetCampaignByID :one
@@ -30,6 +30,7 @@ UPDATE campaigns SET
   ends_at = $6,
   cover_file_id = $7,
   publish_at = $8,
+  category = $9,
   updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
@@ -50,13 +51,25 @@ SELECT * FROM campaign_totals WHERE campaign_id = $1;
 
 -- name: ListActiveCampaigns :many
 -- Sección pública "Campañas activas" (Etapa 4): cualquier visitante puede
--- explorar campañas para aportar, no solo entrar por un link directo. $3
--- en NULL desactiva el filtro de búsqueda por título.
+-- explorar campañas para aportar, no solo entrar por un link directo. $3/$4
+-- en NULL desactivan cada filtro (búsqueda por título, categoría).
 SELECT * FROM campaigns
 WHERE status = 'active' AND deleted_at IS NULL
   AND ($3::text IS NULL OR title ILIKE '%' || $3 || '%')
+  AND ($4::text IS NULL OR category = $4)
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
+
+-- name: GetFeaturedCampaign :one
+-- La campaña activa "más caliente": la que tiene el aporte confirmado más
+-- reciente (inspirado en Vaki). Sin filas si ninguna campaña activa tiene
+-- aportes confirmados todavía — el caller lo trata como "sin destacada".
+SELECT c.* FROM campaigns c
+JOIN contributions ct ON ct.campaign_id = c.id
+JOIN payments p ON p.contribution_id = ct.id
+WHERE c.status = 'active' AND c.deleted_at IS NULL AND p.status = 'confirmed'
+ORDER BY p.confirmed_at DESC
+LIMIT 1;
 
 -- name: PublishDueCampaigns :many
 -- El scheduler en background (ver cmd/api) llama esto cada minuto: publica

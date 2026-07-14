@@ -53,6 +53,10 @@ func (f *fakeOrgRepo) GetOwnerEmail(context.Context, uuid.UUID) (string, string,
 	return "", "", nil
 }
 
+func (f *fakeOrgRepo) GetOwnerInfo(context.Context, uuid.UUID) (string, bool, error) {
+	return "", false, nil
+}
+
 func setupLoginFixture(t *testing.T) (*LoginService, identity.User) {
 	t.Helper()
 	authRepo := newFakeAuthRepo()

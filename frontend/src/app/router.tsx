@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { ComponentsShowcasePage } from './ComponentsShowcasePage'
 import { DashboardLayout } from './DashboardLayout'
 import { RequireAuth } from './guard'
+import { HowItWorksPage } from './HowItWorksPage'
 import { LandingPage } from './LandingPage'
 import { NotFoundPage } from './NotFoundPage'
 import { PrivacyPage } from './PrivacyPage'
@@ -26,6 +27,7 @@ export const router = createBrowserRouter([
   { path: '/verify-email', element: <VerifyEmailPage /> },
   { path: '/design', element: <ComponentsShowcasePage /> },
   { path: '/privacidad', element: <PrivacyPage /> },
+  { path: '/como-funciona', element: <HowItWorksPage /> },
   { path: '/explorar', element: <ExploreCampaignsPage /> },
   { path: '/public/:slug', element: <PublicCampaignPage /> },
   { path: '/c/:slug', element: <RedirectToPublicCampaign /> },

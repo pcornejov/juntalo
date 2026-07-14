@@ -3,6 +3,7 @@ import * as campaignsApi from '../api'
 
 const campaignsKey = ['campaigns']
 const campaignTypesKey = ['campaign-types']
+const campaignCategoriesKey = ['campaign-categories']
 
 // "Cargar más" en vez de números de página: a esta escala (campañas de un
 // solo organizador) no vale la pena una UI de paginación numerada.
@@ -32,6 +33,14 @@ export function useCampaignTypes() {
   return useQuery({
     queryKey: campaignTypesKey,
     queryFn: () => campaignsApi.listCampaignTypes().then((r) => r.items),
+    staleTime: Infinity,
+  })
+}
+
+export function useCampaignCategories() {
+  return useQuery({
+    queryKey: campaignCategoriesKey,
+    queryFn: () => campaignsApi.listCampaignCategories().then((r) => r.items),
     staleTime: Infinity,
   })
 }

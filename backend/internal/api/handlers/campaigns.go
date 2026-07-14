@@ -110,6 +110,7 @@ func (h *CampaignHandler) Create(c *fiber.Ctx) error {
 	created, err := h.create.Create(c.Context(), campaignsuc.CreateInput{
 		OrganizationID: orgID,
 		TypeKey:        campaign.TypeKey(req.TypeKey),
+		Category:       campaign.Category(req.Category),
 		Title:          req.Title,
 		Description:    req.Description,
 		GoalAmount:     goalFromRequest(req.GoalAmount),
@@ -246,6 +247,7 @@ func (h *CampaignHandler) Update(c *fiber.Ctx) error {
 	if _, err := h.update.Update(c.Context(), id, orgID, campaignsuc.UpdateInput{
 		Title:          req.Title,
 		Description:    req.Description,
+		Category:       campaign.Category(req.Category),
 		GoalAmount:     goalFromRequest(req.GoalAmount),
 		StartsAt:       req.StartsAt,
 		EndsAt:         req.EndsAt,
@@ -455,6 +457,7 @@ func (h *CampaignHandler) toResponse(c *fiber.Ctx, camp campaign.Campaign, total
 	resp := dto.CampaignResponse{
 		ID:          camp.ID.String(),
 		TypeKey:     string(camp.TypeKey),
+		Category:    string(camp.Category),
 		Title:       camp.Title,
 		Slug:        camp.Slug,
 		Description: camp.Description,

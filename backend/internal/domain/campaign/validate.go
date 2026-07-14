@@ -40,6 +40,20 @@ func ValidateTitle(title string) error {
 	return nil
 }
 
+var errUnknownCategory = apperr.New("unknown_campaign_category", "Categoría de campaña desconocida")
+
+// ValidateCategory acepta vacío (el caller debe resolverlo a CategoryOtro
+// antes de persistir) — solo rechaza un valor que no está en el registro.
+func ValidateCategory(c Category) error {
+	if c == "" {
+		return nil
+	}
+	if !IsValidCategory(c) {
+		return errUnknownCategory
+	}
+	return nil
+}
+
 var errGoalBelowRaised = apperr.New("goal_below_raised", "La meta no puede ser menor a lo ya recaudado")
 
 // ValidateGoalUpdate enforces that a campaign's goal never drops below what's

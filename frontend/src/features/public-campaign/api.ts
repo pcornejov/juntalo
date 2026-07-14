@@ -9,6 +9,7 @@ export interface PublicCampaign {
   images: string[]
   goal_amount?: number
   status: string
+  category: string
   totals: Totals
   cta: string
   unit: string
@@ -32,12 +33,26 @@ export const EXPLORE_CAMPAIGNS_PAGE_SIZE = 12
 // listPublicCampaigns backs la sección "Explorar campañas": cualquier
 // visitante puede navegar campañas activas de cualquier organizador, no
 // solo entrar por un link directo (Etapa 4).
-export function listPublicCampaigns(offset = 0, limit = EXPLORE_CAMPAIGNS_PAGE_SIZE, search = '') {
+export function listPublicCampaigns(
+  offset = 0,
+  limit = EXPLORE_CAMPAIGNS_PAGE_SIZE,
+  search = '',
+  category = '',
+) {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
   if (search) params.set('q', search)
+  if (category) params.set('category', category)
   return apiClient.get<{ items: PublicCampaign[]; has_more: boolean }>(
     `/public/campaigns?${params.toString()}`,
   )
+}
+
+// getFeaturedCampaign devuelve undefined si aún no hay campaña "más
+// caliente" (backend responde 204 No Content, que apiClient.get resuelve a
+// undefined) — inspirado en Vaki, se calcula por el aporte confirmado más
+// reciente, no un campo manual del organizador.
+export function getFeaturedCampaign() {
+  return apiClient.get<PublicCampaign | undefined>('/public/campaigns/featured')
 }
 
 export interface StartContributionInput {

@@ -82,6 +82,12 @@ export function LandingPage() {
           >
             Explorar campañas
           </Link>
+          <Link
+            to="/como-funciona"
+            className="text-sm font-medium text-text-secondary hover:text-text-primary"
+          >
+            Cómo funciona
+          </Link>
           <ThemeToggle />
           <Link to="/login" className="text-sm font-medium text-text-secondary hover:text-text-primary">
             Ingresar

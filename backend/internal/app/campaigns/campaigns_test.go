@@ -107,6 +107,10 @@ func (f *fakeCampaignRepo) PublishDueCampaigns(context.Context) ([]campaign.Camp
 	return nil, nil
 }
 
-func (f *fakeCampaignRepo) ListPublic(context.Context, string, int32, int32) ([]campaign.Campaign, error) {
+func (f *fakeCampaignRepo) ListPublic(context.Context, string, campaign.Category, int32, int32) ([]campaign.Campaign, error) {
 	return nil, nil
+}
+
+func (f *fakeCampaignRepo) GetFeatured(context.Context) (campaign.Campaign, bool, error) {
+	return campaign.Campaign{}, false, nil
 }

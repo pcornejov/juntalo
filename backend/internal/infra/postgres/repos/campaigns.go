@@ -28,6 +28,7 @@ func (r *CampaignRepo) Create(ctx context.Context, in app.CreateCampaignInput) (
 	c, err := r.q.CreateCampaign(ctx, sqlc.CreateCampaignParams{
 		OrganizationID: in.OrganizationID,
 		TypeKey:        string(in.TypeKey),
+		Category:       string(in.Category),
 		Title:          in.Title,
 		Slug:           in.Slug,
 		Description:    in.Description,
@@ -99,11 +100,12 @@ func (r *CampaignRepo) ListByOrg(ctx context.Context, orgID uuid.UUID, limit, of
 	return out, nil
 }
 
-func (r *CampaignRepo) ListPublic(ctx context.Context, search string, limit, offset int32) ([]campaign.Campaign, error) {
+func (r *CampaignRepo) ListPublic(ctx context.Context, search string, category campaign.Category, limit, offset int32) ([]campaign.Campaign, error) {
 	rows, err := r.q.ListActiveCampaigns(ctx, sqlc.ListActiveCampaignsParams{
-		Limit:  limit,
-		Offset: offset,
-		Search: pgtype.Text{String: search, Valid: search != ""},
+		Limit:    limit,
+		Offset:   offset,
+		Search:   pgtype.Text{String: search, Valid: search != ""},
+		Category: pgtype.Text{String: string(category), Valid: category != ""},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list public campaigns: %w", err)
@@ -113,6 +115,17 @@ func (r *CampaignRepo) ListPublic(ctx context.Context, search string, limit, off
 		out[i] = mapCampaign(c)
 	}
 	return out, nil
+}
+
+func (r *CampaignRepo) GetFeatured(ctx context.Context) (campaign.Campaign, bool, error) {
+	c, err := r.q.GetFeaturedCampaign(ctx)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return campaign.Campaign{}, false, nil
+		}
+		return campaign.Campaign{}, false, fmt.Errorf("get featured campaign: %w", err)
+	}
+	return mapCampaign(c), true, nil
 }
 
 func (r *CampaignRepo) Update(ctx context.Context, in app.UpdateCampaignInput) (campaign.Campaign, error) {
@@ -125,6 +138,7 @@ func (r *CampaignRepo) Update(ctx context.Context, in app.UpdateCampaignInput) (
 		EndsAt:      toTimestamptz(in.EndsAt),
 		CoverFileID: toPgUUID(in.CoverFileID),
 		PublishAt:   toTimestamptz(in.PublishAt),
+		Category:    string(in.Category),
 	})
 	if err != nil {
 		return campaign.Campaign{}, fmt.Errorf("update campaign: %w", err)

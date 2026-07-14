@@ -1,9 +1,15 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCampaignTypes, useCreateCampaign, usePublishCampaign } from '../hooks/useCampaigns'
+import {
+  useCampaignCategories,
+  useCampaignTypes,
+  useCreateCampaign,
+  usePublishCampaign,
+} from '../hooks/useCampaigns'
 import { campaignArchetypes } from '../archetypes'
 import { errorMessage } from '../../../shared/api/errors'
 import { formatCLP } from '../../../shared/lib/clp'
+import { categoryIcon } from '../../../shared/lib/categoryIcons'
 import { Button, Card, Input } from '../../../shared/ui'
 
 // El formulario crea Y publica en un solo paso (Etapa 1: crear y compartir en <2 min).
@@ -11,12 +17,14 @@ import { Button, Card, Input } from '../../../shared/ui'
 export function CampaignFormPage() {
   const navigate = useNavigate()
   const { data: types, isLoading: loadingTypes } = useCampaignTypes()
+  const { data: categories } = useCampaignCategories()
   const createCampaign = useCreateCampaign()
   const publishCampaign = usePublishCampaign()
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [goalAmount, setGoalAmount] = useState('')
+  const [category, setCategory] = useState<string>('')
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -49,6 +57,7 @@ export function CampaignFormPage() {
     try {
       const created = await createCampaign.mutateAsync({
         type_key: defaultType.key,
+        category: category || undefined,
         title,
         description: description || undefined,
         goal_amount: goalAmount ? Number(goalAmount) : undefined,
@@ -98,6 +107,33 @@ export function CampaignFormPage() {
           ))}
         </div>
       </div>
+
+      {categories && categories.length > 0 && (
+        <div className="mb-6">
+          <p className="mb-2 text-sm text-text-secondary">Categoría (opcional)</p>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((c) => {
+              const Icon = categoryIcon(c.icon)
+              const selected = category === c.key
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => setCategory(selected ? '' : c.key)}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    selected
+                      ? 'border-brand-hover bg-accent-tint text-brand-hover'
+                      : 'border-border-default bg-bg-surface text-text-secondary hover:bg-bg-subtle'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {c.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">

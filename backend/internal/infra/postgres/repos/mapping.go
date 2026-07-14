@@ -64,6 +64,7 @@ func mapCampaign(c sqlc.Campaign) campaign.Campaign {
 		ID:             c.ID,
 		OrganizationID: c.OrganizationID,
 		TypeKey:        campaign.TypeKey(c.TypeKey),
+		Category:       campaign.Category(c.Category),
 		Title:          c.Title,
 		Slug:           c.Slug,
 		Description:    c.Description,

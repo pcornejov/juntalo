@@ -38,6 +38,7 @@ type Campaign struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	PublishAt      pgtype.Timestamptz `json:"publish_at"`
+	Category       string             `json:"category"`
 }
 
 type CampaignImage struct {

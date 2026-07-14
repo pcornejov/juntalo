@@ -4,6 +4,7 @@ import "time"
 
 type CreateCampaignRequest struct {
 	TypeKey     string     `json:"type_key" validate:"required"`
+	Category    string     `json:"category"`
 	Title       string     `json:"title" validate:"required,min=3,max=120"`
 	Description string     `json:"description"`
 	GoalAmount  *int64     `json:"goal_amount"`
@@ -15,6 +16,7 @@ type CreateCampaignRequest struct {
 type UpdateCampaignRequest struct {
 	Title          string     `json:"title" validate:"required,min=3,max=120"`
 	Description    string     `json:"description"`
+	Category       string     `json:"category"`
 	GoalAmount     *int64     `json:"goal_amount"`
 	StartsAt       *time.Time `json:"starts_at"`
 	EndsAt         *time.Time `json:"ends_at"`
@@ -26,6 +28,7 @@ type UpdateCampaignRequest struct {
 type CampaignResponse struct {
 	ID          string                  `json:"id"`
 	TypeKey     string                  `json:"type_key"`
+	Category    string                  `json:"category"`
 	Title       string                  `json:"title"`
 	Slug        string                  `json:"slug"`
 	Description string                  `json:"description"`
@@ -64,17 +67,20 @@ type CampaignListResponse struct {
 }
 
 type PublicCampaignResponse struct {
-	Slug        string    `json:"slug"`
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	CoverURL    *string   `json:"cover_url,omitempty"`
-	Images      []string  `json:"images"`
-	GoalAmount  *int64    `json:"goal_amount,omitempty"`
-	Status      string    `json:"status"`
-	Totals      TotalsDTO `json:"totals"`
-	CTA         string    `json:"cta"`
-	Unit        string    `json:"unit"`
-	PublicURL   string    `json:"public_url"`
+	Slug          string    `json:"slug"`
+	Title         string    `json:"title"`
+	Description   string    `json:"description"`
+	CoverURL      *string   `json:"cover_url,omitempty"`
+	Images        []string  `json:"images"`
+	GoalAmount    *int64    `json:"goal_amount,omitempty"`
+	Status        string    `json:"status"`
+	Category      string    `json:"category"`
+	Totals        TotalsDTO `json:"totals"`
+	CTA           string    `json:"cta"`
+	Unit          string    `json:"unit"`
+	PublicURL     string    `json:"public_url"`
+	OrganizerName string    `json:"organizer_name,omitempty"`
+	IsVerified    bool      `json:"is_verified"`
 }
 
 type PublicCampaignListResponse struct {
@@ -89,4 +95,10 @@ type CampaignTypeResponse struct {
 	Unit               string `json:"unit"`
 	RequiresGoalAmount bool   `json:"requires_goal_amount"`
 	AllowsFreeAmount   bool   `json:"allows_free_amount"`
+}
+
+type CampaignCategoryResponse struct {
+	Key   string `json:"key"`
+	Label string `json:"label"`
+	Icon  string `json:"icon"`
 }

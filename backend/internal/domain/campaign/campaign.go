@@ -14,6 +14,7 @@ type Campaign struct {
 	ID             uuid.UUID
 	OrganizationID uuid.UUID
 	TypeKey        TypeKey
+	Category       Category
 	Title          string
 	Slug           string
 	Description    string

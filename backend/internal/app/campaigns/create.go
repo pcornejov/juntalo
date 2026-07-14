@@ -24,6 +24,7 @@ func NewCreateService(repo app.CampaignRepository) *CreateService {
 type CreateInput struct {
 	OrganizationID uuid.UUID
 	TypeKey        campaign.TypeKey
+	Category       campaign.Category
 	Title          string
 	Description    string
 	GoalAmount     *money.CLP
@@ -44,6 +45,13 @@ func (s *CreateService) Create(ctx context.Context, in CreateInput) (campaign.Ca
 	if err := campaign.ValidatePublishAt(in.PublishAt, campaign.StatusDraft); err != nil {
 		return campaign.Campaign{}, err
 	}
+	if err := campaign.ValidateCategory(in.Category); err != nil {
+		return campaign.Campaign{}, err
+	}
+	category := in.Category
+	if category == "" {
+		category = campaign.CategoryOtro
+	}
 
 	slug, err := s.uniqueSlug(ctx, campaign.Slugify(in.Title))
 	if err != nil {
@@ -53,6 +61,7 @@ func (s *CreateService) Create(ctx context.Context, in CreateInput) (campaign.Ca
 	return s.repo.Create(ctx, app.CreateCampaignInput{
 		OrganizationID: in.OrganizationID,
 		TypeKey:        in.TypeKey,
+		Category:       category,
 		Title:          strings.TrimSpace(in.Title),
 		Slug:           slug,
 		Description:    in.Description,

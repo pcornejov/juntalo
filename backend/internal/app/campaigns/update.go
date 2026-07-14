@@ -32,6 +32,7 @@ type UpdateInput struct {
 	// wipear silenciosamente la fecha en cada edición no relacionada).
 	PublishAt      *time.Time
 	ClearPublishAt bool
+	Category       campaign.Category
 }
 
 func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in UpdateInput) (campaign.Campaign, error) {
@@ -69,6 +70,13 @@ func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in Upda
 	if err := campaign.ValidatePublishAt(publishAt, existing.Status); err != nil {
 		return campaign.Campaign{}, err
 	}
+	if err := campaign.ValidateCategory(in.Category); err != nil {
+		return campaign.Campaign{}, err
+	}
+	category := existing.Category
+	if in.Category != "" {
+		category = in.Category
+	}
 
 	return s.repo.Update(ctx, app.UpdateCampaignInput{
 		ID:          id,
@@ -79,6 +87,7 @@ func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in Upda
 		EndsAt:      in.EndsAt,
 		CoverFileID: coverFileID,
 		PublishAt:   publishAt,
+		Category:    category,
 	})
 }
 
@@ -104,5 +113,6 @@ func (s *UpdateService) CancelSchedule(ctx context.Context, id, orgID uuid.UUID)
 		EndsAt:      existing.EndsAt,
 		CoverFileID: existing.CoverFileID,
 		PublishAt:   nil,
+		Category:    existing.Category,
 	})
 }

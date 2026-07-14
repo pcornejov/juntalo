@@ -56,8 +56,12 @@ func (f *fakeCampaignRepo) PublishDueCampaigns(context.Context) ([]campaign.Camp
 	return nil, nil
 }
 
-func (f *fakeCampaignRepo) ListPublic(context.Context, string, int32, int32) ([]campaign.Campaign, error) {
+func (f *fakeCampaignRepo) ListPublic(context.Context, string, campaign.Category, int32, int32) ([]campaign.Campaign, error) {
 	return nil, nil
+}
+
+func (f *fakeCampaignRepo) GetFeatured(context.Context) (campaign.Campaign, bool, error) {
+	return campaign.Campaign{}, false, nil
 }
 
 // ── fakeOrgRepo ─────────────────────────────────────────────────────────
@@ -74,6 +78,9 @@ func (f *fakeOrgRepo) GetByID(_ context.Context, id uuid.UUID) (identity.Organiz
 }
 func (f *fakeOrgRepo) GetOwnerEmail(context.Context, uuid.UUID) (string, string, error) {
 	return "", "", nil
+}
+func (f *fakeOrgRepo) GetOwnerInfo(context.Context, uuid.UUID) (string, bool, error) {
+	return "", false, nil
 }
 
 // ── fakeContributorRepo ─────────────────────────────────────────────────

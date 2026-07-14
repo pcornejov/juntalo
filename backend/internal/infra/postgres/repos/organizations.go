@@ -46,3 +46,13 @@ func (r *OrganizationRepo) GetOwnerEmail(ctx context.Context, id uuid.UUID) (ema
 	}
 	return row.Email, row.FullName, nil
 }
+
+// GetOwnerInfo agrega IsVerified (email del dueño verificado) sobre
+// GetOwnerEmail para el badge de verificación de la página pública.
+func (r *OrganizationRepo) GetOwnerInfo(ctx context.Context, id uuid.UUID) (fullName string, isVerified bool, err error) {
+	row, err := r.q.GetOrganizationOwnerByOrgID(ctx, id)
+	if err != nil {
+		return "", false, fmt.Errorf("get organization owner: %w", err)
+	}
+	return row.FullName, row.EmailVerifiedAt.Valid, nil
+}

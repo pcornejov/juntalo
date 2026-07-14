@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Copy, Pencil } from 'lucide-react'
 import {
   useCampaign,
+  useCampaignCategories,
   useCampaignGallery,
   useCampaignTransitions,
   useCancelScheduledPublish,
@@ -13,6 +14,7 @@ import {
 } from '../hooks/useCampaigns'
 import { useDebouncedValue } from '../../../shared/lib/useDebouncedValue'
 import { errorMessage } from '../../../shared/api/errors'
+import { categoryIcon } from '../../../shared/lib/categoryIcons'
 import { Button, Card, Input, ShareButtons, QrCode } from '../../../shared/ui'
 import { StatusBadge } from '../components/StatusBadge'
 import { TotalsPanel } from '../components/TotalsPanel'
@@ -41,8 +43,10 @@ export function CampaignDetailPage() {
 function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: () => void }) {
   const [title, setTitle] = useState(campaign.title)
   const [description, setDescription] = useState(campaign.description)
+  const [category, setCategory] = useState(campaign.category)
   const [error, setError] = useState<string | null>(null)
   const update = useUpdateCampaign(campaign.id)
+  const { data: categories } = useCampaignCategories()
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -51,6 +55,7 @@ function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: ()
       {
         title,
         description,
+        category,
         goal_amount: campaign.goal_amount,
         starts_at: campaign.starts_at,
         ends_at: campaign.ends_at,
@@ -74,6 +79,32 @@ function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: ()
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
+      {categories && categories.length > 0 && (
+        <div>
+          <label className="mb-1 block text-sm text-text-secondary">Categoría</label>
+          <div className="flex flex-wrap gap-2">
+            {categories.map((c) => {
+              const Icon = categoryIcon(c.icon)
+              const selected = category === c.key
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => setCategory(c.key)}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    selected
+                      ? 'border-brand-hover bg-accent-tint text-brand-hover'
+                      : 'border-border-default bg-bg-surface text-text-secondary hover:bg-bg-subtle'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {c.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={update.isPending}>

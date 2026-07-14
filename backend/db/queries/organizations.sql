@@ -13,7 +13,7 @@ LIMIT 1;
 SELECT * FROM organizations WHERE id = $1;
 
 -- name: GetOrganizationOwnerByOrgID :one
-SELECT u.email, u.full_name FROM users u
+SELECT u.email, u.full_name, u.email_verified_at FROM users u
 JOIN organization_members om ON om.user_id = u.id
 WHERE om.organization_id = $1 AND om.role = 'owner'
 LIMIT 1;

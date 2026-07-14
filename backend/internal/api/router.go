@@ -50,6 +50,7 @@ func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, dashH
 
 func mountPublicRoutes(app fiber.Router, apiV1 fiber.Router, h *handlers.PublicHandler) {
 	apiV1.Get("/public/campaigns", h.ListJSON)
+	apiV1.Get("/public/campaigns/featured", h.Featured)
 	apiV1.Get("/public/campaigns/:slug", h.GetJSON)
 	app.Get("/c/:slug", h.OGPage)
 }
@@ -74,4 +75,5 @@ func mountWebpayRoutes(apiV1 fiber.Router, h *handlers.WebpayHandler) {
 
 func mountMetaRoutes(router fiber.Router) {
 	router.Get("/meta/campaign-types", handlers.CampaignTypes)
+	router.Get("/meta/campaign-categories", handlers.CampaignCategories)
 }

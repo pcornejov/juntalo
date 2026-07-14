@@ -24,3 +24,14 @@ func CampaignTypes(c *fiber.Ctx) error {
 	}
 	return c.JSON(fiber.Map{"items": out})
 }
+
+// CampaignCategories serves the declarative category registry so the
+// frontend no hardcodea labels/íconos al filtrar/crear (inspirado en Vaki).
+func CampaignCategories(c *fiber.Ctx) error {
+	cats := campaign.Categories()
+	out := make([]dto.CampaignCategoryResponse, len(cats))
+	for i, cat := range cats {
+		out[i] = dto.CampaignCategoryResponse{Key: string(cat.Key), Label: cat.Label, Icon: cat.Icon}
+	}
+	return c.JSON(fiber.Map{"items": out})
+}

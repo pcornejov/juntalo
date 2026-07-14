@@ -27,12 +27,13 @@ type PublicHandler struct {
 	files       app.FileRepository
 	images      app.CampaignImageRepository
 	storage     app.FileStorage
+	orgs        app.OrganizationRepository
 	frontendURL string
 	selfURL     string
 }
 
-func NewPublicHandler(get *campaignsuc.GetService, list *campaignsuc.ListService, files app.FileRepository, images app.CampaignImageRepository, storage app.FileStorage, frontendURL, selfURL string) *PublicHandler {
-	return &PublicHandler{get: get, list: list, files: files, images: images, storage: storage, frontendURL: frontendURL, selfURL: selfURL}
+func NewPublicHandler(get *campaignsuc.GetService, list *campaignsuc.ListService, files app.FileRepository, images app.CampaignImageRepository, storage app.FileStorage, orgs app.OrganizationRepository, frontendURL, selfURL string) *PublicHandler {
+	return &PublicHandler{get: get, list: list, files: files, images: images, storage: storage, orgs: orgs, frontendURL: frontendURL, selfURL: selfURL}
 }
 
 const (
@@ -53,8 +54,9 @@ func (h *PublicHandler) ListJSON(c *fiber.Ctx) error {
 		offset = 0
 	}
 	search := c.Query("q")
+	category := c.Query("category")
 
-	items, err := h.list.ListPublic(c.Context(), search, int32(limit+1), int32(offset))
+	items, err := h.list.ListPublic(c.Context(), search, campaign.Category(category), int32(limit+1), int32(offset))
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
@@ -70,11 +72,49 @@ func (h *PublicHandler) ListJSON(c *fiber.Ctx) error {
 		if len(images) > 0 {
 			coverURL = &images[0]
 		}
+		organizerName, isVerified := h.resolveOrganizer(c, item.Campaign.OrganizationID)
 		resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images)
 		resp.PublicURL = h.selfURL + "/c/" + item.Campaign.Slug
+		resp.OrganizerName = organizerName
+		resp.IsVerified = isVerified
 		out[i] = resp
 	}
 	return c.JSON(dto.PublicCampaignListResponse{Items: out, HasMore: hasMore})
+}
+
+// Featured implements GET /public/campaigns/featured: la campaña "más
+// caliente" (inspirado en Vaki) para destacar en la sección pública.
+func (h *PublicHandler) Featured(c *fiber.Ctx) error {
+	item, found, err := h.list.GetFeatured(c.Context())
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	if !found {
+		return c.Status(fiber.StatusNoContent).Send(nil)
+	}
+
+	images := resolveGalleryURLs(c.Context(), h.images, h.storage, item.Campaign.ID)
+	coverURL := resolveCoverURL(c, h.files, h.storage, item.Campaign.CoverFileID)
+	if len(images) > 0 {
+		coverURL = &images[0]
+	}
+	organizerName, isVerified := h.resolveOrganizer(c, item.Campaign.OrganizationID)
+	resp := toPublicCampaignResponse(item.Campaign, item.Totals, coverURL, images)
+	resp.PublicURL = h.selfURL + "/c/" + item.Campaign.Slug
+	resp.OrganizerName = organizerName
+	resp.IsVerified = isVerified
+	return c.JSON(resp)
+}
+
+// resolveOrganizer no falla el request si la búsqueda del dueño falla — el
+// badge de verificación es puramente decorativo, no debe tumbar la página
+// pública.
+func (h *PublicHandler) resolveOrganizer(c *fiber.Ctx, orgID uuid.UUID) (name string, verified bool) {
+	name, verified, err := h.orgs.GetOwnerInfo(c.Context(), orgID)
+	if err != nil {
+		return "", false
+	}
+	return name, verified
 }
 
 // GetJSON is consumed by the SPA's public campaign page (Etapa 4 §4).
@@ -105,6 +145,7 @@ func (h *PublicHandler) GetJSON(c *fiber.Ctx) error {
 	// re-comparte el link desde la página pública, la preview de WhatsApp
 	// sigue funcionando (Etapa 2 §1).
 	resp.PublicURL = h.selfURL + "/c/" + slug
+	resp.OrganizerName, resp.IsVerified = h.resolveOrganizer(c, found.OrganizationID)
 	return c.JSON(resp)
 }
 
@@ -162,6 +203,7 @@ func toPublicCampaignResponse(c campaign.Campaign, totals campaign.Totals, cover
 		CoverURL:    coverURL,
 		Images:      images,
 		Status:      string(c.Status),
+		Category:    string(c.Category),
 		CTA:         def.Labels.CTA,
 		Unit:        def.Labels.Unit,
 		Totals: dto.TotalsDTO{

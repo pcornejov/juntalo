@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createOrganization = `-- name: CreateOrganization :one
@@ -86,20 +87,21 @@ func (q *Queries) GetPersonalOrganizationByUserID(ctx context.Context, userID uu
 }
 
 const getOrganizationOwnerByOrgID = `-- name: GetOrganizationOwnerByOrgID :one
-SELECT u.email, u.full_name FROM users u
+SELECT u.email, u.full_name, u.email_verified_at FROM users u
 JOIN organization_members om ON om.user_id = u.id
 WHERE om.organization_id = $1 AND om.role = 'owner'
 LIMIT 1
 `
 
 type GetOrganizationOwnerByOrgIDRow struct {
-	Email    string `json:"email"`
-	FullName string `json:"full_name"`
+	Email           string             `json:"email"`
+	FullName        string             `json:"full_name"`
+	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
 }
 
 func (q *Queries) GetOrganizationOwnerByOrgID(ctx context.Context, organizationID uuid.UUID) (GetOrganizationOwnerByOrgIDRow, error) {
 	row := q.db.QueryRow(ctx, getOrganizationOwnerByOrgID, organizationID)
 	var i GetOrganizationOwnerByOrgIDRow
-	err := row.Scan(&i.Email, &i.FullName)
+	err := row.Scan(&i.Email, &i.FullName, &i.EmailVerifiedAt)
 	return i, err
 }

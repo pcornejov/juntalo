@@ -197,7 +197,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, cloneSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
 	dashboardHandler := handlers.NewDashboardHandler(participantsSvc, exportSvc, refundSvc, orgRepo)
 	fileHandler := handlers.NewFileHandler(uploadSvc, orgRepo)
-	publicHandler := handlers.NewPublicHandler(getSvc, listSvc, fileRepo, campaignImageRepo, storage, cfg.FrontendURL, cfg.SelfURL)
+	publicHandler := handlers.NewPublicHandler(getSvc, listSvc, fileRepo, campaignImageRepo, storage, orgRepo, cfg.FrontendURL, cfg.SelfURL)
 	contributionHandler := handlers.NewContributionHandler(startSvc, statusSvc)
 	webhookHandler := handlers.NewWebhookHandler(confirmSvc, cfg.MockWebhookSecret)
 
