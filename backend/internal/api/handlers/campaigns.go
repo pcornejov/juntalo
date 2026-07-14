@@ -115,6 +115,7 @@ func (h *CampaignHandler) Create(c *fiber.Ctx) error {
 		GoalAmount:     goalFromRequest(req.GoalAmount),
 		StartsAt:       req.StartsAt,
 		EndsAt:         req.EndsAt,
+		PublishAt:      req.PublishAt,
 	})
 	if err != nil {
 		return dto.WriteError(c, err)
@@ -122,6 +123,27 @@ func (h *CampaignHandler) Create(c *fiber.Ctx) error {
 	h.recordAudit(c, orgID, auditcat.ActionCampaignCreated, created.ID, map[string]any{"title": created.Title})
 
 	return c.Status(fiber.StatusCreated).JSON(h.toResponse(c, created, campaign.Totals{}))
+}
+
+func (h *CampaignHandler) CancelSchedule(c *fiber.Ctx) error {
+	orgID, err := h.orgID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	id, err := h.parseID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	updated, err := h.update.CancelSchedule(c.Context(), id, orgID)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	_, totals, err := h.get.GetForOrg(c.Context(), id, orgID)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	return c.JSON(h.toResponse(c, updated, totals))
 }
 
 func (h *CampaignHandler) Clone(c *fiber.Ctx) error {
@@ -222,12 +244,14 @@ func (h *CampaignHandler) Update(c *fiber.Ctx) error {
 	}
 
 	if _, err := h.update.Update(c.Context(), id, orgID, campaignsuc.UpdateInput{
-		Title:       req.Title,
-		Description: req.Description,
-		GoalAmount:  goalFromRequest(req.GoalAmount),
-		StartsAt:    req.StartsAt,
-		EndsAt:      req.EndsAt,
-		CoverFileID: coverFileID,
+		Title:          req.Title,
+		Description:    req.Description,
+		GoalAmount:     goalFromRequest(req.GoalAmount),
+		StartsAt:       req.StartsAt,
+		EndsAt:         req.EndsAt,
+		CoverFileID:    coverFileID,
+		PublishAt:      req.PublishAt,
+		ClearPublishAt: req.ClearPublishAt,
 	}); err != nil {
 		return dto.WriteError(c, err)
 	}
@@ -439,6 +463,7 @@ func (h *CampaignHandler) toResponse(c *fiber.Ctx, camp campaign.Campaign, total
 		Status:      string(camp.Status),
 		StartsAt:    camp.StartsAt,
 		EndsAt:      camp.EndsAt,
+		PublishAt:   camp.PublishAt,
 		PublicURL:   h.selfURL + "/c/" + camp.Slug,
 		CreatedAt:   camp.CreatedAt,
 		Totals: dto.TotalsDTO{

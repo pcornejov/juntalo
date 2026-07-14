@@ -2,6 +2,7 @@ package campaign
 
 import (
 	"testing"
+	"time"
 
 	"github.com/pcornejov/juntalo/backend/internal/domain/apperr"
 	"github.com/pcornejov/juntalo/backend/internal/domain/money"
@@ -32,5 +33,23 @@ func TestValidateGoalUpdate(t *testing.T) {
 	}
 	if err := ValidateGoalUpdate(nil, raised); err != nil {
 		t.Errorf("nil goal (no meta) should not error: %v", err)
+	}
+}
+
+func TestValidatePublishAt(t *testing.T) {
+	future := time.Now().Add(time.Hour)
+	past := time.Now().Add(-time.Hour)
+
+	if err := ValidatePublishAt(nil, StatusDraft); err != nil {
+		t.Errorf("nil publish_at should not error: %v", err)
+	}
+	if err := ValidatePublishAt(&future, StatusDraft); err != nil {
+		t.Errorf("future publish_at on draft should not error: %v", err)
+	}
+	if err := ValidatePublishAt(&past, StatusDraft); !apperr.Is(err, "validation_failed") {
+		t.Errorf("past publish_at should error, got %v", err)
+	}
+	if err := ValidatePublishAt(&future, StatusActive); !apperr.Is(err, "campaign_not_active") {
+		t.Errorf("publish_at on non-draft should error, got %v", err)
 	}
 }

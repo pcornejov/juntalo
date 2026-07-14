@@ -34,6 +34,7 @@ func (r *CampaignRepo) Create(ctx context.Context, in app.CreateCampaignInput) (
 		GoalAmount:     toInt8(in.GoalAmount),
 		StartsAt:       toTimestamptz(in.StartsAt),
 		EndsAt:         toTimestamptz(in.EndsAt),
+		PublishAt:      toTimestamptz(in.PublishAt),
 	})
 	if err != nil {
 		return campaign.Campaign{}, fmt.Errorf("create campaign: %w", err)
@@ -107,6 +108,7 @@ func (r *CampaignRepo) Update(ctx context.Context, in app.UpdateCampaignInput) (
 		StartsAt:    toTimestamptz(in.StartsAt),
 		EndsAt:      toTimestamptz(in.EndsAt),
 		CoverFileID: toPgUUID(in.CoverFileID),
+		PublishAt:   toTimestamptz(in.PublishAt),
 	})
 	if err != nil {
 		return campaign.Campaign{}, fmt.Errorf("update campaign: %w", err)
@@ -127,6 +129,18 @@ func (r *CampaignRepo) SoftDelete(ctx context.Context, id uuid.UUID) error {
 		return fmt.Errorf("soft delete campaign: %w", err)
 	}
 	return nil
+}
+
+func (r *CampaignRepo) PublishDueCampaigns(ctx context.Context) ([]campaign.Campaign, error) {
+	rows, err := r.q.PublishDueCampaigns(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("publish due campaigns: %w", err)
+	}
+	out := make([]campaign.Campaign, len(rows))
+	for i, c := range rows {
+		out[i] = mapCampaign(c)
+	}
+	return out, nil
 }
 
 func (r *CampaignRepo) GetTotals(ctx context.Context, id uuid.UUID) (campaign.Totals, error) {

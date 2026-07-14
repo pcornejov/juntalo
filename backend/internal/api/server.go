@@ -28,6 +28,11 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/infra/storage/local"
 )
 
+// publishSchedulerInterval: cada minuto es suficiente resolución para "en
+// fecha programada" — no hace falta segundos de precisión para publicar
+// campañas.
+const publishSchedulerInterval = time.Minute
+
 type Config struct {
 	JWTSecret   string
 	IsProd      bool
@@ -113,6 +118,10 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	deleteSvc := campaignsuc.NewDeleteService(campaignRepo)
 	cloneSvc := campaignsuc.NewCloneService(campaignRepo, createSvc)
 	uploadSvc := filesuc.NewUploadService(storage, fileRepo)
+
+	// Auto-publicar campaña en fecha programada: vive dentro de este mismo
+	// proceso, no como infra de cron aparte (Etapa 4).
+	go campaignsuc.RunPublishScheduler(context.Background(), campaignRepo, publishSchedulerInterval)
 
 	startSvc := contributionsuc.NewStartService(campaignRepo, orgRepo, contributorRepo, contributionRepo, paymentRepo, paymentProvider, emailSender, cfg.FrontendURL)
 	confirmSvc := contributionsuc.NewConfirmService(paymentRepo, contributionRepo, campaignRepo, contributorRepo, orgRepo, emailSender, cfg.FrontendURL)

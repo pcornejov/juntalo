@@ -21,6 +21,7 @@ export interface Campaign {
   images: CampaignImage[]
   goal_amount?: number
   status: 'draft' | 'active' | 'paused' | 'finished' | 'suspended'
+  publish_at?: string
   public_url: string
   totals: Totals
   created_at: string
@@ -52,8 +53,13 @@ export function createCampaign(input: {
   title: string
   description?: string
   goal_amount?: number
+  publish_at?: string
 }) {
   return apiClient.post<Campaign>('/campaigns', input)
+}
+
+export function cancelScheduledPublish(id: string) {
+  return apiClient.post<Campaign>(`/campaigns/${id}/cancel-schedule`)
 }
 
 export function publishCampaign(id: string) {

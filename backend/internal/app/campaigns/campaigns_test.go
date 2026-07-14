@@ -102,3 +102,7 @@ func (f *fakeCampaignRepo) SoftDelete(_ context.Context, id uuid.UUID) error {
 func (f *fakeCampaignRepo) GetTotals(_ context.Context, id uuid.UUID) (campaign.Totals, error) {
 	return campaign.Totals{}, nil
 }
+
+func (f *fakeCampaignRepo) PublishDueCampaigns(context.Context) ([]campaign.Campaign, error) {
+	return nil, nil
+}

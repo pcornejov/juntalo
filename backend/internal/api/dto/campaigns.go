@@ -9,15 +9,18 @@ type CreateCampaignRequest struct {
 	GoalAmount  *int64     `json:"goal_amount"`
 	StartsAt    *time.Time `json:"starts_at"`
 	EndsAt      *time.Time `json:"ends_at"`
+	PublishAt   *time.Time `json:"publish_at"`
 }
 
 type UpdateCampaignRequest struct {
-	Title       string     `json:"title" validate:"required,min=3,max=120"`
-	Description string     `json:"description"`
-	GoalAmount  *int64     `json:"goal_amount"`
-	StartsAt    *time.Time `json:"starts_at"`
-	EndsAt      *time.Time `json:"ends_at"`
-	CoverFileID *string    `json:"cover_file_id"`
+	Title          string     `json:"title" validate:"required,min=3,max=120"`
+	Description    string     `json:"description"`
+	GoalAmount     *int64     `json:"goal_amount"`
+	StartsAt       *time.Time `json:"starts_at"`
+	EndsAt         *time.Time `json:"ends_at"`
+	CoverFileID    *string    `json:"cover_file_id"`
+	PublishAt      *time.Time `json:"publish_at"`
+	ClearPublishAt bool       `json:"clear_publish_at"`
 }
 
 type CampaignResponse struct {
@@ -32,6 +35,7 @@ type CampaignResponse struct {
 	Status      string                  `json:"status"`
 	StartsAt    *time.Time              `json:"starts_at,omitempty"`
 	EndsAt      *time.Time              `json:"ends_at,omitempty"`
+	PublishAt   *time.Time              `json:"publish_at,omitempty"`
 	PublicURL   string                  `json:"public_url"`
 	Totals      TotalsDTO               `json:"totals"`
 	CreatedAt   time.Time               `json:"created_at"`

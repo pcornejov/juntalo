@@ -20,6 +20,8 @@ export function CampaignFormPage() {
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [publishMode, setPublishMode] = useState<'now' | 'later'>('now')
+  const [publishAt, setPublishAt] = useState('')
 
   const defaultType = types?.[0]
 
@@ -39,6 +41,10 @@ export function CampaignFormPage() {
     e.preventDefault()
     if (!defaultType) return
     setError(null)
+    if (publishMode === 'later' && !publishAt) {
+      setError('Elige una fecha de publicación.')
+      return
+    }
     setIsSubmitting(true)
     try {
       const created = await createCampaign.mutateAsync({
@@ -46,8 +52,11 @@ export function CampaignFormPage() {
         title,
         description: description || undefined,
         goal_amount: goalAmount ? Number(goalAmount) : undefined,
+        publish_at: publishMode === 'later' ? new Date(publishAt).toISOString() : undefined,
       })
-      await publishCampaign.mutateAsync(created.id)
+      if (publishMode === 'now') {
+        await publishCampaign.mutateAsync(created.id)
+      }
       navigate(`/dashboard/campaigns/${created.id}`)
     } catch (err) {
       setError(errorMessage(err))
@@ -125,9 +134,46 @@ export function CampaignFormPage() {
               placeholder="$500.000"
             />
           </div>
+          <div>
+            <label className="mb-2 block text-sm text-text-secondary">Publicación</label>
+            <div className="flex gap-4 text-sm">
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="publishMode"
+                  checked={publishMode === 'now'}
+                  onChange={() => setPublishMode('now')}
+                />
+                Publicar ahora
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="publishMode"
+                  checked={publishMode === 'later'}
+                  onChange={() => setPublishMode('later')}
+                />
+                Programar para más adelante
+              </label>
+            </div>
+            {publishMode === 'later' && (
+              <Input
+                type="datetime-local"
+                value={publishAt}
+                onChange={(e) => setPublishAt(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                className="mt-2"
+                required
+              />
+            )}
+          </div>
           {error && <p className="text-sm text-danger">{error}</p>}
           <Button type="submit" disabled={isSubmitting || !defaultType} className="w-full">
-            {isSubmitting ? 'Creando…' : 'Crear y publicar'}
+            {isSubmitting
+              ? 'Creando…'
+              : publishMode === 'later'
+                ? 'Crear y programar publicación'
+                : 'Crear y publicar'}
           </Button>
         </form>
       </Card>

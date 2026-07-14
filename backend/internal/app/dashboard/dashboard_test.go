@@ -48,6 +48,9 @@ func (f *fakeCampaignRepo) SoftDelete(context.Context, uuid.UUID) error { return
 func (f *fakeCampaignRepo) GetTotals(context.Context, uuid.UUID) (campaign.Totals, error) {
 	return campaign.Totals{}, nil
 }
+func (f *fakeCampaignRepo) PublishDueCampaigns(context.Context) ([]campaign.Campaign, error) {
+	return nil, nil
+}
 
 type fakeParticipantRepo struct {
 	rows []app.ParticipantRow

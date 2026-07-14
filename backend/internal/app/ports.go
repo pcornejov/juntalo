@@ -106,6 +106,9 @@ type CreateCampaignInput struct {
 	GoalAmount     *money.CLP
 	StartsAt       *time.Time
 	EndsAt         *time.Time
+	// PublishAt: si viene seteada, la campaña queda en draft hasta que el
+	// scheduler en background la publique automáticamente (Etapa 4).
+	PublishAt *time.Time
 }
 
 // UpdateCampaignInput carries the editable fields of a campaign (Etapa 4 §3).
@@ -117,6 +120,7 @@ type UpdateCampaignInput struct {
 	StartsAt    *time.Time
 	EndsAt      *time.Time
 	CoverFileID *uuid.UUID
+	PublishAt   *time.Time
 }
 
 type CampaignRepository interface {
@@ -130,6 +134,9 @@ type CampaignRepository interface {
 	UpdateStatus(ctx context.Context, id uuid.UUID, status campaign.Status) (campaign.Campaign, error)
 	SoftDelete(ctx context.Context, id uuid.UUID) error
 	GetTotals(ctx context.Context, id uuid.UUID) (campaign.Totals, error)
+	// PublishDueCampaigns transiciona atómicamente a 'active' todo draft cuya
+	// publish_at ya venció — usado por el scheduler en background (Etapa 4).
+	PublishDueCampaigns(ctx context.Context) ([]campaign.Campaign, error)
 }
 
 // CreateFileInput carries what FileRepository.Create needs to persist file metadata

@@ -26,6 +26,12 @@ type UpdateInput struct {
 	StartsAt    *time.Time
 	EndsAt      *time.Time
 	CoverFileID *uuid.UUID
+	// PublishAt sigue el mismo patrón "mantener si no viene" que CoverFileID.
+	// ClearPublishAt es el único camino para borrar una publicación programada
+	// (un PublishAt nil por sí solo, con JSON omitiendo la clave, no debe
+	// wipear silenciosamente la fecha en cada edición no relacionada).
+	PublishAt      *time.Time
+	ClearPublishAt bool
 }
 
 func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in UpdateInput) (campaign.Campaign, error) {
@@ -54,6 +60,16 @@ func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in Upda
 		coverFileID = in.CoverFileID
 	}
 
+	publishAt := existing.PublishAt
+	if in.ClearPublishAt {
+		publishAt = nil
+	} else if in.PublishAt != nil {
+		publishAt = in.PublishAt
+	}
+	if err := campaign.ValidatePublishAt(publishAt, existing.Status); err != nil {
+		return campaign.Campaign{}, err
+	}
+
 	return s.repo.Update(ctx, app.UpdateCampaignInput{
 		ID:          id,
 		Title:       in.Title,
@@ -62,5 +78,31 @@ func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in Upda
 		StartsAt:    in.StartsAt,
 		EndsAt:      in.EndsAt,
 		CoverFileID: coverFileID,
+		PublishAt:   publishAt,
+	})
+}
+
+// CancelSchedule clears a campaign's publish_at, leaving every other field
+// untouched — un atajo sobre Update para el botón "cancelar publicación
+// programada" del dashboard, que no debería tener que reenviar título,
+// descripción, etc. solo para borrar una fecha.
+func (s *UpdateService) CancelSchedule(ctx context.Context, id, orgID uuid.UUID) (campaign.Campaign, error) {
+	existing, found, err := s.repo.GetByIDForOrg(ctx, id, orgID)
+	if err != nil {
+		return campaign.Campaign{}, err
+	}
+	if !found {
+		return campaign.Campaign{}, ErrNotFound
+	}
+
+	return s.repo.Update(ctx, app.UpdateCampaignInput{
+		ID:          id,
+		Title:       existing.Title,
+		Description: existing.Description,
+		GoalAmount:  existing.GoalAmount,
+		StartsAt:    existing.StartsAt,
+		EndsAt:      existing.EndsAt,
+		CoverFileID: existing.CoverFileID,
+		PublishAt:   nil,
 	})
 }

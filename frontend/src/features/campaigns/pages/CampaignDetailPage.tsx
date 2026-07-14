@@ -5,6 +5,7 @@ import {
   useCampaign,
   useCampaignGallery,
   useCampaignTransitions,
+  useCancelScheduledPublish,
   useCloneCampaign,
   useParticipants,
   usePublishCampaign,
@@ -32,6 +33,7 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   const publish = usePublishCampaign()
   const { pause, resume, finish } = useCampaignTransitions()
   const clone = useCloneCampaign()
+  const cancelSchedule = useCancelScheduledPublish()
   const gallery = useCampaignGallery(campaign.id)
   const {
     participants,
@@ -106,6 +108,28 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
           </Button>
         </div>
       </div>
+
+      {campaign.status === 'draft' && campaign.publish_at && (
+        <Card className="flex flex-wrap items-center justify-between gap-2 border-brand-hover/30 bg-accent-tint">
+          <p className="text-sm text-text-primary">
+            Se publicará automáticamente el{' '}
+            <span className="font-semibold">
+              {new Date(campaign.publish_at).toLocaleString('es-CL', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}
+            </span>
+            .
+          </p>
+          <Button
+            variant="secondary"
+            disabled={cancelSchedule.isPending}
+            onClick={() => cancelSchedule.mutate(campaign.id)}
+          >
+            {cancelSchedule.isPending ? 'Cancelando…' : 'Cancelar publicación programada'}
+          </Button>
+        </Card>
+      )}
 
       <TotalsPanel campaign={campaign} />
 

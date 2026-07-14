@@ -56,6 +56,7 @@ type Querier interface {
 	MarkEmailVerified(ctx context.Context, id uuid.UUID) error
 	MarkPasswordResetTokenUsed(ctx context.Context, tokenHash string) error
 	NextCampaignImagePosition(ctx context.Context, campaignID uuid.UUID) (int32, error)
+	PublishDueCampaigns(ctx context.Context) ([]Campaign, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	SoftDeleteCampaign(ctx context.Context, id uuid.UUID) error

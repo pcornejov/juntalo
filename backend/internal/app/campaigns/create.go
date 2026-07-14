@@ -29,6 +29,7 @@ type CreateInput struct {
 	GoalAmount     *money.CLP
 	StartsAt       *time.Time
 	EndsAt         *time.Time
+	PublishAt      *time.Time
 }
 
 // Create validates the type + title, generates a server-side unique slug, and
@@ -38,6 +39,9 @@ func (s *CreateService) Create(ctx context.Context, in CreateInput) (campaign.Ca
 		return campaign.Campaign{}, err
 	}
 	if err := campaign.ValidateTitle(in.Title); err != nil {
+		return campaign.Campaign{}, err
+	}
+	if err := campaign.ValidatePublishAt(in.PublishAt, campaign.StatusDraft); err != nil {
 		return campaign.Campaign{}, err
 	}
 
@@ -55,6 +59,7 @@ func (s *CreateService) Create(ctx context.Context, in CreateInput) (campaign.Ca
 		GoalAmount:     in.GoalAmount,
 		StartsAt:       in.StartsAt,
 		EndsAt:         in.EndsAt,
+		PublishAt:      in.PublishAt,
 	})
 }
 

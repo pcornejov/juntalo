@@ -85,6 +85,9 @@ func mapCampaign(c sqlc.Campaign) campaign.Campaign {
 	if c.EndsAt.Valid {
 		out.EndsAt = &c.EndsAt.Time
 	}
+	if c.PublishAt.Valid {
+		out.PublishAt = &c.PublishAt.Time
+	}
 	return out
 }
 
