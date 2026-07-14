@@ -32,6 +32,10 @@ type Config struct {
 	// llegan los emails (ver internal/infra/email).
 	ResendAPIKey string `envconfig:"RESEND_API_KEY" default:""`
 	EmailFrom    string `envconfig:"EMAIL_FROM" default:"onboarding@resend.dev"`
+
+	// Monitoreo de errores (Sentry). DSN vacío = sentry-go queda en modo
+	// no-op (no manda nada, no falla) — mismo patrón que RESEND_API_KEY.
+	SentryDSN string `envconfig:"SENTRY_DSN" default:""`
 }
 
 func Load() (Config, error) {

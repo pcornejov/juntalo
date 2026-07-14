@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"log"
+	"time"
+
+	"github.com/getsentry/sentry-go"
 
 	juntdb "github.com/pcornejov/juntalo/backend/db"
 	"github.com/pcornejov/juntalo/backend/internal/api"
@@ -15,6 +18,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}
+
+	// DSN vacío deja sentry-go en modo no-op: Init nunca falla ni bloquea el
+	// arranque por esto (Config.SentryDSN).
+	if err := sentry.Init(sentry.ClientOptions{
+		Dsn:              cfg.SentryDSN,
+		Environment:      cfg.Env,
+		TracesSampleRate: 0, // solo error tracking por ahora, no performance tracing
+	}); err != nil {
+		log.Printf("sentry init: %v", err)
+	}
+	defer sentry.Flush(2 * time.Second)
 
 	if cfg.RunMigrationsOnBoot {
 		log.Println("running migrations (RUN_MIGRATIONS_ON_BOOT=true)...")

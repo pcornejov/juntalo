@@ -59,6 +59,8 @@ services:
         sync: false # se completa a mano en el dashboard de Render — nunca en el repo
       - key: EMAIL_FROM
         value: onboarding@resend.dev # sandbox de Resend: solo entrega a tu propio email hasta verificar un dominio
+      - key: SENTRY_DSN
+        sync: false # se completa a mano — DSN del proyecto backend en Sentry
 
   - type: web
     name: juntalo-web
@@ -69,6 +71,8 @@ services:
     envVars:
       - key: VITE_API_BASE
         value: https://juntalo-api.onrender.com/api/v1
+      - key: VITE_SENTRY_DSN
+        sync: false # se completa a mano — DSN del proyecto frontend en Sentry (puede ser el mismo proyecto u otro)
     routes:
       - type: rewrite
         source: /*

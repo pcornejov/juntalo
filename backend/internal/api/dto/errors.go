@@ -3,6 +3,7 @@ package dto
 import (
 	"errors"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gofiber/fiber/v2"
 
 	"github.com/pcornejov/juntalo/backend/internal/domain/apperr"
@@ -54,6 +55,11 @@ func WriteError(c *fiber.Ctx, err error) error {
 		}
 		return c.Status(status).JSON(ErrorResponse{Error: ErrorBody{Code: appErr.Code, Message: appErr.Message}})
 	}
+
+	// Solo lo no mapeado a un apperr conocido llega aquí — errores de negocio
+	// esperados (validación, no encontrado, etc.) no son ruido de Sentry;
+	// esto es justo lo que sí queremos saber que pasó (fallo de DB, bug, etc.).
+	sentry.CaptureException(err)
 
 	return c.Status(fiber.StatusInternalServerError).JSON(ErrorResponse{
 		Error: ErrorBody{Code: "internal_error", Message: "Ocurrió un error inesperado"},

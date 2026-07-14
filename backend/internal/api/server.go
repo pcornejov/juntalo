@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gofiber/contrib/fibersentry"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -49,7 +50,13 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 		AppName: "juntalo-api",
 	})
 
+	// Orden importa: recover.New() debe quedar afuera (red de seguridad
+	// final que sí convierte el panic en una respuesta 500) y fibersentry
+	// adentro, más cerca de los handlers, para que su propio recover()
+	// vea el panic primero, lo reporte a Sentry, y recién ahí lo repropague
+	// (Repanic: true) para que recover.New() termine el trabajo.
 	fiberApp.Use(recover.New())
+	fiberApp.Use(fibersentry.New(fibersentry.Config{Repanic: true}))
 	fiberApp.Use(requestid.New())
 	fiberApp.Use(logger.New())
 	fiberApp.Use(cors.New(cors.Config{
