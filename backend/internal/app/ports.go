@@ -67,6 +67,10 @@ type OrganizationRepository interface {
 	// GetBySlug resuelve la página pública persistente del organizador
 	// (/org/:slug) — inspirada en el link único de por vida de Ceneka.
 	GetBySlug(ctx context.Context, slug string) (identity.Organization, bool, error)
+	// UpdateCommissionRate: herramienta del backoffice para ajustar la
+	// comisión de una organización sin tocar código (rate como fracción,
+	// ej. 0.05 = 5%). found=false si el id no existe.
+	UpdateCommissionRate(ctx context.Context, id uuid.UUID, rate float64) (identity.Organization, bool, error)
 	// GetOwnerEmail se usa para notificar al organizador de nuevos aportes
 	// (Hito "notificaciones") — no requiere UI de equipos, solo el dueño.
 	GetOwnerEmail(ctx context.Context, id uuid.UUID) (email, fullName string, err error)
@@ -360,14 +364,15 @@ type AuditRepository interface {
 // AdminUserRow is one row of the platform-wide user list — a cuenta y su
 // organización personal, con cuántas campañas tiene.
 type AdminUserRow struct {
-	ID               uuid.UUID
-	Email            string
-	FullName         string
-	EmailVerified    bool
-	CreatedAt        time.Time
-	OrganizationID   uuid.UUID
-	OrganizationName string
-	CampaignCount    int64
+	ID                         uuid.UUID
+	Email                      string
+	FullName                   string
+	EmailVerified              bool
+	CreatedAt                  time.Time
+	OrganizationID             uuid.UUID
+	OrganizationName           string
+	OrganizationCommissionRate float64
+	CampaignCount              int64
 }
 
 // AdminCampaignRow is one row of the platform-wide campaign list — a

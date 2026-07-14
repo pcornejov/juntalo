@@ -80,6 +80,10 @@ func (f *fakeOrgRepo) GetPersonalByUserID(context.Context, uuid.UUID) (identity.
 func (f *fakeOrgRepo) GetByID(_ context.Context, id uuid.UUID) (identity.Organization, error) {
 	return identity.Organization{ID: id, CommissionRate: f.byID[id]}, nil
 }
+func (f *fakeOrgRepo) UpdateCommissionRate(context.Context, uuid.UUID, float64) (identity.Organization, bool, error) {
+	return identity.Organization{}, false, nil
+}
+
 func (f *fakeOrgRepo) GetBySlug(context.Context, string) (identity.Organization, bool, error) {
 	return identity.Organization{}, false, nil
 }

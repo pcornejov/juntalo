@@ -20,6 +20,7 @@ export interface AdminUser {
   created_at: string
   organization_id: string
   organization_name: string
+  organization_commission_rate: number
   campaign_count: number
 }
 
@@ -74,6 +75,13 @@ export function listAdminCampaigns(offset = 0, limit = ADMIN_PAGE_SIZE) {
 // puede eliminar cualquier campaña sin importar su estado.
 export function deleteAdminCampaign(id: string) {
   return apiClient.delete<void>(`/admin/campaigns/${id}`)
+}
+
+// updateOrgCommissionRate: herramienta del backoffice para ajustar la
+// comisión de una organización sin tocar código. rate va como fracción
+// (0.05 = 5%) — la conversión desde porcentaje vive en la UI.
+export function updateOrgCommissionRate(orgId: string, rate: number) {
+  return apiClient.patch<void>(`/admin/organizations/${orgId}/commission`, { rate })
 }
 
 export function listAdminPayments(offset = 0, limit = ADMIN_PAGE_SIZE) {

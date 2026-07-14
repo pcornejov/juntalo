@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Trash2, Users, Megaphone, Wallet, TrendingUp } from 'lucide-react'
+import { Check, Trash2, Users, Megaphone, Wallet, TrendingUp } from 'lucide-react'
 import {
   useAdminMetrics,
   useAdminUsers,
   useAdminCampaigns,
   useAdminPayments,
   useDeleteAdminCampaign,
+  useUpdateOrgCommissionRate,
 } from '../hooks/useAdmin'
 import { formatCLP } from '../../../shared/lib/clp'
 import { typeLabels } from '../../campaigns/typeMeta'
-import { Badge, Button, Card } from '../../../shared/ui'
+import { Badge, Button, Card, Input } from '../../../shared/ui'
 import type { AdminCampaign, AdminPayment, AdminUser } from '../api'
 
 const campaignStatusTone: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = {
@@ -51,6 +52,48 @@ function MetricCard({
   )
 }
 
+// CommissionCell: input de porcentaje editable inline — el backend guarda
+// la comisión como fracción (0.05), acá se muestra/edita como porcentaje
+// (5) para que el admin no tenga que hacer la conversión mentalmente.
+function CommissionCell({ user }: { user: AdminUser }) {
+  const currentPercent = user.organization_commission_rate * 100
+  const [value, setValue] = useState(String(currentPercent))
+  const updateRate = useUpdateOrgCommissionRate()
+  const dirty = Number(value) !== currentPercent
+
+  function handleSave() {
+    const percent = Number(value)
+    if (Number.isNaN(percent) || percent < 0 || percent > 50) return
+    updateRate.mutate({ orgId: user.organization_id, rate: percent / 100 })
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <Input
+        type="number"
+        min={0}
+        max={50}
+        step={0.1}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="w-16 py-1 text-right tabular-nums"
+      />
+      <span className="text-text-secondary">%</span>
+      {dirty && (
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={updateRate.isPending}
+          className="text-text-secondary hover:text-brand-hover disabled:opacity-50"
+          title="Guardar comisión"
+        >
+          <Check className="h-4 w-4" strokeWidth={2} />
+        </button>
+      )}
+    </div>
+  )
+}
+
 function UsersTable({ items }: { items: AdminUser[] }) {
   if (items.length === 0) return <p className="text-sm text-text-secondary">Sin usuarios todavía.</p>
   return (
@@ -61,6 +104,7 @@ function UsersTable({ items }: { items: AdminUser[] }) {
             <th className="py-2 pr-4">Nombre</th>
             <th className="py-2 pr-4">Email</th>
             <th className="py-2 pr-4">Organización</th>
+            <th className="py-2 pr-4">Comisión</th>
             <th className="py-2 pr-4">Campañas</th>
             <th className="py-2 pr-4">Registrado</th>
           </tr>
@@ -76,6 +120,9 @@ function UsersTable({ items }: { items: AdminUser[] }) {
                 )}
               </td>
               <td className="py-2 pr-4">{u.organization_name}</td>
+              <td className="py-2 pr-4">
+                <CommissionCell user={u} />
+              </td>
               <td className="py-2 pr-4 tabular-nums">{u.campaign_count}</td>
               <td className="py-2 pr-4 text-text-secondary">
                 {new Date(u.created_at).toLocaleDateString('es-CL')}

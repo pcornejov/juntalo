@@ -67,17 +67,37 @@ func (h *AdminHandler) Users(c *fiber.Ctx) error {
 	out := make([]dto.AdminUserResponse, len(items))
 	for i, u := range items {
 		out[i] = dto.AdminUserResponse{
-			ID:               u.ID.String(),
-			Email:            u.Email,
-			FullName:         u.FullName,
-			EmailVerified:    u.EmailVerified,
-			CreatedAt:        u.CreatedAt,
-			OrganizationID:   u.OrganizationID.String(),
-			OrganizationName: u.OrganizationName,
-			CampaignCount:    u.CampaignCount,
+			ID:                         u.ID.String(),
+			Email:                      u.Email,
+			FullName:                   u.FullName,
+			EmailVerified:              u.EmailVerified,
+			CreatedAt:                  u.CreatedAt,
+			OrganizationID:             u.OrganizationID.String(),
+			OrganizationName:           u.OrganizationName,
+			OrganizationCommissionRate: u.OrganizationCommissionRate,
+			CampaignCount:              u.CampaignCount,
 		}
 	}
 	return c.JSON(dto.AdminUserListResponse{Items: out, HasMore: hasMore})
+}
+
+// UpdateOrgCommissionRate implements PATCH /admin/organizations/:id/commission.
+func (h *AdminHandler) UpdateOrgCommissionRate(c *fiber.Ctx) error {
+	id, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return dto.WriteError(c, adminuc.ErrNotFound)
+	}
+	var req dto.UpdateCommissionRateRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	if err := dto.Validate(req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	if _, err := h.svc.UpdateOrgCommissionRate(c.Context(), id, req.Rate); err != nil {
+		return dto.WriteError(c, err)
+	}
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *AdminHandler) Campaigns(c *fiber.Ctx) error {
@@ -116,7 +136,7 @@ func (h *AdminHandler) Campaigns(c *fiber.Ctx) error {
 func (h *AdminHandler) DeleteCampaign(c *fiber.Ctx) error {
 	id, err := uuid.Parse(c.Params("id"))
 	if err != nil {
-		return dto.WriteError(c, adminuc.ErrCampaignNotFound)
+		return dto.WriteError(c, adminuc.ErrNotFound)
 	}
 	if err := h.svc.DeleteCampaign(c.Context(), id); err != nil {
 		return dto.WriteError(c, err)

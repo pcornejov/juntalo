@@ -16,6 +16,7 @@ const listAdminUsers = `-- name: ListAdminUsers :many
 SELECT
   u.id, u.email, u.full_name, u.email_verified_at, u.created_at,
   o.id AS organization_id, o.name AS organization_name,
+  o.commission_rate AS organization_commission_rate,
   COUNT(c.id) AS campaign_count
 FROM users u
 JOIN organization_members om ON om.user_id = u.id AND om.role = 'owner'
@@ -32,14 +33,15 @@ type ListAdminUsersParams struct {
 }
 
 type ListAdminUsersRow struct {
-	ID               uuid.UUID          `json:"id"`
-	Email            string             `json:"email"`
-	FullName         string             `json:"full_name"`
-	EmailVerifiedAt  pgtype.Timestamptz `json:"email_verified_at"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	OrganizationID   uuid.UUID          `json:"organization_id"`
-	OrganizationName string             `json:"organization_name"`
-	CampaignCount    int64              `json:"campaign_count"`
+	ID                         uuid.UUID          `json:"id"`
+	Email                      string             `json:"email"`
+	FullName                   string             `json:"full_name"`
+	EmailVerifiedAt            pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	OrganizationID             uuid.UUID          `json:"organization_id"`
+	OrganizationName           string             `json:"organization_name"`
+	OrganizationCommissionRate pgtype.Numeric     `json:"organization_commission_rate"`
+	CampaignCount              int64              `json:"campaign_count"`
 }
 
 func (q *Queries) ListAdminUsers(ctx context.Context, arg ListAdminUsersParams) ([]ListAdminUsersRow, error) {
@@ -59,6 +61,7 @@ func (q *Queries) ListAdminUsers(ctx context.Context, arg ListAdminUsersParams) 
 			&i.CreatedAt,
 			&i.OrganizationID,
 			&i.OrganizationName,
+			&i.OrganizationCommissionRate,
 			&i.CampaignCount,
 		); err != nil {
 			return nil, err

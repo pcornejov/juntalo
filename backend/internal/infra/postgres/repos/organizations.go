@@ -69,3 +69,17 @@ func (r *OrganizationRepo) GetOwnerInfo(ctx context.Context, id uuid.UUID) (full
 	}
 	return row.FullName, row.EmailVerifiedAt.Valid, nil
 }
+
+func (r *OrganizationRepo) UpdateCommissionRate(ctx context.Context, id uuid.UUID, rate float64) (identity.Organization, bool, error) {
+	o, err := r.q.UpdateOrganizationCommissionRate(ctx, sqlc.UpdateOrganizationCommissionRateParams{
+		ID:             id,
+		CommissionRate: toNumeric(rate),
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return identity.Organization{}, false, nil
+		}
+		return identity.Organization{}, false, fmt.Errorf("update organization commission rate: %w", err)
+	}
+	return mapOrganization(o), true, nil
+}

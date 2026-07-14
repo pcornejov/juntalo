@@ -92,6 +92,7 @@ func mountAdminRoutes(router fiber.Router, h *handlers.AdminHandler, signer app.
 	admin := router.Group("/admin", middleware.RequireAuth(signer), middleware.RequireAdminUser(users, adminEmails))
 	admin.Get("/metrics", h.Metrics)
 	admin.Get("/users", h.Users)
+	admin.Patch("/organizations/:id/commission", h.UpdateOrgCommissionRate)
 	admin.Get("/campaigns", h.Campaigns)
 	admin.Delete("/campaigns/:id", h.DeleteCampaign)
 	admin.Get("/payments", h.Payments)

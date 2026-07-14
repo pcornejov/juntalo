@@ -7,6 +7,7 @@
 SELECT
   u.id, u.email, u.full_name, u.email_verified_at, u.created_at,
   o.id AS organization_id, o.name AS organization_name,
+  o.commission_rate AS organization_commission_rate,
   COUNT(c.id) AS campaign_count
 FROM users u
 JOIN organization_members om ON om.user_id = u.id AND om.role = 'owner'

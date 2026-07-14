@@ -212,7 +212,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	participantsSvc := dashboarduc.NewParticipantsService(campaignRepo, participantRepo)
 	exportSvc := dashboarduc.NewExportCSVService(campaignRepo, participantRepo)
 	refundSvc := dashboarduc.NewRefundService(campaignRepo, contributionRepo, paymentRepo, paymentProvider)
-	adminSvc := adminuc.NewService(adminRepo, campaignRepo)
+	adminSvc := adminuc.NewService(adminRepo, campaignRepo, orgRepo)
 
 	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks, adminEmails)
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, cloneSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)

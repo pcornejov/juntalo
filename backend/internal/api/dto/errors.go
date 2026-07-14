@@ -30,6 +30,7 @@ var codeStatus = map[string]int{
 	"validation_failed":          fiber.StatusBadRequest,
 	"campaign_not_found":         fiber.StatusNotFound,
 	"organization_not_found":     fiber.StatusNotFound,
+	"invalid_commission_rate":    fiber.StatusUnprocessableEntity,
 	"unknown_campaign_type":      fiber.StatusUnprocessableEntity,
 	"unknown_campaign_category":  fiber.StatusUnprocessableEntity,
 	"invalid_video_url":          fiber.StatusUnprocessableEntity,

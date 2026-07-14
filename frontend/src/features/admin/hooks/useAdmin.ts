@@ -41,6 +41,17 @@ export function useDeleteAdminCampaign() {
   })
 }
 
+export function useUpdateOrgCommissionRate() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orgId, rate }: { orgId: string; rate: number }) =>
+      adminApi.updateOrgCommissionRate(orgId, rate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+    },
+  })
+}
+
 export function useAdminPayments() {
   const query = useInfiniteQuery({
     queryKey: ['admin', 'payments'],

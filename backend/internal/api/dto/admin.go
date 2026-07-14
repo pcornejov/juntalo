@@ -3,14 +3,22 @@ package dto
 import "time"
 
 type AdminUserResponse struct {
-	ID               string    `json:"id"`
-	Email            string    `json:"email"`
-	FullName         string    `json:"full_name"`
-	EmailVerified    bool      `json:"email_verified"`
-	CreatedAt        time.Time `json:"created_at"`
-	OrganizationID   string    `json:"organization_id"`
-	OrganizationName string    `json:"organization_name"`
-	CampaignCount    int64     `json:"campaign_count"`
+	ID                         string    `json:"id"`
+	Email                      string    `json:"email"`
+	FullName                   string    `json:"full_name"`
+	EmailVerified              bool      `json:"email_verified"`
+	CreatedAt                  time.Time `json:"created_at"`
+	OrganizationID             string    `json:"organization_id"`
+	OrganizationName           string    `json:"organization_name"`
+	OrganizationCommissionRate float64   `json:"organization_commission_rate"`
+	CampaignCount              int64     `json:"campaign_count"`
+}
+
+// UpdateCommissionRateRequest.Rate viene como fracción (0.05 = 5%) para no
+// duplicar la conversión que ya hace el frontend al mostrarlo como
+// porcentaje.
+type UpdateCommissionRateRequest struct {
+	Rate float64 `json:"rate" validate:"gte=0,lte=0.5"`
 }
 
 type AdminUserListResponse struct {

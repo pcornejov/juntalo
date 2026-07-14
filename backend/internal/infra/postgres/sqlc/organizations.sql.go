@@ -118,6 +118,37 @@ func (q *Queries) GetPersonalOrganizationByUserID(ctx context.Context, userID uu
 	return i, err
 }
 
+const updateOrganizationCommissionRate = `-- name: UpdateOrganizationCommissionRate :one
+UPDATE organizations SET commission_rate = $2, updated_at = now()
+WHERE id = $1
+RETURNING id, name, kind, commission_rate, rut, payout_bank, payout_account_type, payout_account_number, payout_holder_name, created_at, updated_at, slug
+`
+
+type UpdateOrganizationCommissionRateParams struct {
+	ID             uuid.UUID      `json:"id"`
+	CommissionRate pgtype.Numeric `json:"commission_rate"`
+}
+
+func (q *Queries) UpdateOrganizationCommissionRate(ctx context.Context, arg UpdateOrganizationCommissionRateParams) (Organization, error) {
+	row := q.db.QueryRow(ctx, updateOrganizationCommissionRate, arg.ID, arg.CommissionRate)
+	var i Organization
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Kind,
+		&i.CommissionRate,
+		&i.Rut,
+		&i.PayoutBank,
+		&i.PayoutAccountType,
+		&i.PayoutAccountNumber,
+		&i.PayoutHolderName,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Slug,
+	)
+	return i, err
+}
+
 const getOrganizationOwnerByOrgID = `-- name: GetOrganizationOwnerByOrgID :one
 SELECT u.email, u.full_name, u.email_verified_at FROM users u
 JOIN organization_members om ON om.user_id = u.id

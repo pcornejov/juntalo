@@ -39,6 +39,7 @@ type Querier interface {
 	GetOrganizationByID(ctx context.Context, id uuid.UUID) (Organization, error)
 	GetOrganizationBySlug(ctx context.Context, slug string) (Organization, error)
 	GetOrganizationOwnerByOrgID(ctx context.Context, organizationID uuid.UUID) (GetOrganizationOwnerByOrgIDRow, error)
+	UpdateOrganizationCommissionRate(ctx context.Context, arg UpdateOrganizationCommissionRateParams) (Organization, error)
 	GetPasswordIdentityByUserID(ctx context.Context, userID uuid.UUID) (UserIdentity, error)
 	GetPaymentByContributionID(ctx context.Context, contributionID uuid.UUID) (Payment, error)
 	GetPaymentByIDForUpdate(ctx context.Context, id uuid.UUID) (Payment, error)

@@ -28,15 +28,17 @@ func (r *AdminRepo) ListUsers(ctx context.Context, limit, offset int32) ([]app.A
 	}
 	out := make([]app.AdminUserRow, len(rows))
 	for i, row := range rows {
+		rate, _ := row.OrganizationCommissionRate.Float64Value()
 		out[i] = app.AdminUserRow{
-			ID:               row.ID,
-			Email:            row.Email,
-			FullName:         row.FullName,
-			EmailVerified:    row.EmailVerifiedAt.Valid,
-			CreatedAt:        row.CreatedAt.Time,
-			OrganizationID:   row.OrganizationID,
-			OrganizationName: row.OrganizationName,
-			CampaignCount:    row.CampaignCount,
+			ID:                         row.ID,
+			Email:                      row.Email,
+			FullName:                   row.FullName,
+			EmailVerified:              row.EmailVerifiedAt.Valid,
+			CreatedAt:                  row.CreatedAt.Time,
+			OrganizationID:             row.OrganizationID,
+			OrganizationName:           row.OrganizationName,
+			OrganizationCommissionRate: rate.Float64,
+			CampaignCount:              row.CampaignCount,
 		}
 	}
 	return out, nil
