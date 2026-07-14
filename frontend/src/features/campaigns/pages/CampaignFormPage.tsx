@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCampaignTypes, useCreateCampaign, usePublishCampaign } from '../hooks/useCampaigns'
 import { errorMessage } from '../../../shared/api/errors'
+import { formatCLP } from '../../../shared/lib/clp'
 import { Button, Card, Input } from '../../../shared/ui'
 
 // El formulario crea Y publica en un solo paso (Etapa 1: crear y compartir en <2 min).
@@ -19,6 +20,10 @@ export function CampaignFormPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const defaultType = types?.[0]
+
+  function handleGoalAmountChange(e: ChangeEvent<HTMLInputElement>) {
+    setGoalAmount(e.target.value.replace(/\D/g, ''))
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -47,7 +52,7 @@ export function CampaignFormPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-6 text-2xl font-semibold">Nueva campaña</h1>
+      <h1 className="mb-6 font-display text-2xl font-bold tracking-tight">Nueva campaña</h1>
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -76,11 +81,11 @@ export function CampaignFormPage() {
               Meta (CLP, opcional)
             </label>
             <Input
-              type="number"
-              min={0}
-              value={goalAmount}
-              onChange={(e) => setGoalAmount(e.target.value)}
-              placeholder="500000"
+              type="text"
+              inputMode="numeric"
+              value={goalAmount ? formatCLP(Number(goalAmount)) : ''}
+              onChange={handleGoalAmountChange}
+              placeholder="$500.000"
             />
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
