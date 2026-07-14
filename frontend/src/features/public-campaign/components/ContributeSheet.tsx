@@ -39,6 +39,14 @@ export function ContributeSheet({ slug, cta, onClose, onSuccess }: ContributeShe
         is_anonymous: isAnonymous,
         message: message || undefined,
       })
+      // Con una pasarela real (Webpay) el pago no se resuelve en la página:
+      // hay que sacar al aportante entero del sitio para que entre su
+      // tarjeta en Transbank. El mock nunca manda redirect_url, así que este
+      // camino no cambia nada para el flujo simulado.
+      if (result.payment.redirect_url) {
+        window.location.href = result.payment.redirect_url
+        return
+      }
       onSuccess(result)
     } catch (err) {
       setError(errorMessage(err))

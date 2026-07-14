@@ -25,6 +25,7 @@ import (
 	infraauth "github.com/pcornejov/juntalo/backend/internal/infra/auth"
 	"github.com/pcornejov/juntalo/backend/internal/infra/email"
 	"github.com/pcornejov/juntalo/backend/internal/infra/payments/mock"
+	"github.com/pcornejov/juntalo/backend/internal/infra/payments/webpay"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/repos"
 	"github.com/pcornejov/juntalo/backend/internal/infra/storage/local"
 	"github.com/pcornejov/juntalo/backend/internal/infra/storage/r2"
@@ -59,6 +60,12 @@ type Config struct {
 	R2SecretAccessKey string
 	R2Bucket          string
 	R2PublicURL       string
+
+	// Pasarela de pago real (Webpay Plus). WebpayCommerceCode vacío = cae al
+	// mock (ver infra/config).
+	WebpayCommerceCode string
+	WebpayAPIKey       string
+	WebpayEnvironment  string
 }
 
 func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
@@ -112,11 +119,31 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	} else {
 		storage = local.New(cfg.StorageDir, cfg.StorageURL)
 	}
-	paymentProvider := mock.NewProvider(
-		mock.Mode(cfg.MockPaymentMode),
-		cfg.SelfURL+"/api/v1/webhooks/payments/mock",
-		cfg.MockWebhookSecret,
-	)
+	// Pasarela de pago: Webpay Plus (Transbank) si hay credenciales, si no
+	// cae al mock — mismo patrón "vacío = off" que storage/R2 y Resend/Sentry.
+	// webpayProvider queda como *webpay.Provider (no la interfaz) porque el
+	// return handler necesita su método Commit, que no es parte de
+	// app.PaymentProvider (ningún otro proveedor tiene ese paso).
+	var paymentProvider app.PaymentProvider
+	var webpayProvider *webpay.Provider
+	var paymentProviderName string
+	if cfg.WebpayCommerceCode != "" {
+		webpayProvider = webpay.New(webpay.Config{
+			CommerceCode: cfg.WebpayCommerceCode,
+			APIKey:       cfg.WebpayAPIKey,
+			Environment:  cfg.WebpayEnvironment,
+			SelfURL:      cfg.SelfURL,
+		})
+		paymentProvider = webpayProvider
+		paymentProviderName = "webpay"
+	} else {
+		paymentProvider = mock.NewProvider(
+			mock.Mode(cfg.MockPaymentMode),
+			cfg.SelfURL+"/api/v1/webhooks/payments/mock",
+			cfg.MockWebhookSecret,
+		)
+		paymentProviderName = "mock"
+	}
 	var emailSender app.EmailSender
 	if cfg.ResendAPIKey != "" {
 		emailSender = email.NewResendSender(cfg.ResendAPIKey, cfg.EmailFrom)
@@ -159,12 +186,12 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	// proceso, no como infra de cron aparte (Etapa 4).
 	go campaignsuc.RunPublishScheduler(context.Background(), campaignRepo, publishSchedulerInterval)
 
-	startSvc := contributionsuc.NewStartService(campaignRepo, orgRepo, contributorRepo, contributionRepo, paymentRepo, paymentProvider, emailSender, cfg.FrontendURL)
+	startSvc := contributionsuc.NewStartService(campaignRepo, orgRepo, contributorRepo, contributionRepo, paymentRepo, paymentProvider, paymentProviderName, emailSender, cfg.FrontendURL)
 	confirmSvc := contributionsuc.NewConfirmService(paymentRepo, contributionRepo, campaignRepo, contributorRepo, orgRepo, emailSender, cfg.FrontendURL)
 	statusSvc := contributionsuc.NewStatusService(contributionRepo)
 	participantsSvc := dashboarduc.NewParticipantsService(campaignRepo, participantRepo)
 	exportSvc := dashboarduc.NewExportCSVService(campaignRepo, participantRepo)
-	refundSvc := dashboarduc.NewRefundService(campaignRepo, contributionRepo, paymentRepo)
+	refundSvc := dashboarduc.NewRefundService(campaignRepo, contributionRepo, paymentRepo, paymentProvider)
 
 	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks)
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, cloneSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
@@ -181,6 +208,10 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	mountContributionRoutes(v1, contributionHandler, middleware.ContributeLimiter())
 	mountWebhookRoutes(v1, webhookHandler)
 	mountMetaRoutes(v1)
+	if webpayProvider != nil {
+		webpayHandler := handlers.NewWebpayHandler(webpayProvider, confirmSvc, contributionRepo, campaignRepo, cfg.FrontendURL)
+		mountWebpayRoutes(v1, webpayHandler)
+	}
 
 	return fiberApp
 }

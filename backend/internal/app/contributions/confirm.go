@@ -45,7 +45,11 @@ func NewConfirmService(
 // idempotente: un evento repetido para un pago ya en el estado destino no
 // tiene efecto doble (lo garantiza ConfirmByProviderRef). Eventos desconocidos
 // son no-ops silenciosos — no amplificamos reintentos del proveedor con 4xx.
-func (s *ConfirmService) HandleWebhookEvent(ctx context.Context, provider, providerRef, event string) error {
+// Devuelve el payment actualizado (zero value si el evento fue un no-op) para
+// que un caller que necesite más contexto — ej. el return handler de Webpay,
+// que arma el redirect final al frontend a partir del contribution_id — no
+// tenga que volver a consultarlo por su cuenta.
+func (s *ConfirmService) HandleWebhookEvent(ctx context.Context, provider, providerRef, event string) (payment.Payment, error) {
 	var newStatus payment.Status
 	switch event {
 	case "payment.confirmed":
@@ -53,14 +57,14 @@ func (s *ConfirmService) HandleWebhookEvent(ctx context.Context, provider, provi
 	case "payment.failed":
 		newStatus = payment.StatusFailed
 	default:
-		return nil
+		return payment.Payment{}, nil
 	}
 	confirmedPayment, transitioned, err := s.payments.ConfirmByProviderRef(ctx, provider, providerRef, newStatus)
 	if err != nil {
-		return err
+		return payment.Payment{}, err
 	}
 	if transitioned && newStatus == payment.StatusConfirmed {
 		notifyOrganizer(ctx, s.contributions, s.campaigns, s.contributors, s.organizations, s.email, s.frontendURL, confirmedPayment)
 	}
-	return nil
+	return confirmedPayment, nil
 }

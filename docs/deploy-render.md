@@ -33,6 +33,20 @@ No necesitas configurar nada más: `render.yaml` ya conecta el frontend con el b
 - **La base de datos gratis se borra sola a los ~30 días** de creada. Si sigues probando después de ese plazo, hay que recrear el Blueprint (o solo la base) y el schema se vuelve a crear solo gracias a `RUN_MIGRATIONS_ON_BOOT`.
 - Los pagos son siempre simulados (`MockPaymentProvider`) — no hay dinero real involucrado en ningún punto.
 
+## Pasarela de pago real (Webpay Plus)
+
+Por defecto el deploy sigue usando `MockPaymentProvider` — no requiere nada extra y es la forma más rápida de probar el flujo completo. Para probar el pago real (con tarjetas de prueba, sin dinero de verdad) contra el ambiente de integración de Transbank:
+
+1. En el dashboard de Render, en `juntalo-api` → **Environment**, agrega estas 3 variables (no vienen declaradas en `render.yaml` — Render permite agregar variables custom aunque el blueprint no las liste):
+   - `WEBPAY_COMMERCE_CODE` = `597055555532`
+   - `WEBPAY_API_KEY` = `579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C`
+   - `WEBPAY_ENVIRONMENT` = `integration`
+
+   Estas credenciales son **públicas**: Transbank las publica iguales para todos los que están integrando (no son un secreto tuyo) — por eso es seguro pegarlas directo, a diferencia de `RESEND_API_KEY` o las credenciales de R2.
+2. Redeploy manual de `juntalo-api`.
+3. Al aportar, en vez de confirmarse al toque (mock), el navegador te manda a la página real de Webpay. Usa una tarjeta de prueba (Transbank las publica en su documentación; para el formulario de autenticación con RUT y clave, el de prueba es RUT `11.111.111-1` / clave `123`).
+4. Para pasar a producción real: reemplaza las 3 variables por las credenciales de tu comercio afiliado real en Transbank (`WEBPAY_ENVIRONMENT=production`), y cárgalas como secretas (edita `render.yaml` para agregarlas con `sync: false` en vez de dejarlas sueltas en el dashboard, para que quede documentado en el repo que existen sin exponer su valor).
+
 ## Storage persistente de imágenes (Cloudflare R2)
 
 Por defecto las imágenes se guardan en el disco del contenedor de `juntalo-api`, que Render borra en cada redeploy o reinicio. Para que las imágenes persistan de verdad:

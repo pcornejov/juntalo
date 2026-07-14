@@ -6,7 +6,6 @@ package mock
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -81,8 +80,10 @@ func (p *Provider) GetIntent(_ context.Context, providerRef string) (app.Payment
 	return app.PaymentIntent{ProviderRef: providerRef, Status: payment.StatusPending}, nil
 }
 
+// Refund simula un reembolso exitoso e instantáneo — no hay dinero real
+// involucrado, así que no hay nada que pueda fallar del lado del proveedor.
 func (p *Provider) Refund(_ context.Context, providerRef string, amount money.CLP) (app.RefundResult, error) {
-	return app.RefundResult{}, fmt.Errorf("mock: refund not implemented in MVP")
+	return app.RefundResult{ProviderRef: "mock_refund_" + uuid.New().String(), Amount: amount}, nil
 }
 
 // confirmAsync simula la confirmación asíncrona de una pasarela real: espera

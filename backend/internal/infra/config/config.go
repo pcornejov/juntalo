@@ -50,6 +50,15 @@ type Config struct {
 	// conectado) — no es el endpoint de la API S3, ese se arma con
 	// R2AccountID (ver internal/infra/storage/r2).
 	R2PublicURL string `envconfig:"R2_PUBLIC_URL" default:""`
+
+	// Pasarela de pago real (Webpay Plus / Transbank). WebpayCommerceCode
+	// vacío = cae a MockPaymentProvider — mismo patrón que R2AccountID.
+	// Para "integration" el comercio y api key son públicos (los mismos
+	// para todos los desarrolladores, ver render.yaml); para "production"
+	// hay que reemplazarlos por los del comercio afiliado real de Transbank.
+	WebpayCommerceCode string `envconfig:"WEBPAY_COMMERCE_CODE" default:""`
+	WebpayAPIKey       string `envconfig:"WEBPAY_API_KEY" default:""`
+	WebpayEnvironment  string `envconfig:"WEBPAY_ENVIRONMENT" default:"integration"`
 }
 
 func Load() (Config, error) {

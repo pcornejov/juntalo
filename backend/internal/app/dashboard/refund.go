@@ -17,10 +17,11 @@ type RefundService struct {
 	campaigns     app.CampaignRepository
 	contributions app.ContributionRepository
 	payments      app.PaymentRepository
+	provider      app.PaymentProvider
 }
 
-func NewRefundService(campaigns app.CampaignRepository, contributions app.ContributionRepository, payments app.PaymentRepository) *RefundService {
-	return &RefundService{campaigns: campaigns, contributions: contributions, payments: payments}
+func NewRefundService(campaigns app.CampaignRepository, contributions app.ContributionRepository, payments app.PaymentRepository, provider app.PaymentProvider) *RefundService {
+	return &RefundService{campaigns: campaigns, contributions: contributions, payments: payments, provider: provider}
 }
 
 // Refund scopes to the organizer's own campaign — igual que ParticipantsService,
@@ -49,5 +50,14 @@ func (s *RefundService) Refund(ctx context.Context, campaignID, contributionID, 
 		return payment.Payment{}, apperr.New("payment_not_found", "Pago no encontrado")
 	}
 
-	return s.payments.Refund(ctx, pay.ID, amount, "", reason)
+	// El reembolso real en la pasarela va PRIMERO y fuera de cualquier
+	// transacción de DB — es una llamada de red que no debería sostener un
+	// FOR UPDATE, y no tiene sentido marcar "reembolsado" en Juntalo si el
+	// dinero nunca volvió de verdad al medio de pago del aportante.
+	result, err := s.provider.Refund(ctx, pay.ProviderRef, amount)
+	if err != nil {
+		return payment.Payment{}, apperr.New("refund_provider_failed", "No se pudo procesar el reembolso con la pasarela de pago")
+	}
+
+	return s.payments.Refund(ctx, pay.ID, amount, result.ProviderRef, reason)
 }

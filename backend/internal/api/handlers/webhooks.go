@@ -48,7 +48,7 @@ func (h *WebhookHandler) Payments(c *fiber.Ctx) error {
 		return dto.WriteError(c, err)
 	}
 
-	if err := h.confirm.HandleWebhookEvent(c.Context(), provider, payload.ProviderRef, payload.Event); err != nil {
+	if _, err := h.confirm.HandleWebhookEvent(c.Context(), provider, payload.ProviderRef, payload.Event); err != nil {
 		// Referencia desconocida: puede ser ruido del proveedor (reintento
 		// tardío de un test, etc.) — se registra pero no se amplifica con 4xx.
 		if contributionsuc.IsPaymentNotFound(err) {

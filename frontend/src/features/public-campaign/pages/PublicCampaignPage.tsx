@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { Calendar, MapPin, Share2, Link2, ArrowRight, ShieldCheck, Users } from 'lucide-react'
 import { usePublicCampaign } from '../hooks/usePublicCampaign'
 import { useContributionStatus } from '../hooks/useContribute'
@@ -19,20 +19,36 @@ import type { StartContributionResult } from '../api'
 // CTA principal), Sora en titulares y cifras grandes, Inter en el resto.
 export function PublicCampaignPage() {
   const { slug } = useParams<{ slug: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { data: campaign, isLoading, isError } = usePublicCampaign(slug)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [result, setResult] = useState<StartContributionResult | null>(null)
+  // Vuelta de una pasarela redirect-based (Webpay): el backend redirige acá
+  // con ?contribution_id= después de confirmar el pago — no hay `result` de
+  // useContribute porque el POST original lo hizo un submit anterior, antes
+  // de salir del sitio, así que se retoma el polling solo con el id.
+  const redirectedContributionId = searchParams.get('contribution_id') ?? undefined
+  const contributionId = result?.contribution_id ?? redirectedContributionId
   const { data: statusData } = useContributionStatus(
     slug ?? '',
-    result?.contribution_id,
+    contributionId,
     result?.payment.status,
   )
   const contributionStatus = statusData?.status ?? result?.payment.status
+  const showSuccessPanel = Boolean(result) || Boolean(redirectedContributionId)
+
+  function closeSuccessPanel() {
+    setResult(null)
+    if (redirectedContributionId) {
+      searchParams.delete('contribution_id')
+      setSearchParams(searchParams, { replace: true })
+    }
+  }
   // Mientras el pago del aporte recién hecho sigue 'pending', el total y el
   // contador de aportantes que devuelve el backend todavía no lo incluyen
   // (solo cuentan pagos confirmados) — se marcan como "actualizando" en vez
   // de mostrar una cifra que el propio usuario sabe que está desactualizada.
-  const isConfirmingContribution = Boolean(result) && contributionStatus === 'pending'
+  const isConfirmingContribution = showSuccessPanel && contributionStatus === 'pending'
 
   if (isLoading) {
     return <div className="p-6 text-center text-text-secondary">Cargando…</div>
@@ -223,11 +239,8 @@ export function PublicCampaignPage() {
         />
       )}
 
-      {result && (
-        <ContributeSuccessPanel
-          status={contributionStatus ?? result.payment.status}
-          onClose={() => setResult(null)}
-        />
+      {showSuccessPanel && (
+        <ContributeSuccessPanel status={contributionStatus ?? 'pending'} onClose={closeSuccessPanel} />
       )}
     </div>
   )

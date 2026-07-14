@@ -17,8 +17,6 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/domain/payment"
 )
 
-const mockProviderName = "mock"
-
 var errCampaignNotActive = apperr.New("campaign_not_active", "Esta campaña no está recibiendo aportes en este momento")
 
 type StartService struct {
@@ -28,8 +26,17 @@ type StartService struct {
 	contributions app.ContributionRepository
 	payments      app.PaymentRepository
 	provider      app.PaymentProvider
-	email         app.EmailSender
-	frontendURL   string
+	// providerName se persiste en payments.provider y es la clave con la que
+	// después se busca el pago por provider_ref (ConfirmByProviderRef, tanto
+	// acá mismo como en el webhook/return handler de cada proveedor) — tiene
+	// que coincidir exacto con el nombre que usa ese proveedor para
+	// confirmar, o la confirmación nunca encuentra el pago (bug real: quedó
+	// hardcodeado en "mock" hasta que se integró Webpay, momento en el que
+	// toda confirmación real fallaba en silencio por buscar provider="mock"
+	// contra filas guardadas con el provider correcto).
+	providerName string
+	email        app.EmailSender
+	frontendURL  string
 }
 
 func NewStartService(
@@ -39,13 +46,14 @@ func NewStartService(
 	contributions app.ContributionRepository,
 	payments app.PaymentRepository,
 	provider app.PaymentProvider,
+	providerName string,
 	email app.EmailSender,
 	frontendURL string,
 ) *StartService {
 	return &StartService{
 		campaigns: campaigns, organizations: organizations, contributors: contributors,
 		contributions: contributions, payments: payments, provider: provider,
-		email: email, frontendURL: frontendURL,
+		providerName: providerName, email: email, frontendURL: frontendURL,
 	}
 }
 
@@ -139,7 +147,7 @@ func (s *StartService) Start(ctx context.Context, in StartInput) (StartResult, e
 	_, err = s.payments.Create(ctx, app.CreatePaymentInput{
 		ContributionID:        newContribution.ID,
 		IdempotencyKey:        in.IdempotencyKey,
-		Provider:              mockProviderName,
+		Provider:              s.providerName,
 		ProviderRef:           intent.ProviderRef,
 		Status:                payment.StatusPending,
 		AmountGross:           in.Amount,
@@ -165,7 +173,7 @@ func (s *StartService) Start(ctx context.Context, in StartInput) (StartResult, e
 
 	finalStatus := payment.StatusPending
 	if intent.Status == payment.StatusConfirmed || intent.Status == payment.StatusFailed {
-		confirmedPayment, transitioned, err := s.payments.ConfirmByProviderRef(ctx, mockProviderName, intent.ProviderRef, intent.Status)
+		confirmedPayment, transitioned, err := s.payments.ConfirmByProviderRef(ctx, s.providerName, intent.ProviderRef, intent.Status)
 		if err != nil {
 			return StartResult{}, err
 		}

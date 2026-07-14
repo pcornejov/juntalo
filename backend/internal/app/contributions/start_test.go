@@ -42,7 +42,7 @@ func newFixture(t *testing.T, providerMode payment.Status) *fixture {
 	return &fixture{
 		campaigns: campaigns, orgs: orgs, contributions: contributionsRepo,
 		payments: paymentsRepo, provider: provider,
-		start:      NewStartService(campaigns, orgs, &fakeContributorRepo{}, contributionsRepo, paymentsRepo, provider, &fakeEmailSender{}, "http://localhost:5173"),
+		start:      NewStartService(campaigns, orgs, &fakeContributorRepo{}, contributionsRepo, paymentsRepo, provider, "mock", &fakeEmailSender{}, "http://localhost:5173"),
 		confirm:    NewConfirmService(paymentsRepo, contributionsRepo, campaigns, &fakeContributorRepo{}, orgs, &fakeEmailSender{}, "http://localhost:5173"),
 		campaignID: campaignID, orgID: orgID,
 	}
@@ -216,7 +216,7 @@ func TestStartService_DeferredThenWebhookConfirms(t *testing.T) {
 	}
 
 	pay, _, _ := f.payments.GetByIdempotencyKey(context.Background(), "k")
-	if err := f.confirm.HandleWebhookEvent(context.Background(), "mock", pay.ProviderRef, "payment.confirmed"); err != nil {
+	if _, err := f.confirm.HandleWebhookEvent(context.Background(), "mock", pay.ProviderRef, "payment.confirmed"); err != nil {
 		t.Fatalf("webhook confirm: %v", err)
 	}
 
@@ -237,10 +237,10 @@ func TestConfirmService_RepeatedWebhookEventIsIdempotent(t *testing.T) {
 	}
 	pay, _, _ := f.payments.GetByIdempotencyKey(context.Background(), "k")
 
-	if err := f.confirm.HandleWebhookEvent(context.Background(), "mock", pay.ProviderRef, "payment.confirmed"); err != nil {
+	if _, err := f.confirm.HandleWebhookEvent(context.Background(), "mock", pay.ProviderRef, "payment.confirmed"); err != nil {
 		t.Fatalf("first webhook: %v", err)
 	}
-	if err := f.confirm.HandleWebhookEvent(context.Background(), "mock", pay.ProviderRef, "payment.confirmed"); err != nil {
+	if _, err := f.confirm.HandleWebhookEvent(context.Background(), "mock", pay.ProviderRef, "payment.confirmed"); err != nil {
 		t.Fatalf("repeated webhook should be a no-op, not an error: %v", err)
 	}
 
@@ -257,7 +257,7 @@ func TestConfirmService_UnknownEventIsNoop(t *testing.T) {
 	}
 	pay, _, _ := f.payments.GetByIdempotencyKey(context.Background(), "k")
 
-	if err := f.confirm.HandleWebhookEvent(context.Background(), "mock", pay.ProviderRef, "payment.unknown_event"); err != nil {
+	if _, err := f.confirm.HandleWebhookEvent(context.Background(), "mock", pay.ProviderRef, "payment.unknown_event"); err != nil {
 		t.Fatalf("unknown event should be a silent no-op, got %v", err)
 	}
 }

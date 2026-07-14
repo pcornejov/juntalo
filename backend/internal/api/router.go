@@ -64,6 +64,13 @@ func mountWebhookRoutes(apiV1 fiber.Router, h *handlers.WebhookHandler) {
 	apiV1.Post("/webhooks/payments/:provider", h.Payments)
 }
 
+// mountWebpayRoutes solo se llama si hay un *webpay.Provider configurado
+// (ver server.go) — con el mock, estas rutas ni se registran.
+func mountWebpayRoutes(apiV1 fiber.Router, h *handlers.WebpayHandler) {
+	apiV1.Get("/webpay/redirect", h.Redirect)
+	apiV1.Post("/webpay/return", h.Return)
+}
+
 func mountMetaRoutes(router fiber.Router) {
 	router.Get("/meta/campaign-types", handlers.CampaignTypes)
 }
