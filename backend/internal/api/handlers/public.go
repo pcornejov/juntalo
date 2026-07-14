@@ -36,7 +36,14 @@ func NewPublicHandler(get *campaignsuc.GetService, files app.FileRepository, ima
 
 // GetJSON is consumed by the SPA's public campaign page (Etapa 4 §4).
 func (h *PublicHandler) GetJSON(c *fiber.Ctx) error {
-	c.Set("Cache-Control", "public, max-age=30")
+	// Antes tenía Cache-Control: public, max-age=30 — pero el navegador
+	// respeta ese header a nivel de fetch() sin importar que React Query
+	// invalide su propia caché, así que el refetch tras confirmar un pago
+	// podía seguir devolviendo el total viejo hasta por 30s. El total y el
+	// contador de aportantes son justamente lo que más necesita ser
+	// correcto en tiempo real, así que no vale la pena cachear esta
+	// respuesta a nivel HTTP.
+	c.Set("Cache-Control", "no-store")
 
 	slug := c.Params("slug")
 	found, totals, err := h.get.GetPublicBySlug(c.Context(), slug)

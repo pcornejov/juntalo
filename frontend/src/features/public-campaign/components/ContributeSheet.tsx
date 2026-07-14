@@ -1,7 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Input } from '../../../shared/ui'
 import { errorMessage } from '../../../shared/api/errors'
+import { formatCLP } from '../../../shared/lib/clp'
 import { useContribute } from '../hooks/useContribute'
 import type { StartContributionResult } from '../api'
 
@@ -17,10 +18,16 @@ interface ContributeSheetProps {
 export function ContributeSheet({ slug, cta, onClose, onSuccess }: ContributeSheetProps) {
   const { mutateAsync, isPending } = useContribute(slug)
   const [fullName, setFullName] = useState('')
+  // amount guarda solo dígitos (fuente de verdad); el input muestra el
+  // monto formateado como CLP ($7.777) mientras se escribe.
   const [amount, setAmount] = useState('')
   const [isAnonymous, setIsAnonymous] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+
+  function handleAmountChange(e: ChangeEvent<HTMLInputElement>) {
+    setAmount(e.target.value.replace(/\D/g, ''))
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -51,11 +58,11 @@ export function ContributeSheet({ slug, cta, onClose, onSuccess }: ContributeShe
             required
           />
           <Input
-            type="number"
-            min={1}
+            type="text"
+            inputMode="numeric"
             placeholder="Monto en CLP"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            value={amount ? formatCLP(Number(amount)) : ''}
+            onChange={handleAmountChange}
             required
           />
           <textarea
