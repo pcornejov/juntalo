@@ -35,7 +35,10 @@ WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
 
 -- name: UpdateCampaignStatus :one
-UPDATE campaigns SET status = $2, updated_at = now()
+-- publish_at se limpia siempre: solo tiene sentido mientras la campaña sigue
+-- en draft (QA: publicar manualmente antes de la fecha programada dejaba
+-- publish_at "stale" con una fecha ya vencida en una campaña activa).
+UPDATE campaigns SET status = $2, publish_at = NULL, updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
 
@@ -50,6 +53,6 @@ SELECT * FROM campaign_totals WHERE campaign_id = $1;
 -- atómicamente todo draft cuya publish_at ya venció, sin condición de
 -- carrera entre el scheduler y una publicación manual del organizador
 -- (el UPDATE solo afecta filas que siguen en 'draft').
-UPDATE campaigns SET status = 'active', updated_at = now()
+UPDATE campaigns SET status = 'active', publish_at = NULL, updated_at = now()
 WHERE status = 'draft' AND publish_at IS NOT NULL AND publish_at <= now() AND deleted_at IS NULL
 RETURNING *;

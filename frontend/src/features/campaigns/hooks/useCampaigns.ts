@@ -87,10 +87,11 @@ export function useCampaignGallery(campaignId: string) {
   }
 }
 
-export function useParticipants(campaignId: string) {
+export function useParticipants(campaignId: string, search = '', status = '') {
   const query = useInfiniteQuery({
-    queryKey: ['participants', campaignId],
-    queryFn: ({ pageParam }) => campaignsApi.listParticipants(campaignId, pageParam),
+    queryKey: ['participants', campaignId, search, status],
+    queryFn: ({ pageParam }) =>
+      campaignsApi.listParticipants(campaignId, pageParam, campaignsApi.PARTICIPANTS_PAGE_SIZE, search, status),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) =>
       lastPage.has_more ? allPages.length * campaignsApi.PARTICIPANTS_PAGE_SIZE : undefined,

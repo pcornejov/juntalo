@@ -60,6 +60,20 @@ func (f *fakeParticipantRepo) ListByCampaign(context.Context, uuid.UUID, int32, 
 	return f.rows, nil
 }
 
+func (f *fakeParticipantRepo) ListByCampaignFiltered(_ context.Context, _ uuid.UUID, search, status string, _, _ int32) ([]app.ParticipantRow, error) {
+	var out []app.ParticipantRow
+	for _, r := range f.rows {
+		if status != "" && string(r.Status) != status {
+			continue
+		}
+		if search != "" && !strings.Contains(strings.ToLower(r.FullName), strings.ToLower(search)) {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out, nil
+}
+
 func TestParticipantsService_ForeignOrgReturnsNotFound(t *testing.T) {
 	campaignID, ownerOrg, otherOrg := uuid.New(), uuid.New(), uuid.New()
 	campaigns := &fakeCampaignRepo{byID: map[uuid.UUID]campaign.Campaign{
@@ -67,9 +81,37 @@ func TestParticipantsService_ForeignOrgReturnsNotFound(t *testing.T) {
 	}}
 	svc := NewParticipantsService(campaigns, &fakeParticipantRepo{})
 
-	_, err := svc.List(context.Background(), campaignID, otherOrg, 0, 0)
+	_, err := svc.List(context.Background(), campaignID, otherOrg, "", "", 0, 0)
 	if !apperr.Is(err, "campaign_not_found") {
 		t.Fatalf("expected campaign_not_found for a foreign org (no filtrar existencia), got %v", err)
+	}
+}
+
+func TestParticipantsService_FiltersBySearchAndStatus(t *testing.T) {
+	campaignID, orgID := uuid.New(), uuid.New()
+	campaigns := &fakeCampaignRepo{byID: map[uuid.UUID]campaign.Campaign{
+		campaignID: {ID: campaignID, OrganizationID: orgID},
+	}}
+	participants := &fakeParticipantRepo{rows: []app.ParticipantRow{
+		{FullName: "Zoe Findable", Status: contribution.StatusConfirmed},
+		{FullName: "Ana Pérez", Status: contribution.StatusRefunded},
+	}}
+	svc := NewParticipantsService(campaigns, participants)
+
+	got, err := svc.List(context.Background(), campaignID, orgID, "zoe", "", 100, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 || got[0].FullName != "Zoe Findable" {
+		t.Fatalf("expected search to find Zoe Findable, got %+v", got)
+	}
+
+	got, err = svc.List(context.Background(), campaignID, orgID, "", "refunded", 100, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(got) != 1 || got[0].FullName != "Ana Pérez" {
+		t.Fatalf("expected status filter to find Ana Pérez, got %+v", got)
 	}
 }
 

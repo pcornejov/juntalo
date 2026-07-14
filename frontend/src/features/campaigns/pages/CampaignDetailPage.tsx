@@ -1,4 +1,4 @@
-import type { ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Copy } from 'lucide-react'
 import {
@@ -10,6 +10,7 @@ import {
   useParticipants,
   usePublishCampaign,
 } from '../hooks/useCampaigns'
+import { useDebouncedValue } from '../../../shared/lib/useDebouncedValue'
 import { Button, Card, ShareButtons, QrCode } from '../../../shared/ui'
 import { StatusBadge } from '../components/StatusBadge'
 import { TotalsPanel } from '../components/TotalsPanel'
@@ -35,13 +36,16 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   const clone = useCloneCampaign()
   const cancelSchedule = useCancelScheduledPublish()
   const gallery = useCampaignGallery(campaign.id)
+  const [participantSearch, setParticipantSearch] = useState('')
+  const [participantStatus, setParticipantStatus] = useState('')
+  const debouncedParticipantSearch = useDebouncedValue(participantSearch)
   const {
     participants,
     isLoading: isLoadingParticipants,
     hasNextPage: hasMoreParticipants,
     isFetchingNextPage: isFetchingMoreParticipants,
     fetchNextPage: fetchMoreParticipants,
-  } = useParticipants(campaign.id)
+  } = useParticipants(campaign.id, debouncedParticipantSearch, participantStatus)
 
   // public_url ya viene absoluta desde el backend (Etapa 4: /c/:slug vive en
   // el dominio del backend, no del frontend — necesario cuando ambos están
@@ -219,7 +223,17 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
         {isLoadingParticipants ? (
           <p className="text-sm text-text-secondary">Cargando…</p>
         ) : (
-          <ParticipantsTable items={participants} campaignId={campaign.id} />
+          <ParticipantsTable
+            items={participants}
+            campaignId={campaign.id}
+            search={participantSearch}
+            onSearchChange={setParticipantSearch}
+            status={participantStatus}
+            onStatusChange={setParticipantStatus}
+            hasAnyParticipants={
+              participants.length > 0 || !!debouncedParticipantSearch || !!participantStatus
+            }
+          />
         )}
         {hasMoreParticipants && (
           <div className="text-center">

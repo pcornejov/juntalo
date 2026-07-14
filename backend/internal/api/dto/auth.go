@@ -3,7 +3,11 @@ package dto
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	FullName string `json:"full_name" validate:"required,min=2,max=120"`
-	Password string `json:"password" validate:"required,min=8"`
+	// Password solo lleva "required" a nivel de DTO — el largo mínimo lo
+	// valida identity.ValidatePassword en el dominio (QA: un "min=8" acá
+	// interceptaba antes y el código weak_password nunca llegaba a
+	// devolverse a la API, pese a estar documentado en errors.go).
+	Password string `json:"password" validate:"required"`
 }
 
 type LoginRequest struct {
@@ -49,7 +53,7 @@ type ForgotPasswordResponse struct {
 
 type ResetPasswordRequest struct {
 	Token       string `json:"token" validate:"required"`
-	NewPassword string `json:"new_password" validate:"required,min=8"`
+	NewPassword string `json:"new_password" validate:"required"`
 }
 
 type VerifyEmailRequest struct {

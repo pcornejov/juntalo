@@ -114,9 +114,18 @@ export interface Participant {
 
 export const PARTICIPANTS_PAGE_SIZE = 20
 
-export function listParticipants(campaignId: string, offset = 0, limit = PARTICIPANTS_PAGE_SIZE) {
+export function listParticipants(
+  campaignId: string,
+  offset = 0,
+  limit = PARTICIPANTS_PAGE_SIZE,
+  search = '',
+  status = '',
+) {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+  if (search) params.set('q', search)
+  if (status) params.set('status', status)
   return apiClient.get<{ items: Participant[]; has_more: boolean }>(
-    `/campaigns/${campaignId}/contributions?limit=${limit}&offset=${offset}`,
+    `/campaigns/${campaignId}/contributions?${params.toString()}`,
   )
 }
 

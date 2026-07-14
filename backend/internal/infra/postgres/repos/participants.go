@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/pcornejov/juntalo/backend/internal/app"
@@ -29,6 +30,35 @@ func (r *ParticipantRepo) ListByCampaign(ctx context.Context, campaignID uuid.UU
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list participants: %w", err)
+	}
+
+	out := make([]app.ParticipantRow, len(rows))
+	for i, row := range rows {
+		out[i] = app.ParticipantRow{
+			ContributionID: row.ContributionID,
+			FullName:       row.ContributorFullName,
+			Email:          row.ContributorEmail.String,
+			Phone:          row.ContributorPhone.String,
+			Amount:         money.CLP(row.Amount),
+			RefundedAmount: money.CLP(row.RefundedAmount),
+			IsAnonymous:    row.IsAnonymous,
+			Status:         contribution.Status(row.Status),
+			CreatedAt:      row.CreatedAt.Time,
+		}
+	}
+	return out, nil
+}
+
+func (r *ParticipantRepo) ListByCampaignFiltered(ctx context.Context, campaignID uuid.UUID, search, status string, limit, offset int32) ([]app.ParticipantRow, error) {
+	rows, err := r.q.ListParticipantsByCampaignFiltered(ctx, sqlc.ListParticipantsByCampaignFilteredParams{
+		CampaignID: campaignID,
+		Limit:      limit,
+		Offset:     offset,
+		Search:     pgtype.Text{String: search, Valid: search != ""},
+		Status:     pgtype.Text{String: status, Valid: status != ""},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list participants filtered: %w", err)
 	}
 
 	out := make([]app.ParticipantRow, len(rows))

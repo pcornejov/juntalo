@@ -25,8 +25,11 @@ func NewParticipantsService(campaigns app.CampaignRepository, participants app.P
 }
 
 // List scopes to the organizer's own campaign — un uuid ajeno responde
-// campaign_not_found, nunca un error de permisos (Etapa 4 §3).
-func (s *ParticipantsService) List(ctx context.Context, campaignID, orgID uuid.UUID, limit, offset int32) ([]app.ParticipantRow, error) {
+// campaign_not_found, nunca un error de permisos (Etapa 4 §3). search/status
+// filtran en el backend sobre todo el dataset de la campaña, no solo la
+// página cargada (QA: la versión anterior filtraba client-side y daba falsos
+// negativos con más de una página de participantes).
+func (s *ParticipantsService) List(ctx context.Context, campaignID, orgID uuid.UUID, search, status string, limit, offset int32) ([]app.ParticipantRow, error) {
 	if _, found, err := s.campaigns.GetByIDForOrg(ctx, campaignID, orgID); err != nil {
 		return nil, err
 	} else if !found {
@@ -35,5 +38,8 @@ func (s *ParticipantsService) List(ctx context.Context, campaignID, orgID uuid.U
 	if limit <= 0 {
 		limit = defaultParticipantsLimit
 	}
-	return s.participants.ListByCampaign(ctx, campaignID, limit, offset)
+	if search == "" && status == "" {
+		return s.participants.ListByCampaign(ctx, campaignID, limit, offset)
+	}
+	return s.participants.ListByCampaignFiltered(ctx, campaignID, search, status, limit, offset)
 }

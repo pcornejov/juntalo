@@ -301,6 +301,11 @@ type ParticipantRow struct {
 
 type ParticipantRepository interface {
 	ListByCampaign(ctx context.Context, campaignID uuid.UUID, limit, offset int32) ([]ParticipantRow, error)
+	// ListByCampaignFiltered scopes ListByCampaign con búsqueda (nombre/email/
+	// teléfono) y filtro por estado — search/status vacíos desactivan cada
+	// filtro (QA: el buscador del dashboard solo filtraba client-side sobre
+	// la página cargada, dando falsos negativos en campañas con >1 página).
+	ListByCampaignFiltered(ctx context.Context, campaignID uuid.UUID, search, status string, limit, offset int32) ([]ParticipantRow, error)
 }
 
 // RecordAuditInput carries what AuditRepository.Record persists (Etapa 4 §1,

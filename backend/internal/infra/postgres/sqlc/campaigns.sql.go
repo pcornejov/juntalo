@@ -225,7 +225,7 @@ func (q *Queries) ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrg
 }
 
 const publishDueCampaigns = `-- name: PublishDueCampaigns :many
-UPDATE campaigns SET status = 'active', updated_at = now()
+UPDATE campaigns SET status = 'active', publish_at = NULL, updated_at = now()
 WHERE status = 'draft' AND publish_at IS NOT NULL AND publish_at <= now() AND deleted_at IS NULL
 RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at
 `
@@ -348,7 +348,7 @@ func (q *Queries) UpdateCampaign(ctx context.Context, arg UpdateCampaignParams) 
 }
 
 const updateCampaignStatus = `-- name: UpdateCampaignStatus :one
-UPDATE campaigns SET status = $2, updated_at = now()
+UPDATE campaigns SET status = $2, publish_at = NULL, updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at
 `

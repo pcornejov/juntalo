@@ -52,6 +52,7 @@ type Querier interface {
 	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
 	ListContributionsByCampaign(ctx context.Context, arg ListContributionsByCampaignParams) ([]Contribution, error)
 	ListParticipantsByCampaign(ctx context.Context, arg ListParticipantsByCampaignParams) ([]ListParticipantsByCampaignRow, error)
+	ListParticipantsByCampaignFiltered(ctx context.Context, arg ListParticipantsByCampaignFilteredParams) ([]ListParticipantsByCampaignFilteredRow, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, tokenHash string) error
 	MarkEmailVerified(ctx context.Context, id uuid.UUID) error
 	MarkPasswordResetTokenUsed(ctx context.Context, tokenHash string) error

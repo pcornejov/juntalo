@@ -1,13 +1,12 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Search } from 'lucide-react'
 import { formatCLP } from '../../../shared/lib/clp'
-import { normalizeForSearch } from '../../../shared/lib/search'
 import { Badge, Button, Input } from '../../../shared/ui'
 import type { Participant } from '../api'
 import { useRefundContribution } from '../hooks/useCampaigns'
 
-const statusFilterOptions: { value: Participant['status'] | 'all'; label: string }[] = [
-  { value: 'all', label: 'Todos los estados' },
+const statusFilterOptions: { value: Participant['status'] | ''; label: string }[] = [
+  { value: '', label: 'Todos los estados' },
   { value: 'pending', label: 'Pendiente' },
   { value: 'confirmed', label: 'Confirmado' },
   { value: 'failed', label: 'Fallido' },
@@ -86,31 +85,30 @@ function RefundForm({
   )
 }
 
+// items ya viene filtrado por el backend (search/status se mandan como query
+// params) — este componente solo renderiza los controles y la tabla, no
+// vuelve a filtrar client-side (QA: filtrar solo la página cargada daba
+// falsos negativos con más de una página de participantes).
 export function ParticipantsTable({
   items,
   campaignId,
+  search,
+  onSearchChange,
+  status,
+  onStatusChange,
+  hasAnyParticipants,
 }: {
   items: Participant[]
   campaignId: string
+  search: string
+  onSearchChange: (value: string) => void
+  status: string
+  onStatusChange: (value: string) => void
+  hasAnyParticipants: boolean
 }) {
   const [refunding, setRefunding] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<Participant['status'] | 'all'>('all')
 
-  const filtered = useMemo(() => {
-    const query = normalizeForSearch(search.trim())
-    return items.filter((p) => {
-      if (status !== 'all' && p.status !== status) return false
-      if (!query) return true
-      return (
-        normalizeForSearch(p.full_name).includes(query) ||
-        normalizeForSearch(p.email ?? '').includes(query) ||
-        normalizeForSearch(p.phone ?? '').includes(query)
-      )
-    })
-  }, [items, search, status])
-
-  if (items.length === 0) {
+  if (!hasAnyParticipants) {
     return <p className="text-sm text-text-secondary">Todavía no hay participantes.</p>
   }
 
@@ -126,13 +124,13 @@ export function ParticipantsTable({
             type="search"
             placeholder="Buscar por nombre, email o teléfono…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"
           />
         </div>
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value as Participant['status'] | 'all')}
+          onChange={(e) => onStatusChange(e.target.value)}
           className="rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand"
         >
           {statusFilterOptions.map((o) => (
@@ -143,7 +141,7 @@ export function ParticipantsTable({
         </select>
       </div>
 
-      {filtered.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-text-secondary">
           No hay participantes que coincidan con la búsqueda.
         </p>
@@ -161,7 +159,7 @@ export function ParticipantsTable({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {items.map((p) => (
                 <Fragment key={p.contribution_id}>
                   <tr className="border-b border-border-default last:border-0">
                     <td className="py-2 pr-4">

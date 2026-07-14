@@ -56,8 +56,10 @@ func (h *DashboardHandler) Participants(c *fiber.Ctx) error {
 	if offset < 0 {
 		offset = 0
 	}
+	search := c.Query("q")
+	status := c.Query("status")
 
-	rows, err := h.participants.List(c.Context(), campaignID, orgID, int32(limit+1), int32(offset))
+	rows, err := h.participants.List(c.Context(), campaignID, orgID, search, status, int32(limit+1), int32(offset))
 	if err != nil {
 		return dto.WriteError(c, err)
 	}
