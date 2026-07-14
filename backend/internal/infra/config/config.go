@@ -21,6 +21,13 @@ type Config struct {
 	// RunMigrationsOnBoot solo se activa en hosting gratuito sin shell (Render);
 	// el VPS real las corre como paso explícito de deploy (Etapa 5/6).
 	RunMigrationsOnBoot bool `envconfig:"RUN_MIGRATIONS_ON_BOOT" default:"false"`
+
+	// ExposeResetLinks: todavía no hay envío de email real, así que
+	// "olvidé mi contraseña" no tiene forma de llegarle al usuario salvo
+	// que la API devuelva el link directo — solo aceptable en este deploy
+	// de prueba. Debe quedar en false en cualquier despliegue real, donde
+	// el link se enviaría por email y nunca por la respuesta HTTP.
+	ExposeResetLinks bool `envconfig:"EXPOSE_RESET_LINKS" default:"false"`
 }
 
 func Load() (Config, error) {

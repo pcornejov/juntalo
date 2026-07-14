@@ -54,6 +54,11 @@ export function LoginPage() {
             autoComplete="current-password"
           />
           {error && <p className="text-sm text-danger">{error}</p>}
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-xs text-text-secondary hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
           <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting ? 'Ingresando…' : 'Ingresar'}
           </Button>

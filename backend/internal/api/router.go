@@ -14,6 +14,8 @@ func mountAuthRoutes(router fiber.Router, h *handlers.AuthHandler, signer app.To
 	auth.Post("/login", h.Login)
 	auth.Post("/refresh", h.Refresh)
 	auth.Post("/logout", h.Logout)
+	auth.Post("/forgot-password", h.ForgotPassword)
+	auth.Post("/reset-password", h.ResetPassword)
 	auth.Get("/me", middleware.RequireAuth(signer), h.Me)
 }
 
@@ -31,6 +33,7 @@ func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, dashH
 	campaigns.Get("/:id/contributions", dashH.Participants)
 	campaigns.Get("/:id/contributions/export", dashH.ExportCSV)
 	campaigns.Post("/:id/images", h.AddImage)
+	campaigns.Patch("/:id/images/reorder", h.ReorderImages)
 	campaigns.Delete("/:id/images/:imageId", h.DeleteImage)
 
 	router.Post("/files", middleware.RequireAuth(signer), fileH.Upload)

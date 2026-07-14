@@ -5,3 +5,6 @@ RETURNING *;
 
 -- name: GetPasswordIdentityByUserID :one
 SELECT * FROM user_identities WHERE user_id = $1 AND provider = 'password';
+
+-- name: UpdatePasswordHash :exec
+UPDATE user_identities SET password_hash = $2 WHERE user_id = $1 AND provider = 'password';

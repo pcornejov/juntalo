@@ -18,32 +18,41 @@ const (
 )
 
 type AuthHandler struct {
-	register *authuc.RegisterService
-	login    *authuc.LoginService
-	refresh  *authuc.RefreshService
-	users    app.UserRepository
-	orgs     app.OrganizationRepository
-	signer   app.TokenSigner
-	isProd   bool
+	register         *authuc.RegisterService
+	login            *authuc.LoginService
+	refresh          *authuc.RefreshService
+	forgotPassword   *authuc.ForgotPasswordService
+	resetPassword    *authuc.ResetPasswordService
+	users            app.UserRepository
+	orgs             app.OrganizationRepository
+	signer           app.TokenSigner
+	isProd           bool
+	exposeResetLinks bool
 }
 
 func NewAuthHandler(
 	register *authuc.RegisterService,
 	login *authuc.LoginService,
 	refresh *authuc.RefreshService,
+	forgotPassword *authuc.ForgotPasswordService,
+	resetPassword *authuc.ResetPasswordService,
 	users app.UserRepository,
 	orgs app.OrganizationRepository,
 	signer app.TokenSigner,
 	isProd bool,
+	exposeResetLinks bool,
 ) *AuthHandler {
 	return &AuthHandler{
-		register: register,
-		login:    login,
-		refresh:  refresh,
-		users:    users,
-		orgs:     orgs,
-		signer:   signer,
-		isProd:   isProd,
+		register:         register,
+		login:            login,
+		refresh:          refresh,
+		forgotPassword:   forgotPassword,
+		resetPassword:    resetPassword,
+		users:            users,
+		orgs:             orgs,
+		signer:           signer,
+		isProd:           isProd,
+		exposeResetLinks: exposeResetLinks,
 	}
 }
 
@@ -107,6 +116,46 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 		_ = h.refresh.Revoke(c.Context(), rawToken)
 	}
 	h.clearRefreshCookie(c)
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+func (h *AuthHandler) ForgotPassword(c *fiber.Ctx) error {
+	var req dto.ForgotPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	if err := dto.Validate(req); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	token, err := h.forgotPassword.RequestReset(c.Context(), req.Email)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	// Mismo mensaje exista o no el email — evita que alguien pueda usar este
+	// endpoint para averiguar qué correos están registrados.
+	resp := dto.ForgotPasswordResponse{
+		Message: "Si el email existe, te enviaremos instrucciones para restablecer tu contraseña.",
+	}
+	if h.exposeResetLinks && token != "" {
+		resp.ResetToken = token
+	}
+	return c.JSON(resp)
+}
+
+func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
+	var req dto.ResetPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	if err := dto.Validate(req); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	if err := h.resetPassword.Reset(c.Context(), req.Token, req.NewPassword); err != nil {
+		return dto.WriteError(c, err)
+	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
 

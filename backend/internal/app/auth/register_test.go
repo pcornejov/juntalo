@@ -41,6 +41,11 @@ func (f *fakeAuthRepo) GetPasswordHash(_ context.Context, userID uuid.UUID) (str
 	return hash, nil
 }
 
+func (f *fakeAuthRepo) UpdatePasswordHash(_ context.Context, userID uuid.UUID, newHash string) error {
+	f.passwords[userID] = newHash
+	return nil
+}
+
 type fakeHasher struct{}
 
 func (fakeHasher) Hash(password string) (string, error) { return "hashed:" + password, nil }

@@ -39,6 +39,7 @@ func main() {
 		SelfURL:           cfg.SelfURL,
 		MockWebhookSecret: cfg.MockWebhookSecret,
 		MockPaymentMode:   cfg.MockPaymentMode,
+		ExposeResetLinks:  cfg.ExposeResetLinks,
 	})
 
 	log.Printf("juntalo-api listening on :%s (env=%s)", cfg.Port, cfg.Env)

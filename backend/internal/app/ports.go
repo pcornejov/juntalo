@@ -30,6 +30,18 @@ type AuthRepository interface {
 	// if the email is taken.
 	Register(ctx context.Context, in RegisterInput) (identity.User, identity.Organization, error)
 	GetPasswordHash(ctx context.Context, userID uuid.UUID) (string, error)
+	UpdatePasswordHash(ctx context.Context, userID uuid.UUID, newHash string) error
+}
+
+// PasswordResetRepository backs "olvidé mi contraseña": un token de un solo
+// uso con expiración, igual en espíritu a RefreshTokenRepository pero sin
+// necesidad de revocación explícita (se marca usado al consumirse).
+type PasswordResetRepository interface {
+	Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error
+	// GetUserIDByValidHash solo devuelve resultado si el token no expiró y no
+	// se usó antes — un token usado o vencido se trata como "no encontrado".
+	GetUserIDByValidHash(ctx context.Context, tokenHash string) (uuid.UUID, bool, error)
+	MarkUsed(ctx context.Context, tokenHash string) error
 }
 
 type UserRepository interface {
@@ -142,6 +154,11 @@ type CampaignImageRepository interface {
 	// didn't belong to that campaign (so handlers can 404 instead of
 	// silently no-op-ing on someone else's image id).
 	Delete(ctx context.Context, campaignID, imageID uuid.UUID) (bool, error)
+	// Reorder rewrites position 0..n-1 following orderedImageIDs. La primera
+	// imagen queda como portada — "elegir portada" es simplemente moverla al
+	// principio. Falla si algún id no pertenece a campaignID (evita que un
+	// organizador reordene fotos de una campaña ajena colándolas en el body).
+	Reorder(ctx context.Context, campaignID uuid.UUID, orderedImageIDs []uuid.UUID) error
 }
 
 // ── Pagos y contribuciones (Hito 3 — el corazón del producto) ──────────────

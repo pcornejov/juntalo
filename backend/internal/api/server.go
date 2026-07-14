@@ -35,6 +35,8 @@ type Config struct {
 	SelfURL           string // base propia para que el mock se autoinvoque vía webhook
 	MockWebhookSecret string
 	MockPaymentMode   string
+
+	ExposeResetLinks bool // solo true en este deploy de prueba — ver Config.ExposeResetLinks en infra/config
 }
 
 func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
@@ -75,10 +77,13 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	paymentRepo := repos.NewPaymentRepo(db)
 	participantRepo := repos.NewParticipantRepo(db)
 	auditRepo := repos.NewAuditRepo(db)
+	passwordResetRepo := repos.NewPasswordResetRepo(db)
 
 	registerSvc := authuc.NewRegisterService(authRepo, hasher)
 	loginSvc := authuc.NewLoginService(userRepo, authRepo, orgRepo, hasher)
 	refreshSvc := authuc.NewRefreshService(refreshRepo)
+	forgotPasswordSvc := authuc.NewForgotPasswordService(userRepo, passwordResetRepo)
+	resetPasswordSvc := authuc.NewResetPasswordService(passwordResetRepo, authRepo, hasher)
 
 	createSvc := campaignsuc.NewCreateService(campaignRepo)
 	getSvc := campaignsuc.NewGetService(campaignRepo)
@@ -94,7 +99,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	participantsSvc := dashboarduc.NewParticipantsService(campaignRepo, participantRepo)
 	exportSvc := dashboarduc.NewExportCSVService(campaignRepo, participantRepo)
 
-	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, userRepo, orgRepo, signer, cfg.IsProd)
+	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, userRepo, orgRepo, signer, cfg.IsProd, cfg.ExposeResetLinks)
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
 	dashboardHandler := handlers.NewDashboardHandler(participantsSvc, exportSvc, orgRepo)
 	fileHandler := handlers.NewFileHandler(uploadSvc, orgRepo)

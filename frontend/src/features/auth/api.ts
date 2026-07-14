@@ -42,3 +42,19 @@ export function logout() {
 export function me() {
   return apiClient.get<MeResponse>('/auth/me')
 }
+
+export function forgotPassword(email: string) {
+  return apiClient.post<{ message: string; reset_token?: string }>(
+    '/auth/forgot-password',
+    { email },
+    { skipAuth: true },
+  )
+}
+
+export function resetPassword(token: string, newPassword: string) {
+  return apiClient.post<void>(
+    '/auth/reset-password',
+    { token, new_password: newPassword },
+    { skipAuth: true },
+  )
+}

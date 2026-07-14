@@ -79,3 +79,14 @@ func (r *AuthRepo) GetPasswordHash(ctx context.Context, userID uuid.UUID) (strin
 	}
 	return identityRow.PasswordHash.String, nil
 }
+
+func (r *AuthRepo) UpdatePasswordHash(ctx context.Context, userID uuid.UUID, newHash string) error {
+	err := sqlc.New(r.pool).UpdatePasswordHash(ctx, sqlc.UpdatePasswordHashParams{
+		UserID:       userID,
+		PasswordHash: pgtype.Text{String: newHash, Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("update password hash: %w", err)
+	}
+	return nil
+}

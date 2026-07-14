@@ -19,6 +19,7 @@ type Querier interface {
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateOrganization(ctx context.Context, name string) (Organization, error)
 	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
+	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
@@ -38,18 +39,22 @@ type Querier interface {
 	GetPersonalOrganizationByUserID(ctx context.Context, userID uuid.UUID) (Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	GetValidPasswordResetTokenByHash(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
 	ListCampaignImages(ctx context.Context, campaignID uuid.UUID) ([]ListCampaignImagesRow, error)
 	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
 	ListContributionsByCampaign(ctx context.Context, arg ListContributionsByCampaignParams) ([]Contribution, error)
 	ListParticipantsByCampaign(ctx context.Context, arg ListParticipantsByCampaignParams) ([]ListParticipantsByCampaignRow, error)
+	MarkPasswordResetTokenUsed(ctx context.Context, tokenHash string) error
 	NextCampaignImagePosition(ctx context.Context, campaignID uuid.UUID) (int32, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	SoftDeleteCampaign(ctx context.Context, id uuid.UUID) error
 	UpdateCampaign(ctx context.Context, arg UpdateCampaignParams) (Campaign, error)
 	UpdateCampaignStatus(ctx context.Context, arg UpdateCampaignStatusParams) (Campaign, error)
+	UpdateCampaignImagePosition(ctx context.Context, arg UpdateCampaignImagePositionParams) (int64, error)
 	UpdateContributionStatus(ctx context.Context, arg UpdateContributionStatusParams) error
+	UpdatePasswordHash(ctx context.Context, arg UpdatePasswordHashParams) error
 	UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) (Payment, error)
 }
 

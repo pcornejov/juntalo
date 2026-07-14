@@ -49,6 +49,13 @@ services:
         value: deferred
       - key: RUN_MIGRATIONS_ON_BOOT
         value: "true"
+      # EXPOSE_RESET_LINKS se deja en su default (false): aunque este es un
+      # deploy de prueba, es una URL pública real con cuentas reales — si
+      # se expusiera el token de "olvidé mi contraseña" en la respuesta de
+      # la API, cualquiera podría secuestrar la cuenta de otra persona con
+      # solo saber su email. El flujo de recuperación queda verificado
+      # localmente (ver sesión de pruebas); en este deploy simplemente no
+      # hay forma de completarlo hasta que exista envío de email real.
 
   - type: web
     name: juntalo-web
