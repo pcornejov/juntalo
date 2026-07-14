@@ -31,8 +31,9 @@ type TypeDefinition struct {
 	Rules   TypeRules  `json:"rules"`
 }
 
-// Registry lists every known type. Only "collection" is enabled in the MVP;
-// the rest are reserved slots (Etapa 1 §3: rifas deshabilitadas).
+// Registry lists every known type. "collection", "sale", "event" y "raffle"
+// están habilitados; course/presale quedan como slots reservados (Etapa 1
+// §3) hasta que haya demanda real de habilitarlos.
 var Registry = map[TypeKey]TypeDefinition{
 	TypeCollection: {
 		Key:     TypeCollection,
@@ -40,18 +41,40 @@ var Registry = map[TypeKey]TypeDefinition{
 		Labels:  TypeLabels{Name: "Colecta", CTA: "Aportar", Unit: "aportantes"},
 		Rules:   TypeRules{RequiresGoalAmount: false, AllowsFreeAmount: true},
 	},
-	TypeSale:    {Key: TypeSale, Enabled: false, Labels: TypeLabels{Name: "Venta", CTA: "Comprar", Unit: "compradores"}},
-	TypeEvent:   {Key: TypeEvent, Enabled: false, Labels: TypeLabels{Name: "Evento", CTA: "Inscribirse", Unit: "inscritos"}},
+	TypeSale: {
+		Key:     TypeSale,
+		Enabled: true,
+		Labels:  TypeLabels{Name: "Venta", CTA: "Comprar", Unit: "compradores"},
+		Rules:   TypeRules{RequiresGoalAmount: false, AllowsFreeAmount: false},
+	},
+	TypeEvent: {
+		Key:     TypeEvent,
+		Enabled: true,
+		Labels:  TypeLabels{Name: "Evento", CTA: "Inscribirse", Unit: "inscritos"},
+		Rules:   TypeRules{RequiresGoalAmount: false, AllowsFreeAmount: false},
+	},
 	TypeCourse:  {Key: TypeCourse, Enabled: false, Labels: TypeLabels{Name: "Curso", CTA: "Inscribirse", Unit: "inscritos"}},
 	TypePresale: {Key: TypePresale, Enabled: false, Labels: TypeLabels{Name: "Preventa", CTA: "Reservar", Unit: "reservas"}},
-	TypeRaffle:  {Key: TypeRaffle, Enabled: false, Labels: TypeLabels{Name: "Rifa", CTA: "Participar", Unit: "participantes"}},
+	TypeRaffle: {
+		Key:     TypeRaffle,
+		Enabled: true,
+		Labels:  TypeLabels{Name: "Rifa", CTA: "Participar", Unit: "participantes"},
+		Rules:   TypeRules{RequiresGoalAmount: false, AllowsFreeAmount: false},
+	},
 }
 
-// EnabledTypes returns only the types the MVP allows creating.
+// typeOrder es el orden estable en que se muestran los tipos habilitados —
+// iterar Registry directo no sirve porque el orden de un map en Go es
+// aleatorio en cada ejecución, y con un solo tipo habilitado nunca importó,
+// pero con varios el frontend (que usa el primero como default) mostraría
+// un tipo distinto en cada carga de página.
+var typeOrder = []TypeKey{TypeCollection, TypeSale, TypeEvent, TypeRaffle, TypeCourse, TypePresale}
+
+// EnabledTypes returns only the types the MVP allows creating, in a stable order.
 func EnabledTypes() []TypeDefinition {
-	var out []TypeDefinition
-	for _, t := range Registry {
-		if t.Enabled {
+	out := make([]TypeDefinition, 0, len(typeOrder))
+	for _, key := range typeOrder {
+		if t := Registry[key]; t.Enabled {
 			out = append(out, t)
 		}
 	}

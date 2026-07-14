@@ -3,6 +3,7 @@ import { Users } from 'lucide-react'
 import { Card, Progress } from '../../../shared/ui'
 import { formatCLP } from '../../../shared/lib/clp'
 import { StatusBadge } from './StatusBadge'
+import { typeLabels } from '../typeMeta'
 import type { Campaign } from '../api'
 
 export function CampaignCard({ campaign }: { campaign: Campaign }) {
@@ -10,7 +11,12 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
     <Link to={`/dashboard/campaigns/${campaign.id}`}>
       <Card className="h-full transition-shadow hover:shadow-md">
         <div className="mb-2 flex items-start justify-between gap-2">
-          <h3 className="font-display text-sm font-bold">{campaign.title}</h3>
+          <div>
+            <h3 className="font-display text-sm font-bold">{campaign.title}</h3>
+            <p className="text-[11px] text-text-secondary">
+              {typeLabels[campaign.type_key] ?? campaign.type_key}
+            </p>
+          </div>
           <StatusBadge status={campaign.status} />
         </div>
         <p className="mb-3 text-sm text-text-secondary">

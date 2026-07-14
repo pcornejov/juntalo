@@ -37,8 +37,8 @@ func TestCreateService_DisabledType(t *testing.T) {
 
 	_, err := svc.Create(context.Background(), CreateInput{
 		OrganizationID: uuid.New(),
-		TypeKey:        campaign.TypeRaffle,
-		Title:          "Rifa de prueba",
+		TypeKey:        campaign.TypeCourse,
+		Title:          "Curso de prueba",
 	})
 	if !apperr.Is(err, "campaign_type_disabled") {
 		t.Fatalf("expected campaign_type_disabled, got %v", err)

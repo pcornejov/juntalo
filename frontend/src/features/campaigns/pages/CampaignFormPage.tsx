@@ -7,6 +7,7 @@ import {
   usePublishCampaign,
 } from '../hooks/useCampaigns'
 import { campaignArchetypes } from '../archetypes'
+import { typeIcons } from '../typeMeta'
 import { errorMessage } from '../../../shared/api/errors'
 import { formatCLP } from '../../../shared/lib/clp'
 import { categoryIcon } from '../../../shared/lib/categoryIcons'
@@ -28,12 +29,16 @@ export function CampaignFormPage() {
   const [category, setCategory] = useState<string>('')
   const [videoUrl, setVideoUrl] = useState('')
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null)
+  const [typeKey, setTypeKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [publishMode, setPublishMode] = useState<'now' | 'later'>('now')
   const [publishAt, setPublishAt] = useState('')
 
-  const defaultType = types?.[0]
+  // El primer tipo de la lista queda como default hasta que el organizador
+  // elija otro — la lista viene en orden estable desde el backend.
+  const selectedType = types?.find((t) => t.key === typeKey) ?? types?.[0]
+  const defaultType = selectedType
 
   function handleGoalAmountChange(e: ChangeEvent<HTMLInputElement>) {
     setGoalAmount(e.target.value.replace(/\D/g, ''))
@@ -89,31 +94,60 @@ export function CampaignFormPage() {
     <div className="mx-auto max-w-lg">
       <h1 className="mb-6 font-display text-2xl font-bold tracking-tight">Nueva campaña</h1>
 
-      <div className="mb-6">
-        <p className="mb-2 text-sm text-text-secondary">
-          Empieza con una plantilla (opcional) — igual puedes editar todo después
-        </p>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {campaignArchetypes.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => applyArchetype(a.id)}
-              className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors ${
-                selectedArchetype === a.id
-                  ? 'border-brand-hover bg-accent-tint'
-                  : 'border-border-default bg-bg-surface hover:bg-bg-subtle'
-              }`}
-            >
-              <a.icon
-                className={`h-5 w-5 ${selectedArchetype === a.id ? 'text-brand-hover' : 'text-text-secondary'}`}
-                strokeWidth={1.75}
-              />
-              <span className="text-[11px] font-medium leading-tight text-text-primary">{a.label}</span>
-            </button>
-          ))}
+      {types && types.length > 1 && (
+        <div className="mb-6">
+          <p className="mb-2 text-sm text-text-secondary">Tipo de campaña</p>
+          <div className="flex flex-wrap gap-2">
+            {types.map((t) => {
+              const Icon = typeIcons[t.key]
+              const selected = selectedType?.key === t.key
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTypeKey(t.key)}
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    selected
+                      ? 'border-brand-hover bg-accent-tint text-brand-hover'
+                      : 'border-border-default bg-bg-surface text-text-secondary hover:bg-bg-subtle'
+                  }`}
+                >
+                  {Icon && <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />}
+                  {t.name}
+                </button>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {selectedType?.key === 'collection' && (
+        <div className="mb-6">
+          <p className="mb-2 text-sm text-text-secondary">
+            Empieza con una plantilla (opcional) — igual puedes editar todo después
+          </p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {campaignArchetypes.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => applyArchetype(a.id)}
+                className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors ${
+                  selectedArchetype === a.id
+                    ? 'border-brand-hover bg-accent-tint'
+                    : 'border-border-default bg-bg-surface hover:bg-bg-subtle'
+                }`}
+              >
+                <a.icon
+                  className={`h-5 w-5 ${selectedArchetype === a.id ? 'text-brand-hover' : 'text-text-secondary'}`}
+                  strokeWidth={1.75}
+                />
+                <span className="text-[11px] font-medium leading-tight text-text-primary">{a.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {categories && categories.length > 0 && (
         <div className="mb-6">

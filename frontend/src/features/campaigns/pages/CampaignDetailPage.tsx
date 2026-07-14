@@ -18,6 +18,7 @@ import { categoryIcon } from '../../../shared/lib/categoryIcons'
 import { isValidVideoUrl } from '../../../shared/lib/videoEmbed'
 import { Button, Card, Input, ShareButtons, QrCode } from '../../../shared/ui'
 import { StatusBadge } from '../components/StatusBadge'
+import { typeLabels } from '../typeMeta'
 import { TotalsPanel } from '../components/TotalsPanel'
 import { ParticipantsTable } from '../components/ParticipantsTable'
 import { ExportCsvButton } from '../components/ExportCsvButton'
@@ -180,8 +181,11 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight">{campaign.title}</h1>
-          <div className="mt-1">
+          <div className="mt-1 flex items-center gap-2">
             <StatusBadge status={campaign.status} />
+            <span className="text-xs text-text-secondary">
+              {typeLabels[campaign.type_key] ?? campaign.type_key}
+            </span>
           </div>
         </div>
         <div className="flex gap-2">

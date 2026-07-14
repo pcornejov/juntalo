@@ -12,8 +12,11 @@ func TestValidateType(t *testing.T) {
 	if err := ValidateType(TypeCollection); err != nil {
 		t.Errorf("collection should be enabled: %v", err)
 	}
-	if err := ValidateType(TypeRaffle); !apperr.Is(err, "campaign_type_disabled") {
-		t.Errorf("raffle should be disabled, got %v", err)
+	if err := ValidateType(TypeRaffle); err != nil {
+		t.Errorf("raffle should be enabled: %v", err)
+	}
+	if err := ValidateType(TypeCourse); !apperr.Is(err, "campaign_type_disabled") {
+		t.Errorf("course should still be disabled, got %v", err)
 	}
 	if err := ValidateType("unknown"); !apperr.Is(err, "unknown_campaign_type") {
 		t.Errorf("unknown type should error, got %v", err)
