@@ -64,7 +64,7 @@ func TestParticipantsService_ForeignOrgReturnsNotFound(t *testing.T) {
 	}}
 	svc := NewParticipantsService(campaigns, &fakeParticipantRepo{})
 
-	_, err := svc.List(context.Background(), campaignID, otherOrg)
+	_, err := svc.List(context.Background(), campaignID, otherOrg, 0, 0)
 	if !apperr.Is(err, "campaign_not_found") {
 		t.Fatalf("expected campaign_not_found for a foreign org (no filtrar existencia), got %v", err)
 	}

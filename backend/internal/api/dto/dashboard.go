@@ -15,5 +15,6 @@ type ParticipantResponse struct {
 }
 
 type ParticipantsResponse struct {
-	Items []ParticipantResponse `json:"items"`
+	Items   []ParticipantResponse `json:"items"`
+	HasMore bool                  `json:"has_more"`
 }

@@ -26,11 +26,14 @@ func NewParticipantsService(campaigns app.CampaignRepository, participants app.P
 
 // List scopes to the organizer's own campaign — un uuid ajeno responde
 // campaign_not_found, nunca un error de permisos (Etapa 4 §3).
-func (s *ParticipantsService) List(ctx context.Context, campaignID, orgID uuid.UUID) ([]app.ParticipantRow, error) {
+func (s *ParticipantsService) List(ctx context.Context, campaignID, orgID uuid.UUID, limit, offset int32) ([]app.ParticipantRow, error) {
 	if _, found, err := s.campaigns.GetByIDForOrg(ctx, campaignID, orgID); err != nil {
 		return nil, err
 	} else if !found {
 		return nil, ErrCampaignNotFound
 	}
-	return s.participants.ListByCampaign(ctx, campaignID, defaultParticipantsLimit, 0)
+	if limit <= 0 {
+		limit = defaultParticipantsLimit
+	}
+	return s.participants.ListByCampaign(ctx, campaignID, limit, offset)
 }

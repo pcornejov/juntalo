@@ -30,6 +30,11 @@ func (h *DashboardHandler) orgID(c *fiber.Ctx) (uuid.UUID, error) {
 	return org.ID, nil
 }
 
+const (
+	defaultParticipantsPageSize = 20
+	maxParticipantsPageSize     = 100
+)
+
 func (h *DashboardHandler) Participants(c *fiber.Ctx) error {
 	orgID, err := h.orgID(c)
 	if err != nil {
@@ -40,9 +45,22 @@ func (h *DashboardHandler) Participants(c *fiber.Ctx) error {
 		return dto.WriteError(c, dashboarduc.ErrCampaignNotFound)
 	}
 
-	rows, err := h.participants.List(c.Context(), campaignID, orgID)
+	limit := c.QueryInt("limit", defaultParticipantsPageSize)
+	if limit <= 0 || limit > maxParticipantsPageSize {
+		limit = defaultParticipantsPageSize
+	}
+	offset := c.QueryInt("offset", 0)
+	if offset < 0 {
+		offset = 0
+	}
+
+	rows, err := h.participants.List(c.Context(), campaignID, orgID, int32(limit+1), int32(offset))
 	if err != nil {
 		return dto.WriteError(c, err)
+	}
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
 	}
 
 	out := make([]dto.ParticipantResponse, len(rows))
@@ -59,7 +77,7 @@ func (h *DashboardHandler) Participants(c *fiber.Ctx) error {
 			CreatedAt:      r.CreatedAt,
 		}
 	}
-	return c.JSON(dto.ParticipantsResponse{Items: out})
+	return c.JSON(dto.ParticipantsResponse{Items: out, HasMore: hasMore})
 }
 
 func (h *DashboardHandler) ExportCSV(c *fiber.Ctx) error {
