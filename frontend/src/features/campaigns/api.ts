@@ -109,3 +109,16 @@ export function listParticipants(campaignId: string, offset = 0, limit = PARTICI
     `/campaigns/${campaignId}/contributions?limit=${limit}&offset=${offset}`,
   )
 }
+
+export interface RefundResult {
+  payment_id: string
+  status: string
+  amount: number
+}
+
+export function refundContribution(campaignId: string, contributionId: string, amount: number, reason?: string) {
+  return apiClient.post<RefundResult>(`/campaigns/${campaignId}/contributions/${contributionId}/refund`, {
+    amount,
+    reason: reason ?? '',
+  })
+}

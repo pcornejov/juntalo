@@ -14,7 +14,18 @@ SELECT * FROM payments WHERE contribution_id = $1;
 -- name: GetPaymentByProviderRefForUpdate :one
 SELECT * FROM payments WHERE provider = $1 AND provider_ref = $2 FOR UPDATE;
 
+-- name: GetPaymentByIDForUpdate :one
+SELECT * FROM payments WHERE id = $1 FOR UPDATE;
+
 -- name: UpdatePaymentStatus :one
 UPDATE payments SET status = $2, confirmed_at = $3, failed_at = $4, updated_at = now()
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdatePaymentStatusOnly :one
+-- Para transiciones que no deben tocar confirmed_at/failed_at (reembolsos):
+-- UpdatePaymentStatus recibiría esas columnas vacías y las dejaría en NULL,
+-- borrando cuándo se confirmó el pago originalmente.
+UPDATE payments SET status = $2, updated_at = now()
 WHERE id = $1
 RETURNING *;

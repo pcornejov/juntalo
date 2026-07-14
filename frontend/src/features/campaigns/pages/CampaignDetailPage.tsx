@@ -179,7 +179,7 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
         {isLoadingParticipants ? (
           <p className="text-sm text-text-secondary">Cargando…</p>
         ) : (
-          <ParticipantsTable items={participants} />
+          <ParticipantsTable items={participants} campaignId={campaign.id} />
         )}
         {hasMoreParticipants && (
           <div className="text-center">

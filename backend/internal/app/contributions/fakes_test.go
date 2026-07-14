@@ -220,6 +220,10 @@ func (f *fakePaymentRepo) ConfirmByProviderRef(_ context.Context, provider, prov
 	return *p, true, nil
 }
 
+func (f *fakePaymentRepo) Refund(context.Context, uuid.UUID, money.CLP, string, string) (payment.Payment, error) {
+	return payment.Payment{}, apperr.New("payment_not_found", "no encontrado")
+}
+
 // ── fakeProvider: el mock del mock — controlado por el test ───────────────
 
 type fakeProvider struct {

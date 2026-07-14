@@ -22,6 +22,7 @@ type Querier interface {
 	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
+	CreatePaymentRefund(ctx context.Context, arg CreatePaymentRefundParams) (PaymentRefund, error)
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserIdentity(ctx context.Context, arg CreateUserIdentityParams) (UserIdentity, error)
@@ -37,9 +38,11 @@ type Querier interface {
 	GetOrganizationOwnerByOrgID(ctx context.Context, organizationID uuid.UUID) (GetOrganizationOwnerByOrgIDRow, error)
 	GetPasswordIdentityByUserID(ctx context.Context, userID uuid.UUID) (UserIdentity, error)
 	GetPaymentByContributionID(ctx context.Context, contributionID uuid.UUID) (Payment, error)
+	GetPaymentByIDForUpdate(ctx context.Context, id uuid.UUID) (Payment, error)
 	GetPaymentByIdempotencyKey(ctx context.Context, idempotencyKey string) (Payment, error)
 	GetPaymentByProviderRefForUpdate(ctx context.Context, arg GetPaymentByProviderRefForUpdateParams) (Payment, error)
 	GetPersonalOrganizationByUserID(ctx context.Context, userID uuid.UUID) (Organization, error)
+	GetRefundedAmountByPaymentID(ctx context.Context, paymentID uuid.UUID) (int64, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetValidEmailVerificationTokenByHash(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
@@ -62,6 +65,7 @@ type Querier interface {
 	UpdateContributionStatus(ctx context.Context, arg UpdateContributionStatusParams) error
 	UpdatePasswordHash(ctx context.Context, arg UpdatePasswordHashParams) error
 	UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) (Payment, error)
+	UpdatePaymentStatusOnly(ctx context.Context, arg UpdatePaymentStatusOnlyParams) (Payment, error)
 }
 
 var _ Querier = (*Queries)(nil)

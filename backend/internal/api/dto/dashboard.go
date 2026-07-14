@@ -18,3 +18,14 @@ type ParticipantsResponse struct {
 	Items   []ParticipantResponse `json:"items"`
 	HasMore bool                  `json:"has_more"`
 }
+
+type RefundRequest struct {
+	Amount int64  `json:"amount"`
+	Reason string `json:"reason"`
+}
+
+type RefundResponse struct {
+	PaymentID string `json:"payment_id"`
+	Status    string `json:"status"`
+	Amount    int64  `json:"amount"`
+}

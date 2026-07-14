@@ -85,6 +85,18 @@ export function useParticipants(campaignId: string) {
   }
 }
 
+export function useRefundContribution(campaignId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ contributionId, amount, reason }: { contributionId: string; amount: number; reason?: string }) =>
+      campaignsApi.refundContribution(campaignId, contributionId, amount, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['participants', campaignId] })
+      qc.invalidateQueries({ queryKey: [...campaignsKey, campaignId] })
+    },
+  })
+}
+
 export function useCampaignTransitions() {
   const qc = useQueryClient()
   const invalidate = () => qc.invalidateQueries({ queryKey: campaignsKey })

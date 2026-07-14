@@ -42,6 +42,8 @@ var codeStatus = map[string]int{
 	"duplicate_contribution":     fiber.StatusConflict,
 	"payment_not_found":          fiber.StatusNotFound,
 	"invalid_payment_transition": fiber.StatusConflict,
+	"refund_exceeds_balance":     fiber.StatusUnprocessableEntity,
+	"payment_not_refundable":     fiber.StatusConflict,
 }
 
 // WriteError maps err to the stable envelope + HTTP status. Unknown errors never

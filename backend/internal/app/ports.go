@@ -268,6 +268,11 @@ type PaymentRepository interface {
 	// si el pago ya estaba en newStatus) — el caller lo usa para no mandar
 	// una notificación duplicada cuando el proveedor reintenta el webhook.
 	ConfirmByProviderRef(ctx context.Context, provider, providerRef string, newStatus payment.Status) (result payment.Payment, transitioned bool, err error)
+	// Refund registra un reembolso (total o parcial) sobre paymentID en una
+	// transacción: inserta el registro en payment_refunds y transiciona el
+	// pago (y su contribution vinculada) a partially_refunded o refunded
+	// según si amount cubre o no el saldo pendiente (Etapa 3 §5).
+	Refund(ctx context.Context, paymentID uuid.UUID, amount money.CLP, providerRef, reason string) (payment.Payment, error)
 }
 
 // ── Panel del organizador (Hito 4) ──────────────────────────────────────────
