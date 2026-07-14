@@ -52,6 +52,14 @@ export function usePublishCampaign() {
   })
 }
 
+export function useCloneCampaign() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: campaignsApi.cloneCampaign,
+    onSuccess: () => qc.invalidateQueries({ queryKey: campaignsKey }),
+  })
+}
+
 export function useCampaignGallery(campaignId: string) {
   const qc = useQueryClient()
   const invalidate = () => qc.invalidateQueries({ queryKey: [...campaignsKey, campaignId] })

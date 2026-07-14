@@ -1,10 +1,11 @@
 import type { ChangeEvent } from 'react'
-import { useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ChevronLeft, ChevronRight, Copy } from 'lucide-react'
 import {
   useCampaign,
   useCampaignGallery,
   useCampaignTransitions,
+  useCloneCampaign,
   useParticipants,
   usePublishCampaign,
 } from '../hooks/useCampaigns'
@@ -27,8 +28,10 @@ export function CampaignDetailPage() {
 }
 
 function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
+  const navigate = useNavigate()
   const publish = usePublishCampaign()
   const { pause, resume, finish } = useCampaignTransitions()
+  const clone = useCloneCampaign()
   const gallery = useCampaignGallery(campaign.id)
   const {
     participants,
@@ -88,6 +91,19 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
               </Button>
             </>
           )}
+          <Button
+            variant="secondary"
+            className="flex items-center gap-1.5"
+            disabled={clone.isPending}
+            onClick={() =>
+              clone.mutate(campaign.id, {
+                onSuccess: (cloned) => navigate(`/dashboard/campaigns/${cloned.id}`),
+              })
+            }
+          >
+            <Copy className="h-4 w-4" strokeWidth={1.75} />
+            {clone.isPending ? 'Clonando…' : 'Clonar'}
+          </Button>
         </div>
       </div>
 

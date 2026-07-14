@@ -28,6 +28,7 @@ func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, dashH
 	campaigns.Get("/:id", h.Get)
 	campaigns.Patch("/:id", h.Update)
 	campaigns.Delete("/:id", h.Delete)
+	campaigns.Post("/:id/clone", h.Clone)
 	campaigns.Post("/:id/publish", h.Publish)
 	campaigns.Post("/:id/pause", h.Pause)
 	campaigns.Post("/:id/resume", h.Resume)

@@ -111,6 +111,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	updateSvc := campaignsuc.NewUpdateService(campaignRepo)
 	transitionSvc := campaignsuc.NewTransitionService(campaignRepo)
 	deleteSvc := campaignsuc.NewDeleteService(campaignRepo)
+	cloneSvc := campaignsuc.NewCloneService(campaignRepo, createSvc)
 	uploadSvc := filesuc.NewUploadService(storage, fileRepo)
 
 	startSvc := contributionsuc.NewStartService(campaignRepo, orgRepo, contributorRepo, contributionRepo, paymentRepo, paymentProvider, emailSender, cfg.FrontendURL)
@@ -121,7 +122,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	refundSvc := dashboarduc.NewRefundService(campaignRepo, contributionRepo, paymentRepo)
 
 	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks)
-	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
+	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, cloneSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
 	dashboardHandler := handlers.NewDashboardHandler(participantsSvc, exportSvc, refundSvc, orgRepo)
 	fileHandler := handlers.NewFileHandler(uploadSvc, orgRepo)
 	publicHandler := handlers.NewPublicHandler(getSvc, fileRepo, campaignImageRepo, storage, cfg.FrontendURL, cfg.SelfURL)

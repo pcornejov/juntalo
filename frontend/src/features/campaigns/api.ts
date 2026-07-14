@@ -72,6 +72,10 @@ export function finishCampaign(id: string) {
   return apiClient.post<Campaign>(`/campaigns/${id}/finish`)
 }
 
+export function cloneCampaign(id: string) {
+  return apiClient.post<Campaign>(`/campaigns/${id}/clone`)
+}
+
 export function listCampaignTypes() {
   return apiClient.get<{ items: CampaignType[] }>('/meta/campaign-types')
 }

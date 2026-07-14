@@ -29,6 +29,7 @@ type CampaignHandler struct {
 	update     *campaignsuc.UpdateService
 	transition *campaignsuc.TransitionService
 	del        *campaignsuc.DeleteService
+	clone      *campaignsuc.CloneService
 	upload     *filesuc.UploadService
 	orgs       app.OrganizationRepository
 	files      app.FileRepository
@@ -45,6 +46,7 @@ func NewCampaignHandler(
 	update *campaignsuc.UpdateService,
 	transition *campaignsuc.TransitionService,
 	del *campaignsuc.DeleteService,
+	clone *campaignsuc.CloneService,
 	upload *filesuc.UploadService,
 	orgs app.OrganizationRepository,
 	files app.FileRepository,
@@ -55,7 +57,7 @@ func NewCampaignHandler(
 ) *CampaignHandler {
 	return &CampaignHandler{
 		create: create, get: get, list: list, update: update,
-		transition: transition, del: del, upload: upload, orgs: orgs,
+		transition: transition, del: del, clone: clone, upload: upload, orgs: orgs,
 		files: files, images: images, storage: storage, audit: audit, selfURL: selfURL,
 	}
 }
@@ -120,6 +122,25 @@ func (h *CampaignHandler) Create(c *fiber.Ctx) error {
 	h.recordAudit(c, orgID, auditcat.ActionCampaignCreated, created.ID, map[string]any{"title": created.Title})
 
 	return c.Status(fiber.StatusCreated).JSON(h.toResponse(c, created, campaign.Totals{}))
+}
+
+func (h *CampaignHandler) Clone(c *fiber.Ctx) error {
+	orgID, err := h.orgID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	id, err := h.parseID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	cloned, err := h.clone.Clone(c.Context(), id, orgID)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	h.recordAudit(c, orgID, auditcat.ActionCampaignCreated, cloned.ID, map[string]any{"title": cloned.Title, "cloned_from": id.String()})
+
+	return c.Status(fiber.StatusCreated).JSON(h.toResponse(c, cloned, campaign.Totals{}))
 }
 
 func (h *CampaignHandler) List(c *fiber.Ctx) error {
