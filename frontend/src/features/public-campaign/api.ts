@@ -11,6 +11,14 @@ export interface PublicCampaign {
   cta: string
   unit: string
   public_url: string
+  created_at?: string
+  // Campos aditivos y opcionales: el backend actual no los expone todavía.
+  // Mientras no vengan en la respuesta, la UI oculta el bloque
+  // correspondiente en vez de inventar datos — ver PublicCampaignPage.
+  organizer_name?: string
+  organizer_campaign_count?: number
+  is_verified?: boolean
+  location?: string
 }
 
 export function getPublicCampaign(slug: string) {

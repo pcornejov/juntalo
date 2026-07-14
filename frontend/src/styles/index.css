@@ -1,24 +1,42 @@
 @import "tailwindcss";
+@import "@fontsource-variable/sora";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Display face reserved for headings, big money figures and the primary
+     CTA — Inter stays the body face so we only pay the extra font-loading
+     cost where the typographic contrast actually earns it (Etapa "B1 —
+     Índigo eléctrico"). */
+  --font-display: "Sora Variable", "Sora", ui-sans-serif, system-ui, sans-serif;
 
   --color-bg-surface: #ffffff;
-  --color-bg-subtle: #f7f7f8;
-  --color-text-primary: #18181b;
-  --color-text-secondary: #71717a;
-  --color-border-default: #e4e4e7;
-  --color-brand: #16a34a;
-  --color-brand-hover: #15803d;
+  --color-bg-subtle: #f7f8fb;
+  --color-text-primary: #0f1222;
+  --color-text-secondary: #5b5f76;
+  --color-border-default: #e4e7f0;
+
+  /* Acento único en dos tonos (B1 · Índigo eléctrico):
+     --color-brand      = tono vívido, para progreso, cifras destacadas,
+                           badges e íconos — NO se usa como fondo de botón.
+     --color-brand-hover = tono fuerte, reservado para el CTA principal y
+                           los estados hover/pressed de acciones primarias.
+     Verificado con WCAG: #4338CA sobre blanco = 7.9:1. */
+  --color-brand: #5b5bf0;
+  --color-brand-hover: #4338ca;
+  --color-accent-tint: #ececfe;
   --color-danger: #dc2626;
 }
 
 :root[data-theme="dark"] {
-  --color-bg-surface: #18181b;
-  --color-bg-subtle: #27272a;
-  --color-text-primary: #fafafa;
-  --color-text-secondary: #a1a1aa;
-  --color-border-default: #3f3f46;
+  --color-bg-surface: #171a2e;
+  --color-bg-subtle: #0e1020;
+  --color-text-primary: #eef0fa;
+  --color-text-secondary: #9ba0c0;
+  --color-border-default: #2a2e48;
+
+  --color-brand: #8b8bff;
+  --color-brand-hover: #6a63f5;
+  --color-accent-tint: #242850;
 }
 
 body {

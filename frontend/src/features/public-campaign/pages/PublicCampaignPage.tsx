@@ -1,14 +1,21 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { Calendar, MapPin, Share2, Link2, ArrowRight, ShieldCheck, Users } from 'lucide-react'
 import { usePublicCampaign } from '../hooks/usePublicCampaign'
 import { formatCLP } from '../../../shared/lib/clp'
+import { relativeDate } from '../../../shared/lib/date'
 import { Button, Card, Progress, ShareButtons, QrCode, Footer } from '../../../shared/ui'
 import { ContributeSheet } from '../components/ContributeSheet'
+import { OrganizerCard } from '../components/OrganizerCard'
 import { ContributeSuccessPanel } from './ContributeSuccessPage'
 import type { StartContributionResult } from '../api'
 
 // Diseñada mobile-first a 375px: es la página que se abre desde el in-app
 // browser de WhatsApp (Etapa 2 §3, Etapa 5 §3).
+//
+// Dirección visual: B1 "Índigo eléctrico" — un solo acento en dos tonos
+// (--color-brand para progreso/cifras/badges, --color-brand-hover para el
+// CTA principal), Sora en titulares y cifras grandes, Inter en el resto.
 export function PublicCampaignPage() {
   const { slug } = useParams<{ slug: string }>()
   const { data: campaign, isLoading, isError } = usePublicCampaign(slug)
@@ -32,40 +39,138 @@ export function PublicCampaignPage() {
   // re-compartir desde aquí siga mostrando preview con imagen y título.
   const publicUrl = campaign.public_url
   const canContribute = campaign.status === 'active'
+  const hasGoal = Boolean(campaign.goal_amount)
+  // Campos aditivos que el backend actual no siempre envía: la UI se
+  // degrada mostrando menos, nunca inventando un dato que no llegó.
+  const hasFacts = Boolean(campaign.created_at) || Boolean(campaign.location)
 
   return (
-    <div className="mx-auto max-w-md pb-24">
-      {campaign.cover_url ? (
-        <img src={campaign.cover_url} alt={campaign.title} className="h-56 w-full object-cover" />
-      ) : (
-        <div className="h-40 w-full bg-bg-subtle" />
-      )}
-
-      <div className="space-y-4 p-4">
-        <h1 className="text-xl font-semibold">{campaign.title}</h1>
-
-        {campaign.goal_amount ? (
-          <>
-            <Progress value={campaign.totals.raised_gross} max={campaign.goal_amount} />
-            <p className="text-sm text-text-secondary">
-              {formatCLP(campaign.totals.raised_gross)} de {formatCLP(campaign.goal_amount)}
-            </p>
-          </>
+    <div className="mx-auto max-w-md pb-28">
+      <div className="relative">
+        {campaign.cover_url ? (
+          <img src={campaign.cover_url} alt={campaign.title} className="h-56 w-full object-cover" />
         ) : (
-          <p className="text-sm text-text-secondary">
-            {formatCLP(campaign.totals.raised_gross)} recaudados
-          </p>
+          <div className="h-40 w-full bg-bg-subtle" />
+        )}
+        {campaign.cover_url && (
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0" />
+        )}
+        {campaign.is_verified && (
+          <div className="absolute bottom-3 left-4 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white">
+            <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Campaña verificada
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-5 p-4">
+        <div className="space-y-3">
+          <h1 className="text-balance font-display text-2xl font-bold leading-tight tracking-tight">
+            {campaign.title}
+          </h1>
+
+          {hasFacts && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-text-secondary">
+              {campaign.created_at && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {relativeDate(campaign.created_at)}
+                </span>
+              )}
+              {campaign.location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" strokeWidth={1.75} />
+                  {campaign.location}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {hasGoal ? (
+          <div className="overflow-hidden rounded-2xl border border-border-default">
+            <div className="grid grid-cols-3 divide-x divide-border-default">
+              <div className="p-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                  Recaudado
+                </p>
+                <p className="font-display text-base font-bold tabular-nums text-brand-hover">
+                  {formatCLP(campaign.totals.raised_gross)}
+                </p>
+              </div>
+              <div className="p-3">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                  Meta
+                </p>
+                <p className="font-display text-base font-bold tabular-nums">
+                  {formatCLP(campaign.goal_amount!)}
+                </p>
+              </div>
+              <div className="p-3">
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                  <Users className="h-2.5 w-2.5" strokeWidth={1.75} />
+                  {campaign.unit}
+                </p>
+                <p className="font-display text-base font-bold tabular-nums">
+                  {campaign.totals.contributor_count}
+                </p>
+              </div>
+            </div>
+            <div className="px-3 pb-3 pt-1">
+              <Progress value={campaign.totals.raised_gross} max={campaign.goal_amount!} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between rounded-2xl border border-border-default p-3">
+            <div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                Recaudado
+              </p>
+              <p className="font-display text-lg font-bold tabular-nums text-brand-hover">
+                {formatCLP(campaign.totals.raised_gross)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="mb-1 flex items-center justify-end gap-1 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                <Users className="h-2.5 w-2.5" strokeWidth={1.75} />
+                {campaign.unit}
+              </p>
+              <p className="font-display text-lg font-bold tabular-nums">
+                {campaign.totals.contributor_count}
+              </p>
+            </div>
+          </div>
         )}
 
-        <p className="text-sm text-text-secondary">
-          {campaign.totals.contributor_count} {campaign.unit}
-        </p>
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
+            Sobre esta campaña
+          </p>
+          <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-text-primary">
+            {campaign.description}
+          </p>
+        </div>
 
-        <p className="whitespace-pre-wrap text-text-primary">{campaign.description}</p>
+        {campaign.organizer_name && (
+          <OrganizerCard
+            name={campaign.organizer_name}
+            campaignCount={campaign.organizer_campaign_count}
+            isVerified={campaign.is_verified}
+          />
+        )}
 
-        <Card className="space-y-3 text-center">
-          <p className="text-sm text-text-secondary">Comparte esta campaña</p>
+        <hr className="border-border-default" />
+
+        <Card className="space-y-3">
+          <p className="flex items-center gap-2 font-display text-sm font-bold">
+            <Share2 className="h-4 w-4 text-text-secondary" strokeWidth={1.75} />
+            Compartir campaña
+          </p>
           <ShareButtons url={publicUrl} title={campaign.title} />
+          <div className="flex items-center gap-2 rounded-lg border border-dashed border-border-default px-3 py-2">
+            <Link2 className="h-3.5 w-3.5 flex-none text-text-secondary" strokeWidth={1.75} />
+            <span className="flex-1 truncate text-xs text-text-secondary">{publicUrl}</span>
+          </div>
           <QrCode url={publicUrl} />
         </Card>
       </div>
@@ -74,11 +179,13 @@ export function PublicCampaignPage() {
 
       <div className="fixed inset-x-0 bottom-0 border-t border-border-default bg-bg-surface p-4">
         <Button
-          className="w-full"
+          variant="cta"
+          className="flex w-full items-center justify-center gap-2"
           disabled={!canContribute}
           onClick={() => setIsSheetOpen(true)}
         >
           {canContribute ? campaign.cta : 'Campaña no disponible'}
+          {canContribute && <ArrowRight className="h-4 w-4" strokeWidth={1.75} />}
         </Button>
       </div>
 
