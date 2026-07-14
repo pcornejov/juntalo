@@ -5,6 +5,10 @@ package apperr
 type Error struct {
 	Code    string
 	Message string
+	// Details: solo lo usa la validación de forma en el borde de la API
+	// (dto.Validate) para indicar qué campo falló y por qué — las reglas de
+	// negocio del dominio siguen comunicándose solo por Code (Etapa 4 §1).
+	Details map[string]any
 }
 
 func (e *Error) Error() string {
@@ -13,6 +17,13 @@ func (e *Error) Error() string {
 
 func New(code, message string) *Error {
 	return &Error{Code: code, Message: message}
+}
+
+// WithDetails attaches field-level details to an existing error (fluent,
+// para no tener que agregar un parámetro a cada llamada de New).
+func (e *Error) WithDetails(details map[string]any) *Error {
+	e.Details = details
+	return e
 }
 
 // Is reports whether err is an *Error with the given code.

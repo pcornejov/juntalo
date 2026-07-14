@@ -58,7 +58,9 @@ func WriteError(c *fiber.Ctx, err error) error {
 		if !ok {
 			status = fiber.StatusUnprocessableEntity
 		}
-		return c.Status(status).JSON(ErrorResponse{Error: ErrorBody{Code: appErr.Code, Message: appErr.Message}})
+		return c.Status(status).JSON(ErrorResponse{
+			Error: ErrorBody{Code: appErr.Code, Message: appErr.Message, Details: appErr.Details},
+		})
 	}
 
 	// Solo lo no mapeado a un apperr conocido llega aquí — errores de negocio
