@@ -1,11 +1,34 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { useCampaigns } from '../hooks/useCampaigns'
-import { Button } from '../../../shared/ui'
+import { Button, Input } from '../../../shared/ui'
 import { CampaignCard } from '../components/CampaignCard'
+import { normalizeForSearch } from '../../../shared/lib/search'
+import type { Campaign } from '../api'
+
+const statusOptions: { value: Campaign['status'] | 'all'; label: string }[] = [
+  { value: 'all', label: 'Todos los estados' },
+  { value: 'draft', label: 'Borrador' },
+  { value: 'active', label: 'Activa' },
+  { value: 'paused', label: 'Pausada' },
+  { value: 'finished', label: 'Finalizada' },
+  { value: 'suspended', label: 'Suspendida' },
+]
 
 export function CampaignListPage() {
   const { campaigns, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } = useCampaigns()
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState<Campaign['status'] | 'all'>('all')
+
+  const filtered = useMemo(() => {
+    const query = normalizeForSearch(search.trim())
+    return campaigns.filter((c) => {
+      if (status !== 'all' && c.status !== status) return false
+      if (query && !normalizeForSearch(c.title).includes(query)) return false
+      return true
+    })
+  }, [campaigns, search, status])
 
   return (
     <div>
@@ -31,8 +54,41 @@ export function CampaignListPage() {
         </p>
       )}
 
+      {!isLoading && campaigns.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-secondary"
+              strokeWidth={1.75}
+            />
+            <Input
+              type="search"
+              placeholder="Buscar por título…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Campaign['status'] | 'all')}
+            className="rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand"
+          >
+            {statusOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {!isLoading && campaigns.length > 0 && filtered.length === 0 && (
+        <p className="text-text-secondary">No hay campañas que coincidan con la búsqueda.</p>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {campaigns.map((c) => (
+        {filtered.map((c) => (
           <CampaignCard key={c.id} campaign={c} />
         ))}
       </div>
