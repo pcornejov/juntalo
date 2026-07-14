@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCampaignTypes, useCreateCampaign, usePublishCampaign } from '../hooks/useCampaigns'
+import { campaignArchetypes } from '../archetypes'
 import { errorMessage } from '../../../shared/api/errors'
 import { formatCLP } from '../../../shared/lib/clp'
 import { Button, Card, Input } from '../../../shared/ui'
@@ -16,6 +17,7 @@ export function CampaignFormPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [goalAmount, setGoalAmount] = useState('')
+  const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -23,6 +25,14 @@ export function CampaignFormPage() {
 
   function handleGoalAmountChange(e: ChangeEvent<HTMLInputElement>) {
     setGoalAmount(e.target.value.replace(/\D/g, ''))
+  }
+
+  function applyArchetype(id: string) {
+    const archetype = campaignArchetypes.find((a) => a.id === id)
+    if (!archetype) return
+    setSelectedArchetype(id)
+    setTitle(archetype.title)
+    setDescription(archetype.description)
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -53,6 +63,33 @@ export function CampaignFormPage() {
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="mb-6 font-display text-2xl font-bold tracking-tight">Nueva campaña</h1>
+
+      <div className="mb-6">
+        <p className="mb-2 text-sm text-text-secondary">
+          Empieza con una plantilla (opcional) — igual puedes editar todo después
+        </p>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {campaignArchetypes.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => applyArchetype(a.id)}
+              className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-colors ${
+                selectedArchetype === a.id
+                  ? 'border-brand-hover bg-accent-tint'
+                  : 'border-border-default bg-bg-surface hover:bg-bg-subtle'
+              }`}
+            >
+              <a.icon
+                className={`h-5 w-5 ${selectedArchetype === a.id ? 'text-brand-hover' : 'text-text-secondary'}`}
+                strokeWidth={1.75}
+              />
+              <span className="text-[11px] font-medium leading-tight text-text-primary">{a.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
