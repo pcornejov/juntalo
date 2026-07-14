@@ -28,6 +28,10 @@ func (f *fakeUserRepo) GetByID(_ context.Context, id uuid.UUID) (identity.User, 
 	return identity.User{}, false, nil
 }
 
+func (f *fakeUserRepo) MarkEmailVerified(_ context.Context, _ uuid.UUID) error {
+	return nil
+}
+
 type fakeOrgRepo struct {
 	byUser map[uuid.UUID]identity.Organization
 }
@@ -43,6 +47,10 @@ func (f *fakeOrgRepo) GetByID(_ context.Context, id uuid.UUID) (identity.Organiz
 		}
 	}
 	return identity.Organization{}, nil
+}
+
+func (f *fakeOrgRepo) GetOwnerEmail(context.Context, uuid.UUID) (string, string, error) {
+	return "", "", nil
 }
 
 func setupLoginFixture(t *testing.T) (*LoginService, identity.User) {

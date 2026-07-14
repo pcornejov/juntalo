@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import { useAuth } from '../features/auth/hooks/useAuth'
+import { VerifyEmailBanner } from '../features/auth/components/VerifyEmailBanner'
 import { Button, ThemeToggle } from '../shared/ui'
 
 export function DashboardLayout() {
@@ -29,6 +30,7 @@ export function DashboardLayout() {
         </div>
       </header>
       <main className="mx-auto max-w-5xl p-6">
+        {user && !user.email_verified && <VerifyEmailBanner />}
         <Outlet />
       </main>
     </div>

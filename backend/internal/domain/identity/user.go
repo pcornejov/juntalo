@@ -8,11 +8,12 @@ import (
 )
 
 type User struct {
-	ID        uuid.UUID
-	Email     string
-	FullName  string
-	Status    string
-	CreatedAt time.Time
+	ID            uuid.UUID
+	Email         string
+	FullName      string
+	Status        string
+	EmailVerified bool
+	CreatedAt     time.Time
 }
 
 type Organization struct {

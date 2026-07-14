@@ -4,6 +4,7 @@ export interface User {
   id: string
   email: string
   full_name: string
+  email_verified: boolean
 }
 
 export interface Organization {
@@ -57,4 +58,12 @@ export function resetPassword(token: string, newPassword: string) {
     { token, new_password: newPassword },
     { skipAuth: true },
   )
+}
+
+export function verifyEmail(token: string) {
+  return apiClient.post<void>('/auth/verify-email', { token }, { skipAuth: true })
+}
+
+export function resendVerification() {
+  return apiClient.post<{ message: string }>('/auth/resend-verification')
 }

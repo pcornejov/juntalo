@@ -44,14 +44,29 @@ type PasswordResetRepository interface {
 	MarkUsed(ctx context.Context, tokenHash string) error
 }
 
+// EmailVerificationRepository tiene exactamente la misma forma que
+// PasswordResetRepository — mismo patrón de token de un solo uso, distinto
+// propósito. Se mantiene como interfaz/tabla separada (igual que
+// refresh_tokens vs password_reset_tokens) para no acoplar dos flujos que
+// evolucionan distinto.
+type EmailVerificationRepository interface {
+	Create(ctx context.Context, userID uuid.UUID, tokenHash string, expiresAt time.Time) error
+	GetUserIDByValidHash(ctx context.Context, tokenHash string) (uuid.UUID, bool, error)
+	MarkUsed(ctx context.Context, tokenHash string) error
+}
+
 type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (identity.User, bool, error)
 	GetByID(ctx context.Context, id uuid.UUID) (identity.User, bool, error)
+	MarkEmailVerified(ctx context.Context, id uuid.UUID) error
 }
 
 type OrganizationRepository interface {
 	GetPersonalByUserID(ctx context.Context, userID uuid.UUID) (identity.Organization, error)
 	GetByID(ctx context.Context, id uuid.UUID) (identity.Organization, error)
+	// GetOwnerEmail se usa para notificar al organizador de nuevos aportes
+	// (Hito "notificaciones") — no requiere UI de equipos, solo el dueño.
+	GetOwnerEmail(ctx context.Context, id uuid.UUID) (email, fullName string, err error)
 }
 
 type RefreshTokenRepository interface {
@@ -210,6 +225,7 @@ type CreateContributorInput struct {
 
 type ContributorRepository interface {
 	Create(ctx context.Context, in CreateContributorInput) (uuid.UUID, error)
+	GetByID(ctx context.Context, id uuid.UUID) (contribution.Contributor, bool, error)
 }
 
 type CreateContributionInput struct {
@@ -248,7 +264,10 @@ type PaymentRepository interface {
 	// ConfirmByProviderRef atomically transitions the payment (found by provider
 	// + providerRef) and its linked contribution in a single transaction
 	// (Etapa 4 §5: idempotente — un evento repetido no debe tener efecto doble).
-	ConfirmByProviderRef(ctx context.Context, provider, providerRef string, newStatus payment.Status) error
+	// transitioned indica si esta llamada realmente cambió el estado (false
+	// si el pago ya estaba en newStatus) — el caller lo usa para no mandar
+	// una notificación duplicada cuando el proveedor reintenta el webhook.
+	ConfirmByProviderRef(ctx context.Context, provider, providerRef string, newStatus payment.Status) (result payment.Payment, transitioned bool, err error)
 }
 
 // ── Panel del organizador (Hito 4) ──────────────────────────────────────────

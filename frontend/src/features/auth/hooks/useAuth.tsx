@@ -12,6 +12,7 @@ interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>
   register: (email: string, fullName: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -62,8 +63,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState({ user: null, organization: null, isLoading: false })
   }
 
+  // Se usa tras verificar el email: refresca /me para que el banner
+  // "verifica tu email" desaparezca sin pedirle al usuario reloguear.
+  async function refreshUser() {
+    const me = await authApi.me()
+    setState((s) => ({ ...s, user: me.user, organization: me.organization }))
+  }
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout }}>
+    <AuthContext.Provider value={{ ...state, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

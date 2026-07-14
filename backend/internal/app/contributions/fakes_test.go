@@ -65,6 +65,9 @@ func (f *fakeOrgRepo) GetPersonalByUserID(context.Context, uuid.UUID) (identity.
 func (f *fakeOrgRepo) GetByID(_ context.Context, id uuid.UUID) (identity.Organization, error) {
 	return identity.Organization{ID: id, CommissionRate: f.byID[id]}, nil
 }
+func (f *fakeOrgRepo) GetOwnerEmail(context.Context, uuid.UUID) (string, string, error) {
+	return "", "", nil
+}
 
 // ── fakeContributorRepo ─────────────────────────────────────────────────
 
@@ -72,6 +75,17 @@ type fakeContributorRepo struct{}
 
 func (f *fakeContributorRepo) Create(context.Context, app.CreateContributorInput) (uuid.UUID, error) {
 	return uuid.New(), nil
+}
+func (f *fakeContributorRepo) GetByID(context.Context, uuid.UUID) (contribution.Contributor, bool, error) {
+	return contribution.Contributor{}, false, nil
+}
+
+// ── fakeEmailSender: no-op para los tests que no verifican notificaciones ──
+
+type fakeEmailSender struct{}
+
+func (f *fakeEmailSender) Send(context.Context, string, string, string) error {
+	return nil
 }
 
 // ── fakeContributionRepo ────────────────────────────────────────────────
@@ -177,19 +191,19 @@ func (f *fakePaymentRepo) GetByContributionID(context.Context, uuid.UUID) (payme
 	return payment.Payment{}, false, nil
 }
 
-func (f *fakePaymentRepo) ConfirmByProviderRef(_ context.Context, provider, providerRef string, newStatus payment.Status) error {
+func (f *fakePaymentRepo) ConfirmByProviderRef(_ context.Context, provider, providerRef string, newStatus payment.Status) (payment.Payment, bool, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	p, ok := f.byProviderRef[provider+"|"+providerRef]
 	if !ok {
-		return apperr.New("payment_not_found", "no encontrado")
+		return payment.Payment{}, false, apperr.New("payment_not_found", "no encontrado")
 	}
 	if p.Status == newStatus {
-		return nil // idempotente
+		return *p, false, nil // idempotente
 	}
 	if !payment.CanTransition(p.Status, newStatus) {
-		return apperr.New("invalid_payment_transition", "transición inválida")
+		return payment.Payment{}, false, apperr.New("invalid_payment_transition", "transición inválida")
 	}
 	p.Status = newStatus
 
@@ -203,7 +217,7 @@ func (f *fakePaymentRepo) ConfirmByProviderRef(_ context.Context, provider, prov
 		contribStatus = contribution.StatusPending
 	}
 	f.contributions.setStatus(p.ContributionID, contribStatus)
-	return nil
+	return *p, true, nil
 }
 
 // ── fakeProvider: el mock del mock — controlado por el test ───────────────

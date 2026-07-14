@@ -16,11 +16,29 @@ func IsPaymentNotFound(err error) bool {
 }
 
 type ConfirmService struct {
-	payments app.PaymentRepository
+	payments      app.PaymentRepository
+	contributions app.ContributionRepository
+	campaigns     app.CampaignRepository
+	contributors  app.ContributorRepository
+	organizations app.OrganizationRepository
+	email         app.EmailSender
+	frontendURL   string
 }
 
-func NewConfirmService(payments app.PaymentRepository) *ConfirmService {
-	return &ConfirmService{payments: payments}
+func NewConfirmService(
+	payments app.PaymentRepository,
+	contributions app.ContributionRepository,
+	campaigns app.CampaignRepository,
+	contributors app.ContributorRepository,
+	organizations app.OrganizationRepository,
+	email app.EmailSender,
+	frontendURL string,
+) *ConfirmService {
+	return &ConfirmService{
+		payments: payments, contributions: contributions, campaigns: campaigns,
+		contributors: contributors, organizations: organizations,
+		email: email, frontendURL: frontendURL,
+	}
 }
 
 // HandleWebhookEvent processes an inbound provider webhook (Etapa 4 §5). Es
@@ -37,5 +55,12 @@ func (s *ConfirmService) HandleWebhookEvent(ctx context.Context, provider, provi
 	default:
 		return nil
 	}
-	return s.payments.ConfirmByProviderRef(ctx, provider, providerRef, newStatus)
+	confirmedPayment, transitioned, err := s.payments.ConfirmByProviderRef(ctx, provider, providerRef, newStatus)
+	if err != nil {
+		return err
+	}
+	if transitioned && newStatus == payment.StatusConfirmed {
+		notifyOrganizer(ctx, s.contributions, s.campaigns, s.contributors, s.organizations, s.email, s.frontendURL, confirmedPayment)
+	}
+	return nil
 }

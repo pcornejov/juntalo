@@ -8,3 +8,6 @@ SELECT * FROM users WHERE id = $1;
 INSERT INTO users (email, full_name)
 VALUES ($1, $2)
 RETURNING *;
+
+-- name: MarkEmailVerified :exec
+UPDATE users SET email_verified_at = now() WHERE id = $1;

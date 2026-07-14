@@ -2,13 +2,16 @@ package repos
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/pcornejov/juntalo/backend/internal/app"
+	"github.com/pcornejov/juntalo/backend/internal/domain/contribution"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/sqlc"
 )
 
@@ -30,4 +33,15 @@ func (r *ContributorRepo) Create(ctx context.Context, in app.CreateContributorIn
 		return uuid.Nil, fmt.Errorf("create contributor: %w", err)
 	}
 	return c.ID, nil
+}
+
+func (r *ContributorRepo) GetByID(ctx context.Context, id uuid.UUID) (contribution.Contributor, bool, error) {
+	c, err := r.q.GetContributorByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return contribution.Contributor{}, false, nil
+		}
+		return contribution.Contributor{}, false, fmt.Errorf("get contributor: %w", err)
+	}
+	return mapContributor(c), true, nil
 }

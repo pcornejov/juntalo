@@ -10,6 +10,7 @@ import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { RegisterPage } from '../features/auth/pages/RegisterPage'
 import { ResetPasswordPage } from '../features/auth/pages/ResetPasswordPage'
+import { VerifyEmailPage } from '../features/auth/pages/VerifyEmailPage'
 import { CampaignListPage } from '../features/campaigns/pages/CampaignListPage'
 import { CampaignFormPage } from '../features/campaigns/pages/CampaignFormPage'
 import { CampaignDetailPage } from '../features/campaigns/pages/CampaignDetailPage'
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
   { path: '/register', element: <RegisterPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/verify-email', element: <VerifyEmailPage /> },
   { path: '/design', element: <ComponentsShowcasePage /> },
   { path: '/privacidad', element: <PrivacyPage /> },
   { path: '/public/:slug', element: <PublicCampaignPage /> },

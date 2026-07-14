@@ -42,8 +42,8 @@ func newFixture(t *testing.T, providerMode payment.Status) *fixture {
 	return &fixture{
 		campaigns: campaigns, orgs: orgs, contributions: contributionsRepo,
 		payments: paymentsRepo, provider: provider,
-		start:      NewStartService(campaigns, orgs, &fakeContributorRepo{}, contributionsRepo, paymentsRepo, provider),
-		confirm:    NewConfirmService(paymentsRepo),
+		start:      NewStartService(campaigns, orgs, &fakeContributorRepo{}, contributionsRepo, paymentsRepo, provider, &fakeEmailSender{}, "http://localhost:5173"),
+		confirm:    NewConfirmService(paymentsRepo, contributionsRepo, campaigns, &fakeContributorRepo{}, orgs, &fakeEmailSender{}, "http://localhost:5173"),
 		campaignID: campaignID, orgID: orgID,
 	}
 }

@@ -84,3 +84,22 @@ func (q *Queries) GetPersonalOrganizationByUserID(ctx context.Context, userID uu
 	)
 	return i, err
 }
+
+const getOrganizationOwnerByOrgID = `-- name: GetOrganizationOwnerByOrgID :one
+SELECT u.email, u.full_name FROM users u
+JOIN organization_members om ON om.user_id = u.id
+WHERE om.organization_id = $1 AND om.role = 'owner'
+LIMIT 1
+`
+
+type GetOrganizationOwnerByOrgIDRow struct {
+	Email    string `json:"email"`
+	FullName string `json:"full_name"`
+}
+
+func (q *Queries) GetOrganizationOwnerByOrgID(ctx context.Context, organizationID uuid.UUID) (GetOrganizationOwnerByOrgIDRow, error) {
+	row := q.db.QueryRow(ctx, getOrganizationOwnerByOrgID, organizationID)
+	var i GetOrganizationOwnerByOrgIDRow
+	err := row.Scan(&i.Email, &i.FullName)
+	return i, err
+}

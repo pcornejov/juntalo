@@ -16,6 +16,8 @@ func mountAuthRoutes(router fiber.Router, h *handlers.AuthHandler, signer app.To
 	auth.Post("/logout", h.Logout)
 	auth.Post("/forgot-password", h.ForgotPassword)
 	auth.Post("/reset-password", h.ResetPassword)
+	auth.Post("/verify-email", h.VerifyEmail)
+	auth.Post("/resend-verification", middleware.RequireAuth(signer), h.ResendVerification)
 	auth.Get("/me", middleware.RequireAuth(signer), h.Me)
 }
 

@@ -34,3 +34,15 @@ func (r *OrganizationRepo) GetByID(ctx context.Context, id uuid.UUID) (identity.
 	}
 	return mapOrganization(o), nil
 }
+
+// GetOwnerEmail busca el dueño ('owner') de la organización — a esta escala
+// (sin equipos/UI de invitaciones todavía) cada organización tiene
+// exactamente un miembro, pero igual filtramos por rol para no depender de
+// ese supuesto implícito.
+func (r *OrganizationRepo) GetOwnerEmail(ctx context.Context, id uuid.UUID) (email, fullName string, err error) {
+	row, err := r.q.GetOrganizationOwnerByOrgID(ctx, id)
+	if err != nil {
+		return "", "", fmt.Errorf("get organization owner: %w", err)
+	}
+	return row.Email, row.FullName, nil
+}

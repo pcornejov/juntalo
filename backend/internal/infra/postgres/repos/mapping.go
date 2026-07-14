@@ -18,11 +18,12 @@ import (
 
 func mapUser(u sqlc.User) identity.User {
 	return identity.User{
-		ID:        u.ID,
-		Email:     u.Email,
-		FullName:  u.FullName,
-		Status:    u.Status,
-		CreatedAt: u.CreatedAt.Time,
+		ID:            u.ID,
+		Email:         u.Email,
+		FullName:      u.FullName,
+		Status:        u.Status,
+		EmailVerified: u.EmailVerifiedAt.Valid,
+		CreatedAt:     u.CreatedAt.Time,
 	}
 }
 
@@ -33,6 +34,15 @@ func mapOrganization(o sqlc.Organization) identity.Organization {
 		Name:           o.Name,
 		Kind:           o.Kind,
 		CommissionRate: rate.Float64,
+	}
+}
+
+func mapContributor(c sqlc.Contributor) contribution.Contributor {
+	return contribution.Contributor{
+		ID:       c.ID,
+		FullName: c.FullName,
+		Email:    c.Email.String,
+		Phone:    c.Phone.String,
 	}
 }
 

@@ -16,6 +16,7 @@ type Querier interface {
 	CreateCampaignImage(ctx context.Context, arg CreateCampaignImageParams) (CampaignImage, error)
 	CreateContribution(ctx context.Context, arg CreateContributionParams) (Contribution, error)
 	CreateContributor(ctx context.Context, arg CreateContributorParams) (Contributor, error)
+	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) error
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateOrganization(ctx context.Context, name string) (Organization, error)
 	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
@@ -30,8 +31,10 @@ type Querier interface {
 	GetCampaignBySlug(ctx context.Context, slug string) (Campaign, error)
 	GetCampaignTotals(ctx context.Context, campaignID uuid.UUID) (CampaignTotal, error)
 	GetContributionByID(ctx context.Context, id uuid.UUID) (Contribution, error)
+	GetContributorByID(ctx context.Context, id uuid.UUID) (Contributor, error)
 	GetFileByID(ctx context.Context, id uuid.UUID) (File, error)
 	GetOrganizationByID(ctx context.Context, id uuid.UUID) (Organization, error)
+	GetOrganizationOwnerByOrgID(ctx context.Context, organizationID uuid.UUID) (GetOrganizationOwnerByOrgIDRow, error)
 	GetPasswordIdentityByUserID(ctx context.Context, userID uuid.UUID) (UserIdentity, error)
 	GetPaymentByContributionID(ctx context.Context, contributionID uuid.UUID) (Payment, error)
 	GetPaymentByIdempotencyKey(ctx context.Context, idempotencyKey string) (Payment, error)
@@ -39,12 +42,15 @@ type Querier interface {
 	GetPersonalOrganizationByUserID(ctx context.Context, userID uuid.UUID) (Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	GetValidEmailVerificationTokenByHash(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
 	GetValidPasswordResetTokenByHash(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
 	ListCampaignImages(ctx context.Context, campaignID uuid.UUID) ([]ListCampaignImagesRow, error)
 	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
 	ListContributionsByCampaign(ctx context.Context, arg ListContributionsByCampaignParams) ([]Contribution, error)
 	ListParticipantsByCampaign(ctx context.Context, arg ListParticipantsByCampaignParams) ([]ListParticipantsByCampaignRow, error)
+	MarkEmailVerificationTokenUsed(ctx context.Context, tokenHash string) error
+	MarkEmailVerified(ctx context.Context, id uuid.UUID) error
 	MarkPasswordResetTokenUsed(ctx context.Context, tokenHash string) error
 	NextCampaignImagePosition(ctx context.Context, campaignID uuid.UUID) (int32, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error

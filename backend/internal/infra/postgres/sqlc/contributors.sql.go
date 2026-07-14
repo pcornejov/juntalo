@@ -8,6 +8,7 @@ package sqlc
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -25,6 +26,23 @@ type CreateContributorParams struct {
 
 func (q *Queries) CreateContributor(ctx context.Context, arg CreateContributorParams) (Contributor, error) {
 	row := q.db.QueryRow(ctx, createContributor, arg.FullName, arg.Email, arg.Phone)
+	var i Contributor
+	err := row.Scan(
+		&i.ID,
+		&i.FullName,
+		&i.Email,
+		&i.Phone,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getContributorByID = `-- name: GetContributorByID :one
+SELECT id, full_name, email, phone, created_at FROM contributors WHERE id = $1
+`
+
+func (q *Queries) GetContributorByID(ctx context.Context, id uuid.UUID) (Contributor, error) {
+	row := q.db.QueryRow(ctx, getContributorByID, id)
 	var i Contributor
 	err := row.Scan(
 		&i.ID,

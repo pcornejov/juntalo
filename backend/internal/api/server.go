@@ -89,12 +89,14 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	participantRepo := repos.NewParticipantRepo(db)
 	auditRepo := repos.NewAuditRepo(db)
 	passwordResetRepo := repos.NewPasswordResetRepo(db)
+	emailVerificationRepo := repos.NewEmailVerificationRepo(db)
 
 	registerSvc := authuc.NewRegisterService(authRepo, hasher)
 	loginSvc := authuc.NewLoginService(userRepo, authRepo, orgRepo, hasher)
 	refreshSvc := authuc.NewRefreshService(refreshRepo)
 	forgotPasswordSvc := authuc.NewForgotPasswordService(userRepo, passwordResetRepo)
 	resetPasswordSvc := authuc.NewResetPasswordService(passwordResetRepo, authRepo, hasher)
+	emailVerifySvc := authuc.NewEmailVerificationService(userRepo, emailVerificationRepo)
 
 	createSvc := campaignsuc.NewCreateService(campaignRepo)
 	getSvc := campaignsuc.NewGetService(campaignRepo)
@@ -104,13 +106,13 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	deleteSvc := campaignsuc.NewDeleteService(campaignRepo)
 	uploadSvc := filesuc.NewUploadService(storage, fileRepo)
 
-	startSvc := contributionsuc.NewStartService(campaignRepo, orgRepo, contributorRepo, contributionRepo, paymentRepo, paymentProvider)
-	confirmSvc := contributionsuc.NewConfirmService(paymentRepo)
+	startSvc := contributionsuc.NewStartService(campaignRepo, orgRepo, contributorRepo, contributionRepo, paymentRepo, paymentProvider, emailSender, cfg.FrontendURL)
+	confirmSvc := contributionsuc.NewConfirmService(paymentRepo, contributionRepo, campaignRepo, contributorRepo, orgRepo, emailSender, cfg.FrontendURL)
 	statusSvc := contributionsuc.NewStatusService(contributionRepo)
 	participantsSvc := dashboarduc.NewParticipantsService(campaignRepo, participantRepo)
 	exportSvc := dashboarduc.NewExportCSVService(campaignRepo, participantRepo)
 
-	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks)
+	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks)
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
 	dashboardHandler := handlers.NewDashboardHandler(participantsSvc, exportSvc, orgRepo)
 	fileHandler := handlers.NewFileHandler(uploadSvc, orgRepo)

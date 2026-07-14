@@ -83,8 +83,11 @@ func (r *PaymentRepo) GetByContributionID(ctx context.Context, contributionID uu
 // payment row, validates the transition in domain, updates payment y su
 // contribution vinculada en una sola transacción (Etapa 3 §5, Etapa 4 §5).
 // Idempotente: un evento repetido para un pago ya en newStatus es un no-op.
-func (r *PaymentRepo) ConfirmByProviderRef(ctx context.Context, provider, providerRef string, newStatus payment.Status) error {
-	return pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+func (r *PaymentRepo) ConfirmByProviderRef(ctx context.Context, provider, providerRef string, newStatus payment.Status) (payment.Payment, bool, error) {
+	var result payment.Payment
+	var transitioned bool
+
+	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
 		q := sqlc.New(tx)
 
 		row, err := q.GetPaymentByProviderRefForUpdate(ctx, sqlc.GetPaymentByProviderRefForUpdateParams{
@@ -100,6 +103,7 @@ func (r *PaymentRepo) ConfirmByProviderRef(ctx context.Context, provider, provid
 
 		current := payment.Status(row.Status)
 		if current == newStatus {
+			result = mapPayment(row)
 			return nil // idempotente: mismo evento reprocesado, sin efecto
 		}
 		if !payment.CanTransition(current, newStatus) {
@@ -114,7 +118,8 @@ func (r *PaymentRepo) ConfirmByProviderRef(ctx context.Context, provider, provid
 		if newStatus == payment.StatusFailed {
 			params.FailedAt = pgtype.Timestamptz{Time: now, Valid: true}
 		}
-		if _, err := q.UpdatePaymentStatus(ctx, params); err != nil {
+		updated, err := q.UpdatePaymentStatus(ctx, params)
+		if err != nil {
 			return fmt.Errorf("update payment status: %w", err)
 		}
 
@@ -126,8 +131,11 @@ func (r *PaymentRepo) ConfirmByProviderRef(ctx context.Context, provider, provid
 			return fmt.Errorf("update contribution status: %w", err)
 		}
 
+		result = mapPayment(updated)
+		transitioned = true
 		return nil
 	})
+	return result, transitioned, err
 }
 
 func mapPaymentStatusToContributionStatus(s payment.Status) contribution.Status {

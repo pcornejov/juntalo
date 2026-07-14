@@ -42,3 +42,10 @@ func (r *UserRepo) GetByID(ctx context.Context, id uuid.UUID) (identity.User, bo
 	}
 	return mapUser(u), true, nil
 }
+
+func (r *UserRepo) MarkEmailVerified(ctx context.Context, id uuid.UUID) error {
+	if err := r.q.MarkEmailVerified(ctx, id); err != nil {
+		return fmt.Errorf("mark email verified: %w", err)
+	}
+	return nil
+}

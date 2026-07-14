@@ -28,6 +28,8 @@ type StartService struct {
 	contributions app.ContributionRepository
 	payments      app.PaymentRepository
 	provider      app.PaymentProvider
+	email         app.EmailSender
+	frontendURL   string
 }
 
 func NewStartService(
@@ -37,10 +39,13 @@ func NewStartService(
 	contributions app.ContributionRepository,
 	payments app.PaymentRepository,
 	provider app.PaymentProvider,
+	email app.EmailSender,
+	frontendURL string,
 ) *StartService {
 	return &StartService{
 		campaigns: campaigns, organizations: organizations, contributors: contributors,
 		contributions: contributions, payments: payments, provider: provider,
+		email: email, frontendURL: frontendURL,
 	}
 }
 
@@ -160,10 +165,14 @@ func (s *StartService) Start(ctx context.Context, in StartInput) (StartResult, e
 
 	finalStatus := payment.StatusPending
 	if intent.Status == payment.StatusConfirmed || intent.Status == payment.StatusFailed {
-		if err := s.payments.ConfirmByProviderRef(ctx, mockProviderName, intent.ProviderRef, intent.Status); err != nil {
+		confirmedPayment, transitioned, err := s.payments.ConfirmByProviderRef(ctx, mockProviderName, intent.ProviderRef, intent.Status)
+		if err != nil {
 			return StartResult{}, err
 		}
 		finalStatus = intent.Status
+		if transitioned && intent.Status == payment.StatusConfirmed {
+			notifyOrganizer(ctx, s.contributions, s.campaigns, s.contributors, s.organizations, s.email, s.frontendURL, confirmedPayment)
+		}
 	}
 
 	return StartResult{

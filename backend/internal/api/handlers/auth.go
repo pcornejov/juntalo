@@ -24,6 +24,7 @@ type AuthHandler struct {
 	refresh          *authuc.RefreshService
 	forgotPassword   *authuc.ForgotPasswordService
 	resetPassword    *authuc.ResetPasswordService
+	emailVerify      *authuc.EmailVerificationService
 	users            app.UserRepository
 	orgs             app.OrganizationRepository
 	signer           app.TokenSigner
@@ -39,6 +40,7 @@ func NewAuthHandler(
 	refresh *authuc.RefreshService,
 	forgotPassword *authuc.ForgotPasswordService,
 	resetPassword *authuc.ResetPasswordService,
+	emailVerify *authuc.EmailVerificationService,
 	users app.UserRepository,
 	orgs app.OrganizationRepository,
 	signer app.TokenSigner,
@@ -53,6 +55,7 @@ func NewAuthHandler(
 		refresh:          refresh,
 		forgotPassword:   forgotPassword,
 		resetPassword:    resetPassword,
+		emailVerify:      emailVerify,
 		users:            users,
 		orgs:             orgs,
 		signer:           signer,
@@ -77,7 +80,24 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return dto.WriteError(c, err)
 	}
 
+	h.sendVerificationEmail(c, user)
+
 	return h.issueSession(c, user, org, fiber.StatusCreated)
+}
+
+// sendVerificationEmail is best-effort: si falla, el usuario igual queda
+// registrado y puede pedir que se lo reenvíen — no bloqueamos el registro
+// por un problema del proveedor de email.
+func (h *AuthHandler) sendVerificationEmail(c *fiber.Ctx, user identity.User) {
+	token, err := h.emailVerify.IssueToken(c.Context(), user.ID)
+	if err != nil {
+		log.Printf("register: issue verification token failed: %v", err)
+		return
+	}
+	link := h.frontendURL + "/verify-email?token=" + token
+	if err := h.email.Send(c.Context(), user.Email, verifyEmailSubject, verifyEmailHTML(link)); err != nil {
+		log.Printf("register: verification email send failed: %v", err)
+	}
 }
 
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
@@ -176,6 +196,41 @@ func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
+	var req dto.VerifyEmailRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	if err := dto.Validate(req); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	if err := h.emailVerify.Verify(c.Context(), req.Token); err != nil {
+		return dto.WriteError(c, err)
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// ResendVerification requiere sesión (a diferencia de forgot-password) — no
+// hay riesgo de enumeración de usuarios que cuidar aquí, así que puede
+// responder directo en vez de un mensaje genérico.
+func (h *AuthHandler) ResendVerification(c *fiber.Ctx) error {
+	userID := middleware.UserID(c)
+	user, found, err := h.users.GetByID(c.Context(), userID)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	if !found {
+		return dto.WriteError(c, sessionExpired())
+	}
+	if user.EmailVerified {
+		return c.JSON(fiber.Map{"message": "Tu email ya está verificado."})
+	}
+
+	h.sendVerificationEmail(c, user)
+	return c.JSON(fiber.Map{"message": "Te enviamos un nuevo link de verificación."})
+}
+
 func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	userID := middleware.UserID(c)
 
@@ -252,7 +307,7 @@ func (h *AuthHandler) clearRefreshCookie(c *fiber.Ctx) {
 }
 
 func toUserResponse(u identity.User) dto.UserResponse {
-	return dto.UserResponse{ID: u.ID.String(), Email: u.Email, FullName: u.FullName}
+	return dto.UserResponse{ID: u.ID.String(), Email: u.Email, FullName: u.FullName, EmailVerified: u.EmailVerified}
 }
 
 func toOrganizationResponse(o identity.Organization) dto.OrganizationResponse {
