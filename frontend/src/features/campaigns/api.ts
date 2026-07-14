@@ -6,6 +6,11 @@ export interface Totals {
   contributor_count: number
 }
 
+export interface CampaignImage {
+  id: string
+  url: string
+}
+
 export interface Campaign {
   id: string
   type_key: string
@@ -13,6 +18,7 @@ export interface Campaign {
   slug: string
   description: string
   cover_url?: string
+  images: CampaignImage[]
   goal_amount?: number
   status: 'draft' | 'active' | 'paused' | 'finished' | 'suspended'
   public_url: string
@@ -66,11 +72,14 @@ export function listCampaignTypes() {
   return apiClient.get<{ items: CampaignType[] }>('/meta/campaign-types')
 }
 
-export function uploadCoverImage(file: File) {
+export function addCampaignImage(campaignId: string, file: File) {
   const form = new FormData()
   form.append('file', file)
-  form.append('kind', 'campaign_cover')
-  return apiClient.upload<{ id: string; url: string }>('/files', form)
+  return apiClient.upload<{ id: string; url: string }>(`/campaigns/${campaignId}/images`, form)
+}
+
+export function deleteCampaignImage(campaignId: string, imageId: string) {
+  return apiClient.delete<void>(`/campaigns/${campaignId}/images/${imageId}`)
 }
 
 export interface Participant {

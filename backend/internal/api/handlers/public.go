@@ -24,13 +24,14 @@ var botUserAgents = []string{
 type PublicHandler struct {
 	get         *campaignsuc.GetService
 	files       app.FileRepository
+	images      app.CampaignImageRepository
 	storage     app.FileStorage
 	frontendURL string
 	selfURL     string
 }
 
-func NewPublicHandler(get *campaignsuc.GetService, files app.FileRepository, storage app.FileStorage, frontendURL, selfURL string) *PublicHandler {
-	return &PublicHandler{get: get, files: files, storage: storage, frontendURL: frontendURL, selfURL: selfURL}
+func NewPublicHandler(get *campaignsuc.GetService, files app.FileRepository, images app.CampaignImageRepository, storage app.FileStorage, frontendURL, selfURL string) *PublicHandler {
+	return &PublicHandler{get: get, files: files, images: images, storage: storage, frontendURL: frontendURL, selfURL: selfURL}
 }
 
 // GetJSON is consumed by the SPA's public campaign page (Etapa 4 §4).
@@ -43,8 +44,12 @@ func (h *PublicHandler) GetJSON(c *fiber.Ctx) error {
 		return dto.WriteError(c, err)
 	}
 
+	images := resolveGalleryURLs(c.Context(), h.images, h.storage, found.ID)
 	coverURL := resolveCoverURL(c, h.files, h.storage, found.CoverFileID)
-	resp := toPublicCampaignResponse(found, totals, coverURL)
+	if len(images) > 0 {
+		coverURL = &images[0]
+	}
+	resp := toPublicCampaignResponse(found, totals, coverURL, images)
 	// public_url apunta a /c/:slug en el dominio del backend (donde vive el
 	// render de OG tags), no al dominio del frontend — así, si alguien
 	// re-comparte el link desde la página pública, la preview de WhatsApp
@@ -67,7 +72,11 @@ func (h *PublicHandler) OGPage(c *fiber.Ctx) error {
 		return c.Redirect(redirectPath, fiber.StatusFound)
 	}
 
+	images := resolveGalleryURLs(c.Context(), h.images, h.storage, found.ID)
 	coverURL := resolveCoverURL(c, h.files, h.storage, found.CoverFileID)
+	if len(images) > 0 {
+		coverURL = &images[0]
+	}
 	c.Set("Content-Type", "text/html; charset=utf-8")
 	return c.SendString(renderOGHTML(found, totals, coverURL, redirectPath))
 }
@@ -94,12 +103,13 @@ func resolveCoverURL(c *fiber.Ctx, files app.FileRepository, storage app.FileSto
 	return &url
 }
 
-func toPublicCampaignResponse(c campaign.Campaign, totals campaign.Totals, coverURL *string) dto.PublicCampaignResponse {
+func toPublicCampaignResponse(c campaign.Campaign, totals campaign.Totals, coverURL *string, images []string) dto.PublicCampaignResponse {
 	def := campaign.Registry[c.TypeKey]
 	resp := dto.PublicCampaignResponse{
 		Title:       c.Title,
 		Description: c.Description,
 		CoverURL:    coverURL,
+		Images:      images,
 		Status:      string(c.Status),
 		CTA:         def.Labels.CTA,
 		Unit:        def.Labels.Unit,

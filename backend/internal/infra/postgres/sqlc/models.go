@@ -39,6 +39,14 @@ type Campaign struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+type CampaignImage struct {
+	ID         uuid.UUID          `json:"id"`
+	CampaignID uuid.UUID          `json:"campaign_id"`
+	FileID     uuid.UUID          `json:"file_id"`
+	Position   int32              `json:"position"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
 type CampaignTotal struct {
 	CampaignID       uuid.UUID `json:"campaign_id"`
 	RaisedGross      int32     `json:"raised_gross"`

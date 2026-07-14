@@ -5,7 +5,7 @@ import { usePublicCampaign } from '../hooks/usePublicCampaign'
 import { useContributionStatus } from '../hooks/useContribute'
 import { formatCLP } from '../../../shared/lib/clp'
 import { relativeDate } from '../../../shared/lib/date'
-import { Button, Card, Progress, ShareButtons, QrCode, Footer } from '../../../shared/ui'
+import { Button, Card, Carousel, Progress, ShareButtons, QrCode, Footer } from '../../../shared/ui'
 import { ContributeSheet } from '../components/ContributeSheet'
 import { OrganizerCard } from '../components/OrganizerCard'
 import { ContributeSuccessPanel } from './ContributeSuccessPage'
@@ -59,12 +59,12 @@ export function PublicCampaignPage() {
   return (
     <div className="mx-auto max-w-md pb-28">
       <div className="relative">
-        {campaign.cover_url ? (
-          <img src={campaign.cover_url} alt={campaign.title} className="h-56 w-full object-cover" />
+        {campaign.images.length > 0 ? (
+          <Carousel images={campaign.images} alt={campaign.title} className="h-56 w-full object-cover" />
         ) : (
           <div className="h-40 w-full bg-bg-subtle" />
         )}
-        {campaign.cover_url && (
+        {campaign.images.length > 0 && (
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0" />
         )}
         {campaign.is_verified && (

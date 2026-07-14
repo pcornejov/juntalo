@@ -43,15 +43,19 @@ export function usePublishCampaign() {
   })
 }
 
-export function useUploadCover(campaign: campaignsApi.Campaign) {
+export function useCampaignGallery(campaignId: string) {
   const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (file: File) => {
-      const uploaded = await campaignsApi.uploadCoverImage(file)
-      return campaignsApi.attachCover(campaign.id, uploaded.id, campaign)
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: [...campaignsKey, campaign.id] }),
-  })
+  const invalidate = () => qc.invalidateQueries({ queryKey: [...campaignsKey, campaignId] })
+  return {
+    addImage: useMutation({
+      mutationFn: (file: File) => campaignsApi.addCampaignImage(campaignId, file),
+      onSuccess: invalidate,
+    }),
+    deleteImage: useMutation({
+      mutationFn: (imageId: string) => campaignsApi.deleteCampaignImage(campaignId, imageId),
+      onSuccess: invalidate,
+    }),
+  }
 }
 
 export function useParticipants(campaignId: string) {

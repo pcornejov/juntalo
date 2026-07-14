@@ -13,6 +13,7 @@ import (
 type Querier interface {
 	CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) error
 	CreateCampaign(ctx context.Context, arg CreateCampaignParams) (Campaign, error)
+	CreateCampaignImage(ctx context.Context, arg CreateCampaignImageParams) (CampaignImage, error)
 	CreateContribution(ctx context.Context, arg CreateContributionParams) (Contribution, error)
 	CreateContributor(ctx context.Context, arg CreateContributorParams) (Contributor, error)
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
@@ -22,6 +23,7 @@ type Querier interface {
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserIdentity(ctx context.Context, arg CreateUserIdentityParams) (UserIdentity, error)
+	DeleteCampaignImage(ctx context.Context, arg DeleteCampaignImageParams) (int64, error)
 	GetCampaignByID(ctx context.Context, id uuid.UUID) (Campaign, error)
 	GetCampaignByIDForOrg(ctx context.Context, arg GetCampaignByIDForOrgParams) (Campaign, error)
 	GetCampaignBySlug(ctx context.Context, slug string) (Campaign, error)
@@ -37,9 +39,11 @@ type Querier interface {
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)
+	ListCampaignImages(ctx context.Context, campaignID uuid.UUID) ([]ListCampaignImagesRow, error)
 	ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrgParams) ([]Campaign, error)
 	ListContributionsByCampaign(ctx context.Context, arg ListContributionsByCampaignParams) ([]Contribution, error)
 	ListParticipantsByCampaign(ctx context.Context, arg ListParticipantsByCampaignParams) ([]ListParticipantsByCampaignRow, error)
+	NextCampaignImagePosition(ctx context.Context, campaignID uuid.UUID) (int32, error)
 	RevokeRefreshToken(ctx context.Context, id uuid.UUID) error
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	SoftDeleteCampaign(ctx context.Context, id uuid.UUID) error

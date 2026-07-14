@@ -5,6 +5,7 @@ export interface PublicCampaign {
   title: string
   description: string
   cover_url?: string
+  images: string[]
   goal_amount?: number
   status: string
   totals: Totals

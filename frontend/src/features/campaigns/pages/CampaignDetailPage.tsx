@@ -2,10 +2,10 @@ import type { ChangeEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   useCampaign,
+  useCampaignGallery,
   useCampaignTransitions,
   useParticipants,
   usePublishCampaign,
-  useUploadCover,
 } from '../hooks/useCampaigns'
 import { Button, Card, ShareButtons, QrCode } from '../../../shared/ui'
 import { StatusBadge } from '../components/StatusBadge'
@@ -28,7 +28,7 @@ export function CampaignDetailPage() {
 function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   const publish = usePublishCampaign()
   const { pause, resume, finish } = useCampaignTransitions()
-  const uploadCover = useUploadCover(campaign)
+  const gallery = useCampaignGallery(campaign.id)
   const { data: participants, isLoading: isLoadingParticipants } = useParticipants(campaign.id)
 
   // public_url ya viene absoluta desde el backend (Etapa 4: /c/:slug vive en
@@ -36,9 +36,10 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   // en dominios distintos, como en este deploy de prueba en Render).
   const publicUrl = campaign.public_url
 
-  function handleCoverChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (file) uploadCover.mutate(file)
+  function handleAddImages(e: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    files.forEach((file) => gallery.addImage.mutate(file))
+    e.target.value = ''
   }
 
   return (
@@ -86,14 +87,35 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
       )}
 
       <Card className="space-y-3">
-        {campaign.cover_url && (
-          <img src={campaign.cover_url} alt="" className="h-40 w-full rounded-lg object-cover" />
+        <p className="text-sm text-text-secondary">Fotos de la campaña</p>
+        {campaign.images.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {campaign.images.map((img) => (
+              <div key={img.id} className="group relative">
+                <img src={img.url} alt="" className="h-24 w-full rounded-lg object-cover" />
+                <button
+                  type="button"
+                  onClick={() => gallery.deleteImage.mutate(img.id)}
+                  disabled={gallery.deleteImage.isPending}
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  aria-label="Quitar foto"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         )}
         <div>
           <label className="mb-1 block text-sm text-text-secondary">
-            {campaign.cover_url ? 'Cambiar imagen' : 'Agregar imagen (opcional)'}
+            {campaign.images.length > 0 ? 'Agregar más fotos' : 'Agregar fotos (opcional)'}
           </label>
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleCoverChange} />
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            onChange={handleAddImages}
+          />
         </div>
       </Card>
 

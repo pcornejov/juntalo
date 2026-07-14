@@ -21,19 +21,25 @@ type UpdateCampaignRequest struct {
 }
 
 type CampaignResponse struct {
-	ID          string     `json:"id"`
-	TypeKey     string     `json:"type_key"`
-	Title       string     `json:"title"`
-	Slug        string     `json:"slug"`
-	Description string     `json:"description"`
-	CoverURL    *string    `json:"cover_url,omitempty"`
-	GoalAmount  *int64     `json:"goal_amount,omitempty"`
-	Status      string     `json:"status"`
-	StartsAt    *time.Time `json:"starts_at,omitempty"`
-	EndsAt      *time.Time `json:"ends_at,omitempty"`
-	PublicURL   string     `json:"public_url"`
-	Totals      TotalsDTO  `json:"totals"`
-	CreatedAt   time.Time  `json:"created_at"`
+	ID          string                  `json:"id"`
+	TypeKey     string                  `json:"type_key"`
+	Title       string                  `json:"title"`
+	Slug        string                  `json:"slug"`
+	Description string                  `json:"description"`
+	CoverURL    *string                 `json:"cover_url,omitempty"`
+	Images      []CampaignImageResponse `json:"images"`
+	GoalAmount  *int64                  `json:"goal_amount,omitempty"`
+	Status      string                  `json:"status"`
+	StartsAt    *time.Time              `json:"starts_at,omitempty"`
+	EndsAt      *time.Time              `json:"ends_at,omitempty"`
+	PublicURL   string                  `json:"public_url"`
+	Totals      TotalsDTO               `json:"totals"`
+	CreatedAt   time.Time               `json:"created_at"`
+}
+
+type CampaignImageResponse struct {
+	ID  string `json:"id"`
+	URL string `json:"url"`
 }
 
 type TotalsDTO struct {
@@ -50,6 +56,7 @@ type PublicCampaignResponse struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	CoverURL    *string   `json:"cover_url,omitempty"`
+	Images      []string  `json:"images"`
 	GoalAmount  *int64    `json:"goal_amount,omitempty"`
 	Status      string    `json:"status"`
 	Totals      TotalsDTO `json:"totals"`

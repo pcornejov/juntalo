@@ -124,6 +124,26 @@ type FileStorage interface {
 	PublicURL(key string) string
 }
 
+// CampaignImageRecord is a gallery image already resolved to its storage
+// key, in display order, for a single campaign.
+type CampaignImageRecord struct {
+	ID         uuid.UUID
+	StorageKey string
+}
+
+// CampaignImageRepository backs the campaign photo gallery/carousel: varias
+// imágenes por campaña en vez de una sola cover_file_id (pedido del
+// producto tras el MVP inicial).
+type CampaignImageRepository interface {
+	// Add appends fileID to campaignID's gallery, at the next position.
+	Add(ctx context.Context, campaignID, fileID uuid.UUID) (uuid.UUID, error)
+	ListByCampaign(ctx context.Context, campaignID uuid.UUID) ([]CampaignImageRecord, error)
+	// Delete removes imageID from campaignID's gallery; returns false if it
+	// didn't belong to that campaign (so handlers can 404 instead of
+	// silently no-op-ing on someone else's image id).
+	Delete(ctx context.Context, campaignID, imageID uuid.UUID) (bool, error)
+}
+
 // ── Pagos y contribuciones (Hito 3 — el corazón del producto) ──────────────
 
 // IntentRequest carries what PaymentProvider.CreateIntent needs. Commission and

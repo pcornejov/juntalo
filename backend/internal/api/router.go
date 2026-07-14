@@ -30,6 +30,8 @@ func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, dashH
 	campaigns.Post("/:id/finish", h.Finish)
 	campaigns.Get("/:id/contributions", dashH.Participants)
 	campaigns.Get("/:id/contributions/export", dashH.ExportCSV)
+	campaigns.Post("/:id/images", h.AddImage)
+	campaigns.Delete("/:id/images/:imageId", h.DeleteImage)
 
 	router.Post("/files", middleware.RequireAuth(signer), fileH.Upload)
 }

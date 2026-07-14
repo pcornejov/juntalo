@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"io"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -16,6 +17,8 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 )
 
+const galleryUploadKind = "campaign_gallery"
+
 const defaultListLimit = 20
 
 type CampaignHandler struct {
@@ -28,6 +31,7 @@ type CampaignHandler struct {
 	upload     *filesuc.UploadService
 	orgs       app.OrganizationRepository
 	files      app.FileRepository
+	images     app.CampaignImageRepository
 	storage    app.FileStorage
 	audit      app.AuditRepository
 	selfURL    string
@@ -43,6 +47,7 @@ func NewCampaignHandler(
 	upload *filesuc.UploadService,
 	orgs app.OrganizationRepository,
 	files app.FileRepository,
+	images app.CampaignImageRepository,
 	storage app.FileStorage,
 	audit app.AuditRepository,
 	selfURL string,
@@ -50,7 +55,7 @@ func NewCampaignHandler(
 	return &CampaignHandler{
 		create: create, get: get, list: list, update: update,
 		transition: transition, del: del, upload: upload, orgs: orgs,
-		files: files, storage: storage, audit: audit, selfURL: selfURL,
+		files: files, images: images, storage: storage, audit: audit, selfURL: selfURL,
 	}
 }
 
@@ -252,6 +257,82 @@ func (h *CampaignHandler) Delete(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+// AddImage implements el carrusel de fotos: sube directo al storage y la
+// asocia a la campaña en un solo paso (a diferencia del flujo viejo de
+// cover_file_id, que subía a POST /files y recién después hacía PATCH).
+func (h *CampaignHandler) AddImage(c *fiber.Ctx) error {
+	orgID, err := h.orgID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	id, err := h.parseID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	if _, _, err := h.get.GetForOrg(c.Context(), id, orgID); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	f, err := fileHeader.Open()
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	defer func() { _ = f.Close() }()
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	uploaded, err := h.upload.Upload(c.Context(), filesuc.UploadInput{
+		OrganizationID: orgID,
+		Kind:           galleryUploadKind,
+		MimeType:       fileHeader.Header.Get("Content-Type"),
+		Data:           data,
+	})
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	imageID, err := h.images.Add(c.Context(), id, uploaded.ID)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(dto.CampaignImageResponse{ID: imageID.String(), URL: uploaded.URL})
+}
+
+func (h *CampaignHandler) DeleteImage(c *fiber.Ctx) error {
+	orgID, err := h.orgID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	id, err := h.parseID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	imageID, err := uuid.Parse(c.Params("imageId"))
+	if err != nil {
+		return dto.WriteError(c, campaignsuc.ErrNotFound)
+	}
+	if _, _, err := h.get.GetForOrg(c.Context(), id, orgID); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	deleted, err := h.images.Delete(c.Context(), id, imageID)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	if !deleted {
+		return dto.WriteError(c, campaignsuc.ErrNotFound)
+	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
 func goalFromRequest(v *int64) *money.CLP {
 	if v == nil {
 		return nil
@@ -261,13 +342,19 @@ func goalFromRequest(v *int64) *money.CLP {
 }
 
 func (h *CampaignHandler) toResponse(c *fiber.Ctx, camp campaign.Campaign, totals campaign.Totals) dto.CampaignResponse {
+	images := resolveGalleryImages(c.Context(), h.images, h.storage, camp.ID)
+	coverURL := resolveCoverURL(c, h.files, h.storage, camp.CoverFileID)
+	if len(images) > 0 {
+		coverURL = &images[0].URL
+	}
 	resp := dto.CampaignResponse{
 		ID:          camp.ID.String(),
 		TypeKey:     string(camp.TypeKey),
 		Title:       camp.Title,
 		Slug:        camp.Slug,
 		Description: camp.Description,
-		CoverURL:    resolveCoverURL(c, h.files, h.storage, camp.CoverFileID),
+		CoverURL:    coverURL,
+		Images:      images,
 		Status:      string(camp.Status),
 		StartsAt:    camp.StartsAt,
 		EndsAt:      camp.EndsAt,
