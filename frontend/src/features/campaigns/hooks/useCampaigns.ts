@@ -52,6 +52,17 @@ export function usePublishCampaign() {
   })
 }
 
+export function useUpdateCampaign(campaignId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: Parameters<typeof campaignsApi.updateCampaign>[1]) =>
+      campaignsApi.updateCampaign(campaignId, input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: campaignsKey })
+    },
+  })
+}
+
 export function useCancelScheduledPublish() {
   const qc = useQueryClient()
   return useMutation({

@@ -21,6 +21,8 @@ export interface Campaign {
   images: CampaignImage[]
   goal_amount?: number
   status: 'draft' | 'active' | 'paused' | 'finished' | 'suspended'
+  starts_at?: string
+  ends_at?: string
   publish_at?: string
   public_url: string
   totals: Totals
@@ -60,6 +62,23 @@ export function createCampaign(input: {
 
 export function cancelScheduledPublish(id: string) {
   return apiClient.post<Campaign>(`/campaigns/${id}/cancel-schedule`)
+}
+
+// updateCampaign siempre manda title/goal_amount/starts_at/ends_at aunque
+// solo se edite la descripción: el backend sobreescribe esos campos tal
+// cual llegan (a diferencia de cover_file_id/publish_at, que si mantienen
+// el valor existente cuando viene null) — omitirlos los borraría.
+export function updateCampaign(
+  id: string,
+  input: {
+    title: string
+    description: string
+    goal_amount?: number
+    starts_at?: string
+    ends_at?: string
+  },
+) {
+  return apiClient.patch<Campaign>(`/campaigns/${id}`, input)
 }
 
 export function publishCampaign(id: string) {

@@ -1,6 +1,6 @@
-import { useState, type ChangeEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Copy } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Copy, Pencil } from 'lucide-react'
 import {
   useCampaign,
   useCampaignGallery,
@@ -9,9 +9,11 @@ import {
   useCloneCampaign,
   useParticipants,
   usePublishCampaign,
+  useUpdateCampaign,
 } from '../hooks/useCampaigns'
 import { useDebouncedValue } from '../../../shared/lib/useDebouncedValue'
-import { Button, Card, ShareButtons, QrCode } from '../../../shared/ui'
+import { errorMessage } from '../../../shared/api/errors'
+import { Button, Card, Input, ShareButtons, QrCode } from '../../../shared/ui'
 import { StatusBadge } from '../components/StatusBadge'
 import { TotalsPanel } from '../components/TotalsPanel'
 import { ParticipantsTable } from '../components/ParticipantsTable'
@@ -29,6 +31,62 @@ export function CampaignDetailPage() {
   return <CampaignDetailContent campaign={campaign} />
 }
 
+// El backend nunca restringió editar título/descripción por estado — solo
+// nunca hubo UI para hacerlo, ni siquiera en borrador (el organizador podía
+// agregar fotos, pero no corregir un typo en la descripción una vez
+// publicada). goal_amount/starts_at/ends_at se reenvían tal cual vienen del
+// campaign actual: el endpoint de Update los sobreescribe con lo que llega
+// en el body (a diferencia de cover_file_id/publish_at, que sí mantienen su
+// valor si viene null) — omitirlos los borraría en cada edición.
+function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: () => void }) {
+  const [title, setTitle] = useState(campaign.title)
+  const [description, setDescription] = useState(campaign.description)
+  const [error, setError] = useState<string | null>(null)
+  const update = useUpdateCampaign(campaign.id)
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    update.mutate(
+      {
+        title,
+        description,
+        goal_amount: campaign.goal_amount,
+        starts_at: campaign.starts_at,
+        ends_at: campaign.ends_at,
+      },
+      { onSuccess: onDone, onError: (err) => setError(errorMessage(err)) },
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div>
+        <label className="mb-1 block text-sm text-text-secondary">Título</label>
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} minLength={3} maxLength={120} required />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm text-text-secondary">Descripción</label>
+        <textarea
+          className="w-full rounded-lg border border-border-default bg-bg-surface px-3 py-2 text-text-primary focus:outline-none focus:ring-2 focus:ring-brand"
+          rows={5}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+      {error && <p className="text-sm text-danger">{error}</p>}
+      <div className="flex gap-2">
+        <Button type="submit" disabled={update.isPending}>
+          {update.isPending ? 'Guardando…' : 'Guardar cambios'}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onDone} disabled={update.isPending}>
+          Cancelar
+        </Button>
+      </div>
+    </form>
+  )
+}
+
 function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   const navigate = useNavigate()
   const publish = usePublishCampaign()
@@ -36,6 +94,7 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   const clone = useCloneCampaign()
   const cancelSchedule = useCancelScheduledPublish()
   const gallery = useCampaignGallery(campaign.id)
+  const [isEditing, setIsEditing] = useState(false)
   const [participantSearch, setParticipantSearch] = useState('')
   const [participantStatus, setParticipantStatus] = useState('')
   const debouncedParticipantSearch = useDebouncedValue(participantSearch)
@@ -207,10 +266,24 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
         </div>
       </Card>
 
-      <Card>
-        <p className="whitespace-pre-wrap text-text-primary">
-          {campaign.description || 'Sin descripción.'}
-        </p>
+      <Card className="space-y-3">
+        {isEditing ? (
+          <EditCampaignForm campaign={campaign} onDone={() => setIsEditing(false)} />
+        ) : (
+          <div className="flex items-start justify-between gap-2">
+            <p className="whitespace-pre-wrap text-text-primary">
+              {campaign.description || 'Sin descripción.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="flex flex-none items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary"
+            >
+              <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Editar
+            </button>
+          </div>
+        )}
       </Card>
 
       <Card className="space-y-4">
