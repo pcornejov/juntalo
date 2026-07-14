@@ -20,6 +20,7 @@ import (
 const galleryUploadKind = "campaign_gallery"
 
 const defaultListLimit = 20
+const maxListLimit = 50
 
 type CampaignHandler struct {
 	create     *campaignsuc.CreateService
@@ -127,16 +128,32 @@ func (h *CampaignHandler) List(c *fiber.Ctx) error {
 		return dto.WriteError(c, err)
 	}
 
-	items, err := h.list.List(c.Context(), orgID, defaultListLimit, 0)
+	limit := c.QueryInt("limit", defaultListLimit)
+	if limit <= 0 || limit > maxListLimit {
+		limit = defaultListLimit
+	}
+	offset := c.QueryInt("offset", 0)
+	if offset < 0 {
+		offset = 0
+	}
+
+	// Se pide un ítem de más para saber si hay página siguiente sin una
+	// query COUNT aparte — a esta escala (un organizador, sus campañas) es
+	// más simple que sumar paginación por cursor con total.
+	items, err := h.list.List(c.Context(), orgID, int32(limit+1), int32(offset))
 	if err != nil {
 		return dto.WriteError(c, err)
+	}
+	hasMore := len(items) > limit
+	if hasMore {
+		items = items[:limit]
 	}
 
 	out := make([]dto.CampaignResponse, len(items))
 	for i, item := range items {
 		out[i] = h.toResponse(c, item.Campaign, item.Totals)
 	}
-	return c.JSON(dto.CampaignListResponse{Items: out})
+	return c.JSON(dto.CampaignListResponse{Items: out, HasMore: hasMore})
 }
 
 func (h *CampaignHandler) Get(c *fiber.Ctx) error {
@@ -331,6 +348,49 @@ func (h *CampaignHandler) DeleteImage(c *fiber.Ctx) error {
 		return dto.WriteError(c, campaignsuc.ErrNotFound)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// ReorderImages recibe el orden completo de la galería; la primera imagen
+// queda como portada — "elegir portada" es simplemente moverla al inicio.
+func (h *CampaignHandler) ReorderImages(c *fiber.Ctx) error {
+	orgID, err := h.orgID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	id, err := h.parseID(c)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	if _, _, err := h.get.GetForOrg(c.Context(), id, orgID); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	var req dto.ReorderImagesRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	if err := dto.Validate(req); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	imageIDs := make([]uuid.UUID, len(req.ImageIDs))
+	for i, raw := range req.ImageIDs {
+		parsed, err := uuid.Parse(raw)
+		if err != nil {
+			return dto.WriteError(c, campaignsuc.ErrNotFound)
+		}
+		imageIDs[i] = parsed
+	}
+
+	if err := h.images.Reorder(c.Context(), id, imageIDs); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	updated, totals, err := h.get.GetForOrg(c.Context(), id, orgID)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	return c.JSON(h.toResponse(c, updated, totals))
 }
 
 func goalFromRequest(v *int64) *money.CLP {

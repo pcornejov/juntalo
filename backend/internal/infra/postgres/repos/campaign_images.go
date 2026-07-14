@@ -5,18 +5,21 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/pcornejov/juntalo/backend/internal/app"
+	"github.com/pcornejov/juntalo/backend/internal/domain/apperr"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/sqlc"
 )
 
 type CampaignImageRepo struct {
-	q *sqlc.Queries
+	pool *pgxpool.Pool
+	q    *sqlc.Queries
 }
 
 func NewCampaignImageRepo(pool *pgxpool.Pool) *CampaignImageRepo {
-	return &CampaignImageRepo{q: sqlc.New(pool)}
+	return &CampaignImageRepo{pool: pool, q: sqlc.New(pool)}
 }
 
 func (r *CampaignImageRepo) Add(ctx context.Context, campaignID, fileID uuid.UUID) (uuid.UUID, error) {
@@ -50,6 +53,28 @@ func (r *CampaignImageRepo) ListByCampaign(ctx context.Context, campaignID uuid.
 		out[i] = app.CampaignImageRecord{ID: row.ID, StorageKey: row.StorageKey}
 	}
 	return out, nil
+}
+
+var ErrImageNotFound = apperr.New("campaign_image_not_found", "Una de las imágenes no pertenece a esta campaña")
+
+func (r *CampaignImageRepo) Reorder(ctx context.Context, campaignID uuid.UUID, orderedImageIDs []uuid.UUID) error {
+	return pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
+		q := sqlc.New(tx)
+		for i, imageID := range orderedImageIDs {
+			affected, err := q.UpdateCampaignImagePosition(ctx, sqlc.UpdateCampaignImagePositionParams{
+				ID:         imageID,
+				CampaignID: campaignID,
+				Position:   int32(i),
+			})
+			if err != nil {
+				return fmt.Errorf("campaign images: reorder: %w", err)
+			}
+			if affected == 0 {
+				return ErrImageNotFound
+			}
+		}
+		return nil
+	})
 }
 
 func (r *CampaignImageRepo) Delete(ctx context.Context, campaignID, imageID uuid.UUID) (bool, error) {

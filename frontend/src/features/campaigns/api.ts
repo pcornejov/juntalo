@@ -35,8 +35,12 @@ export interface CampaignType {
   allows_free_amount: boolean
 }
 
-export function listCampaigns() {
-  return apiClient.get<{ items: Campaign[] }>('/campaigns')
+export const CAMPAIGNS_PAGE_SIZE = 20
+
+export function listCampaigns(offset = 0, limit = CAMPAIGNS_PAGE_SIZE) {
+  return apiClient.get<{ items: Campaign[]; has_more: boolean }>(
+    `/campaigns?limit=${limit}&offset=${offset}`,
+  )
 }
 
 export function getCampaign(id: string) {
@@ -82,6 +86,10 @@ export function deleteCampaignImage(campaignId: string, imageId: string) {
   return apiClient.delete<void>(`/campaigns/${campaignId}/images/${imageId}`)
 }
 
+export function reorderCampaignImages(campaignId: string, imageIds: string[]) {
+  return apiClient.patch<Campaign>(`/campaigns/${campaignId}/images/reorder`, { image_ids: imageIds })
+}
+
 export interface Participant {
   contribution_id: string
   full_name: string
@@ -94,15 +102,10 @@ export interface Participant {
   created_at: string
 }
 
-export function listParticipants(campaignId: string) {
-  return apiClient.get<{ items: Participant[] }>(`/campaigns/${campaignId}/contributions`)
-}
+export const PARTICIPANTS_PAGE_SIZE = 20
 
-export function attachCover(campaignId: string, coverFileId: string, current: Campaign) {
-  return apiClient.patch<Campaign>(`/campaigns/${campaignId}`, {
-    title: current.title,
-    description: current.description,
-    goal_amount: current.goal_amount,
-    cover_file_id: coverFileId,
-  })
+export function listParticipants(campaignId: string, offset = 0, limit = PARTICIPANTS_PAGE_SIZE) {
+  return apiClient.get<{ items: Participant[]; has_more: boolean }>(
+    `/campaigns/${campaignId}/contributions?limit=${limit}&offset=${offset}`,
+  )
 }

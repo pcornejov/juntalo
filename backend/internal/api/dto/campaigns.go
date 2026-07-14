@@ -42,6 +42,12 @@ type CampaignImageResponse struct {
 	URL string `json:"url"`
 }
 
+// ReorderImagesRequest lleva el nuevo orden completo de la galería; la
+// primera imagen queda como portada.
+type ReorderImagesRequest struct {
+	ImageIDs []string `json:"image_ids" validate:"required,min=1"`
+}
+
 type TotalsDTO struct {
 	RaisedGross      int64 `json:"raised_gross"`
 	RaisedNetApprox  int64 `json:"raised_net_approx"`
@@ -49,7 +55,8 @@ type TotalsDTO struct {
 }
 
 type CampaignListResponse struct {
-	Items []CampaignResponse `json:"items"`
+	Items   []CampaignResponse `json:"items"`
+	HasMore bool               `json:"has_more"`
 }
 
 type PublicCampaignResponse struct {

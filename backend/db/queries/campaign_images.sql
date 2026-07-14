@@ -15,3 +15,6 @@ ORDER BY ci.position ASC;
 
 -- name: DeleteCampaignImage :execrows
 DELETE FROM campaign_images WHERE id = $1 AND campaign_id = $2;
+
+-- name: UpdateCampaignImagePosition :execrows
+UPDATE campaign_images SET position = $3 WHERE id = $1 AND campaign_id = $2;

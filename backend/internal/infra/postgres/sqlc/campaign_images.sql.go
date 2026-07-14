@@ -97,3 +97,21 @@ func (q *Queries) DeleteCampaignImage(ctx context.Context, arg DeleteCampaignIma
 	}
 	return result.RowsAffected(), nil
 }
+
+const updateCampaignImagePosition = `-- name: UpdateCampaignImagePosition :execrows
+UPDATE campaign_images SET position = $3 WHERE id = $1 AND campaign_id = $2
+`
+
+type UpdateCampaignImagePositionParams struct {
+	ID         uuid.UUID `json:"id"`
+	CampaignID uuid.UUID `json:"campaign_id"`
+	Position   int32     `json:"position"`
+}
+
+func (q *Queries) UpdateCampaignImagePosition(ctx context.Context, arg UpdateCampaignImagePositionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateCampaignImagePosition, arg.ID, arg.CampaignID, arg.Position)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}

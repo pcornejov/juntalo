@@ -1,14 +1,23 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as campaignsApi from '../api'
 
 const campaignsKey = ['campaigns']
 const campaignTypesKey = ['campaign-types']
 
+// "Cargar más" en vez de números de página: a esta escala (campañas de un
+// solo organizador) no vale la pena una UI de paginación numerada.
 export function useCampaigns() {
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: campaignsKey,
-    queryFn: () => campaignsApi.listCampaigns().then((r) => r.items),
+    queryFn: ({ pageParam }) => campaignsApi.listCampaigns(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.has_more ? allPages.length * campaignsApi.CAMPAIGNS_PAGE_SIZE : undefined,
   })
+  return {
+    ...query,
+    campaigns: query.data?.pages.flatMap((p) => p.items) ?? [],
+  }
 }
 
 export function useCampaign(id: string | undefined) {
@@ -55,14 +64,25 @@ export function useCampaignGallery(campaignId: string) {
       mutationFn: (imageId: string) => campaignsApi.deleteCampaignImage(campaignId, imageId),
       onSuccess: invalidate,
     }),
+    reorder: useMutation({
+      mutationFn: (imageIds: string[]) => campaignsApi.reorderCampaignImages(campaignId, imageIds),
+      onSuccess: invalidate,
+    }),
   }
 }
 
 export function useParticipants(campaignId: string) {
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['participants', campaignId],
-    queryFn: () => campaignsApi.listParticipants(campaignId).then((r) => r.items),
+    queryFn: ({ pageParam }) => campaignsApi.listParticipants(campaignId, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.has_more ? allPages.length * campaignsApi.PARTICIPANTS_PAGE_SIZE : undefined,
   })
+  return {
+    ...query,
+    participants: query.data?.pages.flatMap((p) => p.items) ?? [],
+  }
 }
 
 export function useCampaignTransitions() {
