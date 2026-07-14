@@ -53,9 +53,12 @@ services:
       # deploy de prueba, es una URL pública real con cuentas reales — si
       # se expusiera el token de "olvidé mi contraseña" en la respuesta de
       # la API, cualquiera podría secuestrar la cuenta de otra persona con
-      # solo saber su email. El flujo de recuperación queda verificado
-      # localmente (ver sesión de pruebas); en este deploy simplemente no
-      # hay forma de completarlo hasta que exista envío de email real.
+      # solo saber su email. Con RESEND_API_KEY configurada, el link ya
+      # llega por email real y este atajo no hace falta.
+      - key: RESEND_API_KEY
+        sync: false # se completa a mano en el dashboard de Render — nunca en el repo
+      - key: EMAIL_FROM
+        value: onboarding@resend.dev # sandbox de Resend: solo entrega a tu propio email hasta verificar un dominio
 
   - type: web
     name: juntalo-web

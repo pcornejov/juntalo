@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,6 +27,8 @@ type AuthHandler struct {
 	users            app.UserRepository
 	orgs             app.OrganizationRepository
 	signer           app.TokenSigner
+	email            app.EmailSender
+	frontendURL      string
 	isProd           bool
 	exposeResetLinks bool
 }
@@ -39,6 +42,8 @@ func NewAuthHandler(
 	users app.UserRepository,
 	orgs app.OrganizationRepository,
 	signer app.TokenSigner,
+	email app.EmailSender,
+	frontendURL string,
 	isProd bool,
 	exposeResetLinks bool,
 ) *AuthHandler {
@@ -51,6 +56,8 @@ func NewAuthHandler(
 		users:            users,
 		orgs:             orgs,
 		signer:           signer,
+		email:            email,
+		frontendURL:      frontendURL,
 		isProd:           isProd,
 		exposeResetLinks: exposeResetLinks,
 	}
@@ -131,6 +138,16 @@ func (h *AuthHandler) ForgotPassword(c *fiber.Ctx) error {
 	token, err := h.forgotPassword.RequestReset(c.Context(), req.Email)
 	if err != nil {
 		return dto.WriteError(c, err)
+	}
+
+	if token != "" {
+		link := h.frontendURL + "/reset-password?token=" + token
+		// Best-effort: si el envío falla (proveedor caído, key mal puesta),
+		// no lo reflejamos en la respuesta — igual sería filtrar que el
+		// email existe, y el usuario puede simplemente reintentar.
+		if err := h.email.Send(c.Context(), req.Email, resetPasswordSubject, resetPasswordHTML(link)); err != nil {
+			log.Printf("forgot-password: email send failed: %v", err)
+		}
 	}
 
 	// Mismo mensaje exista o no el email — evita que alguien pueda usar este

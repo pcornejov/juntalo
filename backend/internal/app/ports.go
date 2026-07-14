@@ -66,6 +66,15 @@ type PasswordHasher interface {
 	Verify(password, hash string) bool
 }
 
+// EmailSender isolates the transactional email provider (Resend hoy) del
+// resto del código — mismo espíritu que PaymentProvider: una interfaz
+// estable, implementaciones intercambiables (Resend real, o un no-op
+// cuando no hay API key configurada, para no romper el flujo si el envío
+// de email todavía no está prendido en un ambiente).
+type EmailSender interface {
+	Send(ctx context.Context, to, subject, htmlBody string) error
+}
+
 // TokenSigner issues and parses short-lived JWT access tokens.
 type TokenSigner interface {
 	Sign(userID uuid.UUID, ttl time.Duration) (string, error)

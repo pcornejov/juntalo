@@ -22,12 +22,16 @@ type Config struct {
 	// el VPS real las corre como paso explícito de deploy (Etapa 5/6).
 	RunMigrationsOnBoot bool `envconfig:"RUN_MIGRATIONS_ON_BOOT" default:"false"`
 
-	// ExposeResetLinks: todavía no hay envío de email real, así que
-	// "olvidé mi contraseña" no tiene forma de llegarle al usuario salvo
-	// que la API devuelva el link directo — solo aceptable en este deploy
-	// de prueba. Debe quedar en false en cualquier despliegue real, donde
-	// el link se enviaría por email y nunca por la respuesta HTTP.
+	// ExposeResetLinks: fallback para probar "olvidé mi contraseña" sin
+	// RESEND_API_KEY configurada — solo aceptable en deploys de prueba, ver
+	// email.go. Debe quedar en false en cualquier despliegue real.
 	ExposeResetLinks bool `envconfig:"EXPOSE_RESET_LINKS" default:"false"`
+
+	// Email transaccional (Resend). Si RESEND_API_KEY queda vacía, el envío
+	// cae a un no-op que solo loguea — no rompe el flujo, simplemente no
+	// llegan los emails (ver internal/infra/email).
+	ResendAPIKey string `envconfig:"RESEND_API_KEY" default:""`
+	EmailFrom    string `envconfig:"EMAIL_FROM" default:"onboarding@resend.dev"`
 }
 
 func Load() (Config, error) {

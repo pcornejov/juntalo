@@ -14,12 +14,14 @@ import (
 
 	"github.com/pcornejov/juntalo/backend/internal/api/handlers"
 	"github.com/pcornejov/juntalo/backend/internal/api/middleware"
+	"github.com/pcornejov/juntalo/backend/internal/app"
 	authuc "github.com/pcornejov/juntalo/backend/internal/app/auth"
 	campaignsuc "github.com/pcornejov/juntalo/backend/internal/app/campaigns"
 	contributionsuc "github.com/pcornejov/juntalo/backend/internal/app/contributions"
 	dashboarduc "github.com/pcornejov/juntalo/backend/internal/app/dashboard"
 	filesuc "github.com/pcornejov/juntalo/backend/internal/app/files"
 	infraauth "github.com/pcornejov/juntalo/backend/internal/infra/auth"
+	"github.com/pcornejov/juntalo/backend/internal/infra/email"
 	"github.com/pcornejov/juntalo/backend/internal/infra/payments/mock"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/repos"
 	"github.com/pcornejov/juntalo/backend/internal/infra/storage/local"
@@ -37,6 +39,9 @@ type Config struct {
 	MockPaymentMode   string
 
 	ExposeResetLinks bool // solo true en este deploy de prueba — ver Config.ExposeResetLinks en infra/config
+
+	ResendAPIKey string
+	EmailFrom    string
 }
 
 func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
@@ -64,6 +69,12 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 		cfg.SelfURL+"/api/v1/webhooks/payments/mock",
 		cfg.MockWebhookSecret,
 	)
+	var emailSender app.EmailSender
+	if cfg.ResendAPIKey != "" {
+		emailSender = email.NewResendSender(cfg.ResendAPIKey, cfg.EmailFrom)
+	} else {
+		emailSender = email.NewNoopSender()
+	}
 
 	authRepo := repos.NewAuthRepo(db)
 	userRepo := repos.NewUserRepo(db)
@@ -99,7 +110,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	participantsSvc := dashboarduc.NewParticipantsService(campaignRepo, participantRepo)
 	exportSvc := dashboarduc.NewExportCSVService(campaignRepo, participantRepo)
 
-	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, userRepo, orgRepo, signer, cfg.IsProd, cfg.ExposeResetLinks)
+	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks)
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
 	dashboardHandler := handlers.NewDashboardHandler(participantsSvc, exportSvc, orgRepo)
 	fileHandler := handlers.NewFileHandler(uploadSvc, orgRepo)
