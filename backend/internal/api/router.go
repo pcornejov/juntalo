@@ -70,6 +70,11 @@ func mountWebhookRoutes(apiV1 fiber.Router, h *handlers.WebhookHandler) {
 // (ver server.go) — con el mock, estas rutas ni se registran.
 func mountWebpayRoutes(apiV1 fiber.Router, h *handlers.WebpayHandler) {
 	apiV1.Get("/webpay/redirect", h.Redirect)
+	// Transbank vuelve con POST (token_ws en el body) en el flujo normal,
+	// pero con GET (TBK_TOKEN en query string) cuando el aportante anula la
+	// compra o la sesión expira — fasthttp's FormValue ya busca en query
+	// string además del body, así que el mismo handler sirve para ambos.
+	apiV1.Get("/webpay/return", h.Return)
 	apiV1.Post("/webpay/return", h.Return)
 }
 
