@@ -5,6 +5,7 @@ export interface User {
   email: string
   full_name: string
   email_verified: boolean
+  is_admin: boolean
 }
 
 export interface Organization {

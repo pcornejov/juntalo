@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { ComponentsShowcasePage } from './ComponentsShowcasePage'
 import { DashboardLayout } from './DashboardLayout'
-import { RequireAuth } from './guard'
+import { RequireAdmin, RequireAuth } from './guard'
 import { HowItWorksPage } from './HowItWorksPage'
 import { LandingPage } from './LandingPage'
 import { NotFoundPage } from './NotFoundPage'
@@ -17,6 +17,7 @@ import { CampaignFormPage } from '../features/campaigns/pages/CampaignFormPage'
 import { CampaignDetailPage } from '../features/campaigns/pages/CampaignDetailPage'
 import { ExploreCampaignsPage } from '../features/public-campaign/pages/ExploreCampaignsPage'
 import { PublicCampaignPage } from '../features/public-campaign/pages/PublicCampaignPage'
+import { BackofficePage } from '../features/admin/pages/BackofficePage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
@@ -42,6 +43,10 @@ export const router = createBrowserRouter([
           { index: true, element: <CampaignListPage /> },
           { path: 'campaigns/new', element: <CampaignFormPage /> },
           { path: 'campaigns/:id', element: <CampaignDetailPage /> },
+          {
+            element: <RequireAdmin />,
+            children: [{ path: 'backoffice', element: <BackofficePage /> }],
+          },
         ],
       },
     ],

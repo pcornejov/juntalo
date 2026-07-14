@@ -1,5 +1,5 @@
 import { Link, Outlet } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../features/auth/hooks/useAuth'
 import { VerifyEmailBanner } from '../features/auth/components/VerifyEmailBanner'
 import { Button, ThemeToggle } from '../shared/ui'
@@ -17,6 +17,15 @@ export function DashboardLayout() {
           <p className="text-sm text-text-secondary">{organization?.name}</p>
         </div>
         <div className="flex items-center gap-3">
+          {user?.is_admin && (
+            <Link
+              to="/dashboard/backoffice"
+              className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.75} />
+              Backoffice
+            </Link>
+          )}
           <ThemeToggle />
           <span className="hidden text-sm text-text-secondary sm:inline">{user?.full_name}</span>
           <Button

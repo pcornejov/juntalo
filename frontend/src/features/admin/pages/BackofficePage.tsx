@@ -1,0 +1,252 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Users, Megaphone, Wallet, TrendingUp } from 'lucide-react'
+import { useAdminMetrics, useAdminUsers, useAdminCampaigns, useAdminPayments } from '../hooks/useAdmin'
+import { formatCLP } from '../../../shared/lib/clp'
+import { typeLabels } from '../../campaigns/typeMeta'
+import { Badge, Button, Card } from '../../../shared/ui'
+import type { AdminCampaign, AdminPayment, AdminUser } from '../api'
+
+const campaignStatusTone: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = {
+  draft: 'neutral',
+  active: 'success',
+  paused: 'warning',
+  finished: 'neutral',
+  suspended: 'danger',
+}
+
+const paymentStatusTone: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = {
+  pending: 'warning',
+  confirmed: 'success',
+  failed: 'danger',
+  refunded: 'neutral',
+  partially_refunded: 'neutral',
+}
+
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Users
+  label: string
+  value: string
+}) {
+  return (
+    <Card className="flex items-center gap-3">
+      <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-accent-tint text-brand-hover">
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
+      </div>
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-text-secondary">{label}</p>
+        <p className="font-display text-lg font-bold tabular-nums">{value}</p>
+      </div>
+    </Card>
+  )
+}
+
+function UsersTable({ items }: { items: AdminUser[] }) {
+  if (items.length === 0) return <p className="text-sm text-text-secondary">Sin usuarios todavía.</p>
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-border-default text-text-secondary">
+            <th className="py-2 pr-4">Nombre</th>
+            <th className="py-2 pr-4">Email</th>
+            <th className="py-2 pr-4">Organización</th>
+            <th className="py-2 pr-4">Campañas</th>
+            <th className="py-2 pr-4">Registrado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((u) => (
+            <tr key={u.id} className="border-b border-border-default last:border-0">
+              <td className="py-2 pr-4">{u.full_name}</td>
+              <td className="py-2 pr-4 text-text-secondary">
+                {u.email}
+                {!u.email_verified && (
+                  <span className="ml-1.5 text-xs text-text-secondary">(sin verificar)</span>
+                )}
+              </td>
+              <td className="py-2 pr-4">{u.organization_name}</td>
+              <td className="py-2 pr-4 tabular-nums">{u.campaign_count}</td>
+              <td className="py-2 pr-4 text-text-secondary">
+                {new Date(u.created_at).toLocaleDateString('es-CL')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function CampaignsTable({ items }: { items: AdminCampaign[] }) {
+  if (items.length === 0) return <p className="text-sm text-text-secondary">Sin campañas todavía.</p>
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-border-default text-text-secondary">
+            <th className="py-2 pr-4">Campaña</th>
+            <th className="py-2 pr-4">Tipo</th>
+            <th className="py-2 pr-4">Organizador</th>
+            <th className="py-2 pr-4">Estado</th>
+            <th className="py-2 pr-4">Recaudado</th>
+            <th className="py-2 pr-4">Aportantes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((c) => (
+            <tr key={c.id} className="border-b border-border-default last:border-0">
+              <td className="py-2 pr-4">
+                <Link to={`/public/${c.slug}`} target="_blank" className="hover:underline">
+                  {c.title}
+                </Link>
+              </td>
+              <td className="py-2 pr-4 text-text-secondary">{typeLabels[c.type_key] ?? c.type_key}</td>
+              <td className="py-2 pr-4 text-text-secondary">{c.organizer_email}</td>
+              <td className="py-2 pr-4">
+                <Badge tone={campaignStatusTone[c.status] ?? 'neutral'}>{c.status}</Badge>
+              </td>
+              <td className="py-2 pr-4 tabular-nums">{formatCLP(c.raised_gross)}</td>
+              <td className="py-2 pr-4 tabular-nums">{c.contributor_count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function PaymentsTable({ items }: { items: AdminPayment[] }) {
+  if (items.length === 0) return <p className="text-sm text-text-secondary">Sin pagos todavía.</p>
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-border-default text-text-secondary">
+            <th className="py-2 pr-4">Campaña</th>
+            <th className="py-2 pr-4">Aportante</th>
+            <th className="py-2 pr-4">Proveedor</th>
+            <th className="py-2 pr-4">Estado</th>
+            <th className="py-2 pr-4">Bruto</th>
+            <th className="py-2 pr-4">Comisión</th>
+            <th className="py-2 pr-4">Neto</th>
+            <th className="py-2 pr-4">Fecha</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((p) => (
+            <tr key={p.id} className="border-b border-border-default last:border-0">
+              <td className="py-2 pr-4">
+                <Link to={`/public/${p.campaign_slug}`} target="_blank" className="hover:underline">
+                  {p.campaign_title}
+                </Link>
+              </td>
+              <td className="py-2 pr-4 text-text-secondary">{p.contributor_name}</td>
+              <td className="py-2 pr-4 text-text-secondary">{p.provider}</td>
+              <td className="py-2 pr-4">
+                <Badge tone={paymentStatusTone[p.status] ?? 'neutral'}>{p.status}</Badge>
+              </td>
+              <td className="py-2 pr-4 tabular-nums">{formatCLP(p.amount_gross)}</td>
+              <td className="py-2 pr-4 tabular-nums text-text-secondary">
+                {formatCLP(p.commission_amount)}
+              </td>
+              <td className="py-2 pr-4 tabular-nums">{formatCLP(p.amount_net)}</td>
+              <td className="py-2 pr-4 text-text-secondary">
+                {new Date(p.created_at).toLocaleDateString('es-CL')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+const tabs = [
+  { id: 'users', label: 'Usuarios' },
+  { id: 'campaigns', label: 'Campañas' },
+  { id: 'payments', label: 'Pagos' },
+] as const
+
+type TabID = (typeof tabs)[number]['id']
+
+// Backoffice del operador de la plataforma: solo accesible para las cuentas
+// en ADMIN_EMAILS (el gate real vive en el backend — ver
+// middleware.RequireAdminUser — esta página solo asume que ya pasó
+// RequireAdmin en el router). Un solo tab-switcher en vez de 3 páginas
+// separadas: a esta escala no vale la pena la complejidad de sub-rutas.
+export function BackofficePage() {
+  const [tab, setTab] = useState<TabID>('users')
+  const { data: metrics, isLoading: loadingMetrics } = useAdminMetrics()
+  const users = useAdminUsers()
+  const campaigns = useAdminCampaigns()
+  const payments = useAdminPayments()
+
+  const active = tab === 'users' ? users : tab === 'campaigns' ? campaigns : payments
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Backoffice</h1>
+        <p className="text-sm text-text-secondary">Vista global de la plataforma — todas las organizaciones.</p>
+      </div>
+
+      {!loadingMetrics && metrics && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <MetricCard icon={Users} label="Usuarios" value={String(metrics.total_users)} />
+          <MetricCard
+            icon={Megaphone}
+            label="Campañas activas"
+            value={`${metrics.active_campaigns} / ${metrics.total_campaigns}`}
+          />
+          <MetricCard icon={TrendingUp} label="Recaudado bruto" value={formatCLP(metrics.raised_gross)} />
+          <MetricCard icon={Wallet} label="Comisión generada" value={formatCLP(metrics.total_commission)} />
+        </div>
+      )}
+
+      <div className="flex gap-2 border-b border-border-default">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              tab === t.id
+                ? 'border-brand-hover text-brand-hover'
+                : 'border-transparent text-text-secondary hover:text-text-primary'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <Card>
+        {active.isLoading ? (
+          <p className="text-sm text-text-secondary">Cargando…</p>
+        ) : (
+          <>
+            {tab === 'users' && <UsersTable items={users.items} />}
+            {tab === 'campaigns' && <CampaignsTable items={campaigns.items} />}
+            {tab === 'payments' && <PaymentsTable items={payments.items} />}
+          </>
+        )}
+        {active.hasNextPage && (
+          <div className="mt-4 text-center">
+            <Button
+              variant="secondary"
+              onClick={() => active.fetchNextPage()}
+              disabled={active.isFetchingNextPage}
+            >
+              {active.isFetchingNextPage ? 'Cargando…' : 'Cargar más'}
+            </Button>
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}

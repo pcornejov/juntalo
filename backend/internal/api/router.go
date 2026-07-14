@@ -82,3 +82,15 @@ func mountMetaRoutes(router fiber.Router) {
 	router.Get("/meta/campaign-types", handlers.CampaignTypes)
 	router.Get("/meta/campaign-categories", handlers.CampaignCategories)
 }
+
+// mountAdminRoutes: RequireAdminUser va después de RequireAuth porque
+// necesita el user_id que ese middleware deja en locals — un usuario
+// autenticado pero fuera de adminEmails recibe 404 en cualquiera de estas
+// rutas, igual que un recurso ajeno a su organización en el resto de la app.
+func mountAdminRoutes(router fiber.Router, h *handlers.AdminHandler, signer app.TokenSigner, users app.UserRepository, adminEmails []string) {
+	admin := router.Group("/admin", middleware.RequireAuth(signer), middleware.RequireAdminUser(users, adminEmails))
+	admin.Get("/metrics", h.Metrics)
+	admin.Get("/users", h.Users)
+	admin.Get("/campaigns", h.Campaigns)
+	admin.Get("/payments", h.Payments)
+}

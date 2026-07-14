@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -32,6 +33,7 @@ type AuthHandler struct {
 	frontendURL      string
 	isProd           bool
 	exposeResetLinks bool
+	adminEmails      map[string]bool
 }
 
 func NewAuthHandler(
@@ -48,7 +50,12 @@ func NewAuthHandler(
 	frontendURL string,
 	isProd bool,
 	exposeResetLinks bool,
+	adminEmails []string,
 ) *AuthHandler {
+	allow := make(map[string]bool, len(adminEmails))
+	for _, e := range adminEmails {
+		allow[strings.ToLower(strings.TrimSpace(e))] = true
+	}
 	return &AuthHandler{
 		register:         register,
 		login:            login,
@@ -63,6 +70,7 @@ func NewAuthHandler(
 		frontendURL:      frontendURL,
 		isProd:           isProd,
 		exposeResetLinks: exposeResetLinks,
+		adminEmails:      allow,
 	}
 }
 
@@ -248,7 +256,7 @@ func (h *AuthHandler) Me(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"user":         toUserResponse(user),
+		"user":         h.toUserResponse(user),
 		"organization": toOrganizationResponse(org),
 	})
 }
@@ -266,7 +274,7 @@ func (h *AuthHandler) issueSession(c *fiber.Ctx, user identity.User, org identit
 	h.setRefreshCookie(c, rawRefresh)
 
 	return c.Status(status).JSON(dto.AuthResponse{
-		User:         toUserResponse(user),
+		User:         h.toUserResponse(user),
 		Organization: toOrganizationResponse(org),
 		AccessToken:  accessToken,
 	})
@@ -306,8 +314,14 @@ func (h *AuthHandler) clearRefreshCookie(c *fiber.Ctx) {
 	})
 }
 
-func toUserResponse(u identity.User) dto.UserResponse {
-	return dto.UserResponse{ID: u.ID.String(), Email: u.Email, FullName: u.FullName, EmailVerified: u.EmailVerified}
+func (h *AuthHandler) toUserResponse(u identity.User) dto.UserResponse {
+	return dto.UserResponse{
+		ID:            u.ID.String(),
+		Email:         u.Email,
+		FullName:      u.FullName,
+		EmailVerified: u.EmailVerified,
+		IsAdmin:       h.adminEmails[strings.ToLower(u.Email)],
+	}
 }
 
 func toOrganizationResponse(o identity.Organization) dto.OrganizationResponse {

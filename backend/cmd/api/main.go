@@ -64,6 +64,7 @@ func main() {
 		WebpayCommerceCode: cfg.WebpayCommerceCode,
 		WebpayAPIKey:       cfg.WebpayAPIKey,
 		WebpayEnvironment:  cfg.WebpayEnvironment,
+		AdminEmails:        cfg.AdminEmails,
 	})
 
 	log.Printf("juntalo-api listening on :%s (env=%s)", cfg.Port, cfg.Env)

@@ -338,3 +338,76 @@ type RecordAuditInput struct {
 type AuditRepository interface {
 	Record(ctx context.Context, in RecordAuditInput) error
 }
+
+// ── Backoffice (operador de la plataforma) ──────────────────────────────────
+
+// AdminUserRow is one row of the platform-wide user list — a cuenta y su
+// organización personal, con cuántas campañas tiene.
+type AdminUserRow struct {
+	ID               uuid.UUID
+	Email            string
+	FullName         string
+	EmailVerified    bool
+	CreatedAt        time.Time
+	OrganizationID   uuid.UUID
+	OrganizationName string
+	CampaignCount    int64
+}
+
+// AdminCampaignRow is one row of the platform-wide campaign list — a
+// diferencia de CampaignWithTotals (Etapa "dashboard del organizador"),
+// incluye quién la organiza porque no está scopeada a una sola organización.
+type AdminCampaignRow struct {
+	ID               uuid.UUID
+	Title            string
+	Slug             string
+	TypeKey          campaign.TypeKey
+	Status           campaign.Status
+	Category         campaign.Category
+	CreatedAt        time.Time
+	OrganizationName string
+	OrganizerEmail   string
+	RaisedGross      money.CLP
+	ContributorCount int64
+}
+
+// AdminPaymentRow is one row of the platform-wide payment list — para
+// auditar transacciones sin entrar campaña por campaña.
+type AdminPaymentRow struct {
+	ID               uuid.UUID
+	Status           payment.Status
+	Provider         string
+	AmountGross      money.CLP
+	AmountNet        money.CLP
+	CommissionAmount money.CLP
+	CreatedAt        time.Time
+	ConfirmedAt      *time.Time
+	CampaignTitle    string
+	CampaignSlug     string
+	ContributorName  string
+}
+
+// AdminMetrics is the platform-wide summary shown at the top of the
+// backoffice — RaisedGross/RaisedNetApprox se agregan sobre campaign_totals
+// (que ya descuenta reembolsos), no sobre payments directo.
+type AdminMetrics struct {
+	TotalUsers         int64
+	TotalCampaigns     int64
+	ActiveCampaigns    int64
+	DraftCampaigns     int64
+	FinishedCampaigns  int64
+	TotalContributions int64
+	RaisedGross        money.CLP
+	RaisedNetApprox    money.CLP
+	TotalCommission    money.CLP
+}
+
+// AdminRepository queries cross-tenant, a diferencia de todo el resto del
+// código — solo lo puede llamar un admin de plataforma (ver
+// middleware.RequireAdminUser), nunca un handler autenticado normal.
+type AdminRepository interface {
+	ListUsers(ctx context.Context, limit, offset int32) ([]AdminUserRow, error)
+	ListCampaigns(ctx context.Context, limit, offset int32) ([]AdminCampaignRow, error)
+	ListPayments(ctx context.Context, limit, offset int32) ([]AdminPaymentRow, error)
+	GetMetrics(ctx context.Context) (AdminMetrics, error)
+}

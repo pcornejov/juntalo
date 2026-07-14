@@ -59,6 +59,11 @@ type Config struct {
 	WebpayCommerceCode string `envconfig:"WEBPAY_COMMERCE_CODE" default:""`
 	WebpayAPIKey       string `envconfig:"WEBPAY_API_KEY" default:""`
 	WebpayEnvironment  string `envconfig:"WEBPAY_ENVIRONMENT" default:"integration"`
+
+	// Backoffice del operador de la plataforma. Vacío = nadie tiene acceso —
+	// mismo patrón "vacío = off" que R2/Resend/Sentry/Webpay. Lista separada
+	// por comas de emails con acceso (ver middleware.RequireAdminUser).
+	AdminEmails string `envconfig:"ADMIN_EMAILS" default:""`
 }
 
 func Load() (Config, error) {

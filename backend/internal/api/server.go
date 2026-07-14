@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/gofiber/contrib/fibersentry"
@@ -17,6 +18,7 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/api/handlers"
 	"github.com/pcornejov/juntalo/backend/internal/api/middleware"
 	"github.com/pcornejov/juntalo/backend/internal/app"
+	adminuc "github.com/pcornejov/juntalo/backend/internal/app/admin"
 	authuc "github.com/pcornejov/juntalo/backend/internal/app/auth"
 	campaignsuc "github.com/pcornejov/juntalo/backend/internal/app/campaigns"
 	contributionsuc "github.com/pcornejov/juntalo/backend/internal/app/contributions"
@@ -66,6 +68,10 @@ type Config struct {
 	WebpayCommerceCode string
 	WebpayAPIKey       string
 	WebpayEnvironment  string
+
+	// Backoffice del operador de la plataforma — string separado por comas,
+	// vacío = nadie tiene acceso (ver infra/config).
+	AdminEmails string
 }
 
 func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
@@ -165,6 +171,9 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	auditRepo := repos.NewAuditRepo(db)
 	passwordResetRepo := repos.NewPasswordResetRepo(db)
 	emailVerificationRepo := repos.NewEmailVerificationRepo(db)
+	adminRepo := repos.NewAdminRepo(db)
+
+	adminEmails := splitAdminEmails(cfg.AdminEmails)
 
 	registerSvc := authuc.NewRegisterService(authRepo, hasher)
 	loginSvc := authuc.NewLoginService(userRepo, authRepo, orgRepo, hasher)
@@ -192,14 +201,16 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	participantsSvc := dashboarduc.NewParticipantsService(campaignRepo, participantRepo)
 	exportSvc := dashboarduc.NewExportCSVService(campaignRepo, participantRepo)
 	refundSvc := dashboarduc.NewRefundService(campaignRepo, contributionRepo, paymentRepo, paymentProvider)
+	adminSvc := adminuc.NewService(adminRepo)
 
-	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks)
+	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks, adminEmails)
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, cloneSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
 	dashboardHandler := handlers.NewDashboardHandler(participantsSvc, exportSvc, refundSvc, orgRepo)
 	fileHandler := handlers.NewFileHandler(uploadSvc, orgRepo)
 	publicHandler := handlers.NewPublicHandler(getSvc, listSvc, fileRepo, campaignImageRepo, storage, orgRepo, cfg.FrontendURL, cfg.SelfURL)
 	contributionHandler := handlers.NewContributionHandler(startSvc, statusSvc)
 	webhookHandler := handlers.NewWebhookHandler(confirmSvc, cfg.MockWebhookSecret)
+	adminHandler := handlers.NewAdminHandler(adminSvc)
 
 	v1 := fiberApp.Group("/api/v1")
 	mountAuthRoutes(v1, authHandler, signer)
@@ -208,12 +219,28 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	mountContributionRoutes(v1, contributionHandler, middleware.ContributeLimiter())
 	mountWebhookRoutes(v1, webhookHandler)
 	mountMetaRoutes(v1)
+	mountAdminRoutes(v1, adminHandler, signer, userRepo, adminEmails)
 	if webpayProvider != nil {
 		webpayHandler := handlers.NewWebpayHandler(webpayProvider, confirmSvc, contributionRepo, campaignRepo, cfg.FrontendURL)
 		mountWebpayRoutes(v1, webpayHandler)
 	}
 
 	return fiberApp
+}
+
+func splitAdminEmails(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func healthzHandler(db *pgxpool.Pool) fiber.Handler {

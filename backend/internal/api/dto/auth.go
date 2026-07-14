@@ -20,6 +20,11 @@ type UserResponse struct {
 	Email         string `json:"email"`
 	FullName      string `json:"full_name"`
 	EmailVerified bool   `json:"email_verified"`
+	// IsAdmin: true si el email está en la lista blanca del backoffice
+	// (ADMIN_EMAILS) — el frontend lo usa para mostrar/ocultar el link al
+	// backoffice, pero el guardarraíl real vive en el backend
+	// (middleware.RequireAdminUser), no acá.
+	IsAdmin bool `json:"is_admin"`
 }
 
 type OrganizationResponse struct {
