@@ -29,9 +29,26 @@ No necesitas configurar nada más: `render.yaml` ya conecta el frontend con el b
 ## Limitaciones del free tier (por eso es solo para probar)
 
 - **El backend "duerme"** tras 15 minutos sin tráfico. El primer request después de dormir tarda ~30-50 segundos en responder — no es que esté roto, solo está despertando.
-- **Las imágenes de portada son efímeras**: Render free no permite disco persistente en web services, así que cualquier imagen subida se pierde en el próximo redeploy o reinicio del servicio.
+- **Las imágenes de portada son efímeras por defecto**: Render free no permite disco persistente en web services, así que cualquier imagen subida se pierde en el próximo redeploy o reinicio del servicio — salvo que se configure Cloudflare R2 (ver siguiente sección), que sí persiste entre deploys y es gratis dentro de un umbral generoso.
 - **La base de datos gratis se borra sola a los ~30 días** de creada. Si sigues probando después de ese plazo, hay que recrear el Blueprint (o solo la base) y el schema se vuelve a crear solo gracias a `RUN_MIGRATIONS_ON_BOOT`.
 - Los pagos son siempre simulados (`MockPaymentProvider`) — no hay dinero real involucrado en ningún punto.
+
+## Storage persistente de imágenes (Cloudflare R2)
+
+Por defecto las imágenes se guardan en el disco del contenedor de `juntalo-api`, que Render borra en cada redeploy o reinicio. Para que las imágenes persistan de verdad:
+
+1. En el dashboard de Cloudflare, crea un bucket en **R2** (tiene capa gratis generosa, sin tarjeta).
+2. Activa **Public access** en el bucket (o conecta un dominio custom) para obtener la URL pública base.
+3. En **R2 → Manage R2 API Tokens**, crea un token con permisos de lectura/escritura sobre ese bucket — te da un Account ID, Access Key ID y Secret Access Key.
+4. En el dashboard de Render, en el servicio `juntalo-api` → **Environment**, completa a mano estas 5 variables (ya están declaradas en `render.yaml` con `sync: false`, así que Render las pide pero no las genera ni las commitea):
+   - `R2_ACCOUNT_ID`
+   - `R2_ACCESS_KEY_ID`
+   - `R2_SECRET_ACCESS_KEY`
+   - `R2_BUCKET`
+   - `R2_PUBLIC_URL` (la URL pública del paso 2, sin `/` al final)
+5. Redeploy manual de `juntalo-api` para que tome las variables nuevas.
+
+Si estas 5 variables quedan vacías, el backend sigue funcionando normal y cae automáticamente al disco local (efímero) — no hace falta configurarlas para que el deploy de prueba funcione, solo para que las imágenes persistan.
 
 ## Diferencia con el despliegue real (Etapa 5/6 del roadmap)
 

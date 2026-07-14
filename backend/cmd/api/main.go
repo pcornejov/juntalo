@@ -56,6 +56,11 @@ func main() {
 		ExposeResetLinks:  cfg.ExposeResetLinks,
 		ResendAPIKey:      cfg.ResendAPIKey,
 		EmailFrom:         cfg.EmailFrom,
+		R2AccountID:       cfg.R2AccountID,
+		R2AccessKeyID:     cfg.R2AccessKeyID,
+		R2SecretAccessKey: cfg.R2SecretAccessKey,
+		R2Bucket:          cfg.R2Bucket,
+		R2PublicURL:       cfg.R2PublicURL,
 	})
 
 	log.Printf("juntalo-api listening on :%s (env=%s)", cfg.Port, cfg.Env)

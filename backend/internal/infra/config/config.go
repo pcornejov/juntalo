@@ -36,6 +36,20 @@ type Config struct {
 	// Monitoreo de errores (Sentry). DSN vacío = sentry-go queda en modo
 	// no-op (no manda nada, no falla) — mismo patrón que RESEND_API_KEY.
 	SentryDSN string `envconfig:"SENTRY_DSN" default:""`
+
+	// Storage persistente (Cloudflare R2, S3-compatible). Si R2AccountID
+	// queda vacío, el server cae a storage/local sobre StorageDir — sirve
+	// para desarrollo local, pero en Render StorageDir vive en disco efímero
+	// (se borra en cada redeploy), así que producción SIEMPRE debe traer
+	// estas cuatro variables seteadas (ver render.yaml, todas sync: false).
+	R2AccountID       string `envconfig:"R2_ACCOUNT_ID" default:""`
+	R2AccessKeyID     string `envconfig:"R2_ACCESS_KEY_ID" default:""`
+	R2SecretAccessKey string `envconfig:"R2_SECRET_ACCESS_KEY" default:""`
+	R2Bucket          string `envconfig:"R2_BUCKET" default:""`
+	// R2PublicURL: dominio público del bucket (r2.dev o un dominio custom
+	// conectado) — no es el endpoint de la API S3, ese se arma con
+	// R2AccountID (ver internal/infra/storage/r2).
+	R2PublicURL string `envconfig:"R2_PUBLIC_URL" default:""`
 }
 
 func Load() (Config, error) {

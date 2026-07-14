@@ -27,6 +27,7 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/infra/payments/mock"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/repos"
 	"github.com/pcornejov/juntalo/backend/internal/infra/storage/local"
+	"github.com/pcornejov/juntalo/backend/internal/infra/storage/r2"
 )
 
 // publishSchedulerInterval: cada minuto es suficiente resolución para "en
@@ -49,6 +50,15 @@ type Config struct {
 
 	ResendAPIKey string
 	EmailFrom    string
+
+	// Storage persistente (Cloudflare R2). R2AccountID vacío = cae a
+	// storage/local sobre StorageDir (conveniente en desarrollo; en
+	// producción StorageDir es disco efímero, ver infra/config).
+	R2AccountID       string
+	R2AccessKeyID     string
+	R2SecretAccessKey string
+	R2Bucket          string
+	R2PublicURL       string
 }
 
 func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
@@ -90,7 +100,18 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 
 	hasher := infraauth.NewArgon2idHasher()
 	signer := infraauth.NewJWTSigner(cfg.JWTSecret)
-	storage := local.New(cfg.StorageDir, cfg.StorageURL)
+	var storage app.FileStorage
+	if cfg.R2AccountID != "" {
+		storage = r2.New(r2.Config{
+			AccountID:       cfg.R2AccountID,
+			AccessKeyID:     cfg.R2AccessKeyID,
+			SecretAccessKey: cfg.R2SecretAccessKey,
+			Bucket:          cfg.R2Bucket,
+			PublicURL:       cfg.R2PublicURL,
+		})
+	} else {
+		storage = local.New(cfg.StorageDir, cfg.StorageURL)
+	}
 	paymentProvider := mock.NewProvider(
 		mock.Mode(cfg.MockPaymentMode),
 		cfg.SelfURL+"/api/v1/webhooks/payments/mock",

@@ -4,11 +4,15 @@
 # Limitaciones del free tier a tener en cuenta (solo para pruebas, no producción):
 # - juntalo-api "duerme" tras 15 min sin tráfico; el primer request tras dormir
 #   tarda ~30-50s en responder (incluye el primer /healthz).
-# - El disco de juntalo-api es efímero: las imágenes de portada subidas se
-#   pierden en cada redeploy o reinicio del servicio.
 # - juntalo-db (Postgres free) se elimina automáticamente ~30 días después de
 #   creada. Para seguir probando después, hay que recrearla y correr
 #   `make migrate` de nuevo contra la nueva URL.
+#
+# Storage de imágenes: si las 5 variables R2_* de abajo NO se completan en el
+# dashboard, el server cae a guardar en STORAGE_DIR (disco del contenedor),
+# que es efímero — las imágenes se pierden en cada redeploy o reinicio. Para
+# que persistan de verdad hay que crear un bucket en Cloudflare R2 y cargar
+# esas 5 variables a mano (nunca en este archivo, ver sync: false abajo).
 
 databases:
   - name: juntalo-db
@@ -61,6 +65,21 @@ services:
         value: onboarding@resend.dev # sandbox de Resend: solo entrega a tu propio email hasta verificar un dominio
       - key: SENTRY_DSN
         sync: false # se completa a mano — DSN del proyecto backend en Sentry
+      # Storage persistente (Cloudflare R2) — ver nota arriba. Las 5 vienen
+      # de: dashboard de Cloudflare > R2 > crear bucket > "Manage R2 API
+      # Tokens" para las credenciales, y "Public access" del bucket (o un
+      # dominio custom conectado) para R2_PUBLIC_URL. Si se dejan vacías,
+      # cae a STORAGE_DIR (disco efímero) sin romper el deploy.
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false
 
   - type: web
     name: juntalo-web
