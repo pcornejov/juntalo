@@ -1,0 +1,58 @@
+import { Link } from 'react-router-dom'
+
+// Bases del sitio: cubre lo esencial que un organizador necesita saber antes
+// de crear una campaña — comisión y cuándo recibe la plata. No reemplaza
+// asesoría legal (mismo criterio que PrivacyPage), pero deja por escrito lo
+// que hoy solo vivía como una conversación de producto.
+export function TermsPage() {
+  return (
+    <div className="mx-auto max-w-md space-y-4 p-6 text-text-primary">
+      <h1 className="text-xl font-semibold">Bases del sitio</h1>
+
+      <p className="text-sm text-text-secondary">Última actualización: julio de 2026.</p>
+
+      <section className="space-y-2">
+        <h2 className="font-medium">¿Cómo funciona Juntalo?</h2>
+        <p className="text-sm text-text-secondary">
+          Juntalo es una plataforma de software: no organiza las campañas ni administra los
+          fondos recaudados. El organizador de cada campaña es responsable de su contenido y del
+          uso del dinero que recibe.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-medium">Comisión</h2>
+        <p className="text-sm text-text-secondary">
+          Juntalo cobra una comisión del <strong className="text-text-primary">5%</strong> sobre
+          cada aporte confirmado. Esta comisión cubre el costo de operar la plataforma y procesar
+          los pagos. El monto neto que recibe el organizador (aporte menos comisión) siempre queda
+          visible en su panel, por separado del monto bruto recaudado.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-medium">Transferencias al organizador</h2>
+        <p className="text-sm text-text-secondary">
+          Los fondos recaudados se transfieren a la cuenta del organizador en cortes periódicos
+          (aproximadamente cada 15 días), descontando la comisión de Juntalo. Los aportes
+          confirmados en los últimos días antes de cada corte no se incluyen en esa transferencia
+          — quedan para el corte siguiente, como margen para resolver eventuales reembolsos antes
+          de que el dinero salga de la plataforma.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="font-medium">Reembolsos</h2>
+        <p className="text-sm text-text-secondary">
+          El organizador puede reembolsar un aporte, total o parcialmente, desde su panel mientras
+          los fondos correspondientes sigan en la plataforma. Una vez transferidos al organizador,
+          cualquier reembolso debe coordinarse directamente entre el organizador y el aportante.
+        </p>
+      </section>
+
+      <Link to="/" className="inline-block text-sm text-brand underline">
+        Volver al inicio
+      </Link>
+    </div>
+  )
+}

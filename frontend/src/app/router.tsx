@@ -6,6 +6,7 @@ import { HowItWorksPage } from './HowItWorksPage'
 import { LandingPage } from './LandingPage'
 import { NotFoundPage } from './NotFoundPage'
 import { PrivacyPage } from './PrivacyPage'
+import { TermsPage } from './TermsPage'
 import { RedirectToPublicCampaign } from './RedirectToPublicCampaign'
 import { ForgotPasswordPage } from '../features/auth/pages/ForgotPasswordPage'
 import { LoginPage } from '../features/auth/pages/LoginPage'
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
   { path: '/verify-email', element: <VerifyEmailPage /> },
   { path: '/design', element: <ComponentsShowcasePage /> },
   { path: '/privacidad', element: <PrivacyPage /> },
+  { path: '/bases', element: <TermsPage /> },
   { path: '/como-funciona', element: <HowItWorksPage /> },
   { path: '/explorar', element: <ExploreCampaignsPage /> },
   { path: '/org/:slug', element: <OrgProfilePage /> },
