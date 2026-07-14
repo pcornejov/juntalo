@@ -1,7 +1,8 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter } from 'react-router-dom'
 import { ComponentsShowcasePage } from './ComponentsShowcasePage'
 import { DashboardLayout } from './DashboardLayout'
 import { RequireAuth } from './guard'
+import { LandingPage } from './LandingPage'
 import { NotFoundPage } from './NotFoundPage'
 import { PrivacyPage } from './PrivacyPage'
 import { RedirectToPublicCampaign } from './RedirectToPublicCampaign'
@@ -13,7 +14,7 @@ import { CampaignDetailPage } from '../features/campaigns/pages/CampaignDetailPa
 import { PublicCampaignPage } from '../features/public-campaign/pages/PublicCampaignPage'
 
 export const router = createBrowserRouter([
-  { path: '/', element: <Navigate to="/dashboard" replace /> },
+  { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   { path: '/design', element: <ComponentsShowcasePage /> },

@@ -29,6 +29,12 @@ export function RegisterPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center p-6">
+      <Link
+        to="/"
+        className="mb-6 self-start text-sm font-medium text-text-secondary hover:text-text-primary"
+      >
+        ← Juntalo
+      </Link>
       <h1 className="mb-6 text-2xl font-semibold">Crear cuenta</h1>
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4">
