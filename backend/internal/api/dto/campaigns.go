@@ -11,6 +11,8 @@ type CreateCampaignRequest struct {
 	StartsAt    *time.Time `json:"starts_at"`
 	EndsAt      *time.Time `json:"ends_at"`
 	PublishAt   *time.Time `json:"publish_at"`
+	// VideoURL es un link externo a YouTube o Vimeo — Juntalo no aloja video.
+	VideoURL *string `json:"video_url"`
 }
 
 type UpdateCampaignRequest struct {
@@ -23,6 +25,10 @@ type UpdateCampaignRequest struct {
 	CoverFileID    *string    `json:"cover_file_id"`
 	PublishAt      *time.Time `json:"publish_at"`
 	ClearPublishAt bool       `json:"clear_publish_at"`
+	// VideoURL sigue el patrón "mantener si no viene" de CoverFileID;
+	// ClearVideoURL es el único camino para quitar un video ya asociado.
+	VideoURL      *string `json:"video_url"`
+	ClearVideoURL bool    `json:"clear_video_url"`
 }
 
 type CampaignResponse struct {
@@ -42,6 +48,7 @@ type CampaignResponse struct {
 	PublicURL   string                  `json:"public_url"`
 	Totals      TotalsDTO               `json:"totals"`
 	CreatedAt   time.Time               `json:"created_at"`
+	VideoURL    *string                 `json:"video_url,omitempty"`
 }
 
 type CampaignImageResponse struct {
@@ -81,6 +88,7 @@ type PublicCampaignResponse struct {
 	PublicURL     string    `json:"public_url"`
 	OrganizerName string    `json:"organizer_name,omitempty"`
 	IsVerified    bool      `json:"is_verified"`
+	VideoURL      *string   `json:"video_url,omitempty"`
 }
 
 type PublicCampaignListResponse struct {

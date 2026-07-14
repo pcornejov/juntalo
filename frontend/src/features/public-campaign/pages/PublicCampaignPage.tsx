@@ -5,8 +5,9 @@ import { usePublicCampaign } from '../hooks/usePublicCampaign'
 import { useContributionStatus } from '../hooks/useContribute'
 import { formatCLP } from '../../../shared/lib/clp'
 import { relativeDate } from '../../../shared/lib/date'
-import { Button, Card, Carousel, Progress, ShareButtons, QrCode, Footer } from '../../../shared/ui'
+import { Button, Card, Progress, ShareButtons, QrCode, Footer } from '../../../shared/ui'
 import { ContributeSheet } from '../components/ContributeSheet'
+import { MediaCarousel } from '../components/MediaCarousel'
 import { OrganizerCard } from '../components/OrganizerCard'
 import { ContributeSuccessPanel } from './ContributeSuccessPage'
 import type { StartContributionResult } from '../api'
@@ -71,16 +72,22 @@ export function PublicCampaignPage() {
   // Campos aditivos que el backend actual no siempre envía: la UI se
   // degrada mostrando menos, nunca inventando un dato que no llegó.
   const hasFacts = Boolean(campaign.created_at) || Boolean(campaign.location)
+  const hasMedia = campaign.images.length > 0 || Boolean(campaign.video_url)
 
   return (
     <div className="mx-auto max-w-md pb-28">
       <div className="relative">
-        {campaign.images.length > 0 ? (
-          <Carousel images={campaign.images} alt={campaign.title} className="h-56 w-full object-cover" />
+        {hasMedia ? (
+          <MediaCarousel
+            images={campaign.images}
+            videoUrl={campaign.video_url}
+            alt={campaign.title}
+            className="h-56 w-full object-cover"
+          />
         ) : (
           <div className="h-40 w-full bg-bg-subtle" />
         )}
-        {campaign.images.length > 0 && (
+        {hasMedia && (
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0" />
         )}
         {campaign.is_verified && (
@@ -184,9 +191,7 @@ export function PublicCampaignPage() {
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
             Sobre esta campaña
           </p>
-          <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-text-primary">
-            {campaign.description}
-          </p>
+          <CampaignStory description={campaign.description} />
         </div>
 
         {campaign.organizer_name && (
@@ -241,6 +246,37 @@ export function PublicCampaignPage() {
 
       {showSuccessPanel && (
         <ContributeSuccessPanel status={contributionStatus ?? 'pending'} onClose={closeSuccessPanel} />
+      )}
+    </div>
+  )
+}
+
+// Umbral simple por largo de texto (no medición de DOM): a la escala de una
+// descripción de campaña, evita el costo de un ResizeObserver solo para
+// decidir si mostrar "Leer más".
+const STORY_COLLAPSE_THRESHOLD = 220
+
+function CampaignStory({ description }: { description: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const canCollapse = description.length > STORY_COLLAPSE_THRESHOLD
+
+  return (
+    <div>
+      <p
+        className={`whitespace-pre-wrap text-[15px] leading-relaxed text-text-primary ${
+          canCollapse && !expanded ? 'line-clamp-3' : ''
+        }`}
+      >
+        {description}
+      </p>
+      {canCollapse && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1.5 text-sm font-bold text-brand-hover"
+        >
+          {expanded ? 'Leer menos' : 'Leer más'}
+        </button>
       )}
     </div>
   )

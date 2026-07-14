@@ -22,6 +22,7 @@ export interface PublicCampaign {
   organizer_campaign_count?: number
   is_verified?: boolean
   location?: string
+  video_url?: string
 }
 
 export function getPublicCampaign(slug: string) {

@@ -114,6 +114,7 @@ type CreateCampaignInput struct {
 	// PublishAt: si viene seteada, la campaña queda en draft hasta que el
 	// scheduler en background la publique automáticamente (Etapa 4).
 	PublishAt *time.Time
+	VideoURL  *string
 }
 
 // UpdateCampaignInput carries the editable fields of a campaign (Etapa 4 §3).
@@ -127,6 +128,7 @@ type UpdateCampaignInput struct {
 	CoverFileID *uuid.UUID
 	PublishAt   *time.Time
 	Category    campaign.Category
+	VideoURL    *string
 }
 
 type CampaignRepository interface {

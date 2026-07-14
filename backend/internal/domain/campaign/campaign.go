@@ -19,10 +19,13 @@ type Campaign struct {
 	Slug           string
 	Description    string
 	CoverFileID    *uuid.UUID
-	GoalAmount     *money.CLP
-	Status         Status
-	StartsAt       *time.Time
-	EndsAt         *time.Time
+	// VideoURL es un link externo a YouTube o Vimeo — Juntalo no aloja video
+	// propio (evita el costo de storage y de servir range requests para seek).
+	VideoURL   *string
+	GoalAmount *money.CLP
+	Status     Status
+	StartsAt   *time.Time
+	EndsAt     *time.Time
 	// PublishAt: si está seteada y la campaña sigue en draft, el scheduler en
 	// background la publica automáticamente al llegar esa fecha (Etapa 4).
 	PublishAt *time.Time

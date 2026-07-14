@@ -15,6 +15,7 @@ import {
 import { useDebouncedValue } from '../../../shared/lib/useDebouncedValue'
 import { errorMessage } from '../../../shared/api/errors'
 import { categoryIcon } from '../../../shared/lib/categoryIcons'
+import { isValidVideoUrl } from '../../../shared/lib/videoEmbed'
 import { Button, Card, Input, ShareButtons, QrCode } from '../../../shared/ui'
 import { StatusBadge } from '../components/StatusBadge'
 import { TotalsPanel } from '../components/TotalsPanel'
@@ -44,6 +45,7 @@ function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: ()
   const [title, setTitle] = useState(campaign.title)
   const [description, setDescription] = useState(campaign.description)
   const [category, setCategory] = useState(campaign.category)
+  const [videoUrl, setVideoUrl] = useState(campaign.video_url ?? '')
   const [error, setError] = useState<string | null>(null)
   const update = useUpdateCampaign(campaign.id)
   const { data: categories } = useCampaignCategories()
@@ -51,6 +53,10 @@ function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: ()
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
+    if (videoUrl && !isValidVideoUrl(videoUrl)) {
+      setError('El link de video debe ser de YouTube o Vimeo.')
+      return
+    }
     update.mutate(
       {
         title,
@@ -59,6 +65,8 @@ function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: ()
         goal_amount: campaign.goal_amount,
         starts_at: campaign.starts_at,
         ends_at: campaign.ends_at,
+        video_url: videoUrl || undefined,
+        clear_video_url: !videoUrl,
       },
       { onSuccess: onDone, onError: (err) => setError(errorMessage(err)) },
     )
@@ -105,6 +113,17 @@ function EditCampaignForm({ campaign, onDone }: { campaign: Campaign; onDone: ()
           </div>
         </div>
       )}
+      <div>
+        <label className="mb-1 block text-sm text-text-secondary">
+          Video (YouTube o Vimeo, opcional)
+        </label>
+        <Input
+          type="url"
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          placeholder="https://youtube.com/watch?v=..."
+        />
+      </div>
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" disabled={update.isPending}>

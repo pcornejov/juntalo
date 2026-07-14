@@ -31,6 +31,7 @@ type CreateInput struct {
 	StartsAt       *time.Time
 	EndsAt         *time.Time
 	PublishAt      *time.Time
+	VideoURL       *string
 }
 
 // Create validates the type + title, generates a server-side unique slug, and
@@ -52,6 +53,11 @@ func (s *CreateService) Create(ctx context.Context, in CreateInput) (campaign.Ca
 	if category == "" {
 		category = campaign.CategoryOtro
 	}
+	if in.VideoURL != nil {
+		if err := campaign.ValidateVideoURL(*in.VideoURL); err != nil {
+			return campaign.Campaign{}, err
+		}
+	}
 
 	slug, err := s.uniqueSlug(ctx, campaign.Slugify(in.Title))
 	if err != nil {
@@ -69,6 +75,7 @@ func (s *CreateService) Create(ctx context.Context, in CreateInput) (campaign.Ca
 		StartsAt:       in.StartsAt,
 		EndsAt:         in.EndsAt,
 		PublishAt:      in.PublishAt,
+		VideoURL:       in.VideoURL,
 	})
 }
 

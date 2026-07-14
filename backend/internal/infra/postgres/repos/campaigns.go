@@ -36,6 +36,7 @@ func (r *CampaignRepo) Create(ctx context.Context, in app.CreateCampaignInput) (
 		StartsAt:       toTimestamptz(in.StartsAt),
 		EndsAt:         toTimestamptz(in.EndsAt),
 		PublishAt:      toTimestamptz(in.PublishAt),
+		VideoUrl:       toPgText(in.VideoURL),
 	})
 	if err != nil {
 		return campaign.Campaign{}, fmt.Errorf("create campaign: %w", err)
@@ -139,6 +140,7 @@ func (r *CampaignRepo) Update(ctx context.Context, in app.UpdateCampaignInput) (
 		CoverFileID: toPgUUID(in.CoverFileID),
 		PublishAt:   toTimestamptz(in.PublishAt),
 		Category:    string(in.Category),
+		VideoUrl:    toPgText(in.VideoURL),
 	})
 	if err != nil {
 		return campaign.Campaign{}, fmt.Errorf("update campaign: %w", err)
@@ -200,4 +202,11 @@ func toPgUUID(id *uuid.UUID) pgtype.UUID {
 		return pgtype.UUID{}
 	}
 	return pgtype.UUID{Bytes: *id, Valid: true}
+}
+
+func toPgText(v *string) pgtype.Text {
+	if v == nil {
+		return pgtype.Text{}
+	}
+	return pgtype.Text{String: *v, Valid: true}
 }

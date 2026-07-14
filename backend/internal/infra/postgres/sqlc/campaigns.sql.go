@@ -13,9 +13,9 @@ import (
 )
 
 const createCampaign = `-- name: CreateCampaign :one
-INSERT INTO campaigns (organization_id, type_key, title, slug, description, goal_amount, starts_at, ends_at, publish_at, category)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category
+INSERT INTO campaigns (organization_id, type_key, title, slug, description, goal_amount, starts_at, ends_at, publish_at, category, video_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url
 `
 
 type CreateCampaignParams struct {
@@ -29,6 +29,7 @@ type CreateCampaignParams struct {
 	EndsAt         pgtype.Timestamptz `json:"ends_at"`
 	PublishAt      pgtype.Timestamptz `json:"publish_at"`
 	Category       string             `json:"category"`
+	VideoUrl       pgtype.Text        `json:"video_url"`
 }
 
 func (q *Queries) CreateCampaign(ctx context.Context, arg CreateCampaignParams) (Campaign, error) {
@@ -43,6 +44,7 @@ func (q *Queries) CreateCampaign(ctx context.Context, arg CreateCampaignParams) 
 		arg.EndsAt,
 		arg.PublishAt,
 		arg.Category,
+		arg.VideoUrl,
 	)
 	var i Campaign
 	err := row.Scan(
@@ -64,12 +66,13 @@ func (q *Queries) CreateCampaign(ctx context.Context, arg CreateCampaignParams) 
 		&i.UpdatedAt,
 		&i.PublishAt,
 		&i.Category,
+		&i.VideoUrl,
 	)
 	return i, err
 }
 
 const getCampaignByID = `-- name: GetCampaignByID :one
-SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category FROM campaigns WHERE id = $1 AND deleted_at IS NULL
+SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url FROM campaigns WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetCampaignByID(ctx context.Context, id uuid.UUID) (Campaign, error) {
@@ -94,12 +97,13 @@ func (q *Queries) GetCampaignByID(ctx context.Context, id uuid.UUID) (Campaign, 
 		&i.UpdatedAt,
 		&i.PublishAt,
 		&i.Category,
+		&i.VideoUrl,
 	)
 	return i, err
 }
 
 const getCampaignByIDForOrg = `-- name: GetCampaignByIDForOrg :one
-SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category FROM campaigns WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
+SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url FROM campaigns WHERE id = $1 AND organization_id = $2 AND deleted_at IS NULL
 `
 
 type GetCampaignByIDForOrgParams struct {
@@ -129,12 +133,13 @@ func (q *Queries) GetCampaignByIDForOrg(ctx context.Context, arg GetCampaignByID
 		&i.UpdatedAt,
 		&i.PublishAt,
 		&i.Category,
+		&i.VideoUrl,
 	)
 	return i, err
 }
 
 const getCampaignBySlug = `-- name: GetCampaignBySlug :one
-SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category FROM campaigns WHERE slug = $1 AND deleted_at IS NULL
+SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url FROM campaigns WHERE slug = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetCampaignBySlug(ctx context.Context, slug string) (Campaign, error) {
@@ -159,6 +164,7 @@ func (q *Queries) GetCampaignBySlug(ctx context.Context, slug string) (Campaign,
 		&i.UpdatedAt,
 		&i.PublishAt,
 		&i.Category,
+		&i.VideoUrl,
 	)
 	return i, err
 }
@@ -180,7 +186,7 @@ func (q *Queries) GetCampaignTotals(ctx context.Context, campaignID uuid.UUID) (
 }
 
 const getFeaturedCampaign = `-- name: GetFeaturedCampaign :one
-SELECT c.id, c.organization_id, c.type_key, c.title, c.slug, c.description, c.cover_file_id, c.goal_amount, c.currency, c.status, c.starts_at, c.ends_at, c.settings, c.deleted_at, c.created_at, c.updated_at, c.publish_at, c.category FROM campaigns c
+SELECT c.id, c.organization_id, c.type_key, c.title, c.slug, c.description, c.cover_file_id, c.goal_amount, c.currency, c.status, c.starts_at, c.ends_at, c.settings, c.deleted_at, c.created_at, c.updated_at, c.publish_at, c.category, c.video_url FROM campaigns c
 JOIN contributions ct ON ct.campaign_id = c.id
 JOIN payments p ON p.contribution_id = ct.id
 WHERE c.status = 'active' AND c.deleted_at IS NULL AND p.status = 'confirmed'
@@ -210,12 +216,13 @@ func (q *Queries) GetFeaturedCampaign(ctx context.Context) (Campaign, error) {
 		&i.UpdatedAt,
 		&i.PublishAt,
 		&i.Category,
+		&i.VideoUrl,
 	)
 	return i, err
 }
 
 const listCampaignsByOrg = `-- name: ListCampaignsByOrg :many
-SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category FROM campaigns
+SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url FROM campaigns
 WHERE organization_id = $1 AND deleted_at IS NULL
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $3
@@ -255,6 +262,7 @@ func (q *Queries) ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrg
 			&i.UpdatedAt,
 			&i.PublishAt,
 			&i.Category,
+			&i.VideoUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -267,7 +275,7 @@ func (q *Queries) ListCampaignsByOrg(ctx context.Context, arg ListCampaignsByOrg
 }
 
 const listActiveCampaigns = `-- name: ListActiveCampaigns :many
-SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category FROM campaigns
+SELECT id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url FROM campaigns
 WHERE status = 'active' AND deleted_at IS NULL
   AND ($3::text IS NULL OR title ILIKE '%' || $3 || '%')
   AND ($4::text IS NULL OR category = $4)
@@ -315,6 +323,7 @@ func (q *Queries) ListActiveCampaigns(ctx context.Context, arg ListActiveCampaig
 			&i.UpdatedAt,
 			&i.PublishAt,
 			&i.Category,
+			&i.VideoUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -329,7 +338,7 @@ func (q *Queries) ListActiveCampaigns(ctx context.Context, arg ListActiveCampaig
 const publishDueCampaigns = `-- name: PublishDueCampaigns :many
 UPDATE campaigns SET status = 'active', publish_at = NULL, updated_at = now()
 WHERE status = 'draft' AND publish_at IS NOT NULL AND publish_at <= now() AND deleted_at IS NULL
-RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category
+RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url
 `
 
 func (q *Queries) PublishDueCampaigns(ctx context.Context) ([]Campaign, error) {
@@ -360,6 +369,7 @@ func (q *Queries) PublishDueCampaigns(ctx context.Context) ([]Campaign, error) {
 			&i.UpdatedAt,
 			&i.PublishAt,
 			&i.Category,
+			&i.VideoUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -401,9 +411,10 @@ UPDATE campaigns SET
   cover_file_id = $7,
   publish_at = $8,
   category = $9,
+  video_url = $10,
   updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category
+RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url
 `
 
 type UpdateCampaignParams struct {
@@ -416,6 +427,7 @@ type UpdateCampaignParams struct {
 	CoverFileID pgtype.UUID        `json:"cover_file_id"`
 	PublishAt   pgtype.Timestamptz `json:"publish_at"`
 	Category    string             `json:"category"`
+	VideoUrl    pgtype.Text        `json:"video_url"`
 }
 
 func (q *Queries) UpdateCampaign(ctx context.Context, arg UpdateCampaignParams) (Campaign, error) {
@@ -429,6 +441,7 @@ func (q *Queries) UpdateCampaign(ctx context.Context, arg UpdateCampaignParams) 
 		arg.CoverFileID,
 		arg.PublishAt,
 		arg.Category,
+		arg.VideoUrl,
 	)
 	var i Campaign
 	err := row.Scan(
@@ -450,6 +463,7 @@ func (q *Queries) UpdateCampaign(ctx context.Context, arg UpdateCampaignParams) 
 		&i.UpdatedAt,
 		&i.PublishAt,
 		&i.Category,
+		&i.VideoUrl,
 	)
 	return i, err
 }
@@ -457,7 +471,7 @@ func (q *Queries) UpdateCampaign(ctx context.Context, arg UpdateCampaignParams) 
 const updateCampaignStatus = `-- name: UpdateCampaignStatus :one
 UPDATE campaigns SET status = $2, publish_at = NULL, updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category
+RETURNING id, organization_id, type_key, title, slug, description, cover_file_id, goal_amount, currency, status, starts_at, ends_at, settings, deleted_at, created_at, updated_at, publish_at, category, video_url
 `
 
 type UpdateCampaignStatusParams struct {
@@ -487,6 +501,7 @@ func (q *Queries) UpdateCampaignStatus(ctx context.Context, arg UpdateCampaignSt
 		&i.UpdatedAt,
 		&i.PublishAt,
 		&i.Category,
+		&i.VideoUrl,
 	)
 	return i, err
 }

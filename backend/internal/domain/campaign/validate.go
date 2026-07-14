@@ -1,6 +1,7 @@
 package campaign
 
 import (
+	"net/url"
 	"strings"
 	"time"
 
@@ -50,6 +51,33 @@ func ValidateCategory(c Category) error {
 	}
 	if !IsValidCategory(c) {
 		return errUnknownCategory
+	}
+	return nil
+}
+
+var errInvalidVideoURL = apperr.New("invalid_video_url", "El link de video debe ser de YouTube o Vimeo")
+
+var allowedVideoHosts = map[string]bool{
+	"youtube.com":   true,
+	"m.youtube.com": true,
+	"youtu.be":      true,
+	"vimeo.com":     true,
+}
+
+// ValidateVideoURL acepta vacío (sin video) — Juntalo no aloja video propio,
+// solo linkea a YouTube/Vimeo, así que basta validar el host, no el
+// contenido del link.
+func ValidateVideoURL(raw string) error {
+	if raw == "" {
+		return nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") {
+		return errInvalidVideoURL
+	}
+	host := strings.ToLower(strings.TrimPrefix(u.Hostname(), "www."))
+	if !allowedVideoHosts[host] {
+		return errInvalidVideoURL
 	}
 	return nil
 }

@@ -89,6 +89,9 @@ func mapCampaign(c sqlc.Campaign) campaign.Campaign {
 	if c.PublishAt.Valid {
 		out.PublishAt = &c.PublishAt.Time
 	}
+	if c.VideoUrl.Valid {
+		out.VideoURL = &c.VideoUrl.String
+	}
 	return out
 }
 

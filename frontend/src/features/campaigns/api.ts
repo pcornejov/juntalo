@@ -28,6 +28,7 @@ export interface Campaign {
   public_url: string
   totals: Totals
   created_at: string
+  video_url?: string
 }
 
 export interface CampaignType {
@@ -64,6 +65,7 @@ export function createCampaign(input: {
   description?: string
   goal_amount?: number
   publish_at?: string
+  video_url?: string
 }) {
   return apiClient.post<Campaign>('/campaigns', input)
 }
@@ -85,6 +87,8 @@ export function updateCampaign(
     goal_amount?: number
     starts_at?: string
     ends_at?: string
+    video_url?: string
+    clear_video_url?: boolean
   },
 ) {
   return apiClient.patch<Campaign>(`/campaigns/${id}`, input)

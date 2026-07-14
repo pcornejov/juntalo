@@ -117,6 +117,7 @@ func (h *CampaignHandler) Create(c *fiber.Ctx) error {
 		StartsAt:       req.StartsAt,
 		EndsAt:         req.EndsAt,
 		PublishAt:      req.PublishAt,
+		VideoURL:       req.VideoURL,
 	})
 	if err != nil {
 		return dto.WriteError(c, err)
@@ -254,6 +255,8 @@ func (h *CampaignHandler) Update(c *fiber.Ctx) error {
 		CoverFileID:    coverFileID,
 		PublishAt:      req.PublishAt,
 		ClearPublishAt: req.ClearPublishAt,
+		VideoURL:       req.VideoURL,
+		ClearVideoURL:  req.ClearVideoURL,
 	}); err != nil {
 		return dto.WriteError(c, err)
 	}
@@ -469,6 +472,7 @@ func (h *CampaignHandler) toResponse(c *fiber.Ctx, camp campaign.Campaign, total
 		PublishAt:   camp.PublishAt,
 		PublicURL:   h.selfURL + "/c/" + camp.Slug,
 		CreatedAt:   camp.CreatedAt,
+		VideoURL:    camp.VideoURL,
 		Totals: dto.TotalsDTO{
 			RaisedGross:      int64(totals.RaisedGross),
 			RaisedNetApprox:  int64(totals.RaisedNetApprox),

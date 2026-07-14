@@ -204,6 +204,7 @@ func toPublicCampaignResponse(c campaign.Campaign, totals campaign.Totals, cover
 		Images:      images,
 		Status:      string(c.Status),
 		Category:    string(c.Category),
+		VideoURL:    c.VideoURL,
 		CTA:         def.Labels.CTA,
 		Unit:        def.Labels.Unit,
 		Totals: dto.TotalsDTO{

@@ -1,6 +1,6 @@
 -- name: CreateCampaign :one
-INSERT INTO campaigns (organization_id, type_key, title, slug, description, goal_amount, starts_at, ends_at, publish_at, category)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+INSERT INTO campaigns (organization_id, type_key, title, slug, description, goal_amount, starts_at, ends_at, publish_at, category, video_url)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING *;
 
 -- name: GetCampaignByID :one
@@ -31,6 +31,7 @@ UPDATE campaigns SET
   cover_file_id = $7,
   publish_at = $8,
   category = $9,
+  video_url = $10,
   updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;

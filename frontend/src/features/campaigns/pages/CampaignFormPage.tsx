@@ -10,6 +10,7 @@ import { campaignArchetypes } from '../archetypes'
 import { errorMessage } from '../../../shared/api/errors'
 import { formatCLP } from '../../../shared/lib/clp'
 import { categoryIcon } from '../../../shared/lib/categoryIcons'
+import { isValidVideoUrl } from '../../../shared/lib/videoEmbed'
 import { Button, Card, Input } from '../../../shared/ui'
 
 // El formulario crea Y publica en un solo paso (Etapa 1: crear y compartir en <2 min).
@@ -25,6 +26,7 @@ export function CampaignFormPage() {
   const [description, setDescription] = useState('')
   const [goalAmount, setGoalAmount] = useState('')
   const [category, setCategory] = useState<string>('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,6 +55,10 @@ export function CampaignFormPage() {
       setError('Elige una fecha de publicación.')
       return
     }
+    if (videoUrl && !isValidVideoUrl(videoUrl)) {
+      setError('El link de video debe ser de YouTube o Vimeo.')
+      return
+    }
     setIsSubmitting(true)
     try {
       const created = await createCampaign.mutateAsync({
@@ -62,6 +68,7 @@ export function CampaignFormPage() {
         description: description || undefined,
         goal_amount: goalAmount ? Number(goalAmount) : undefined,
         publish_at: publishMode === 'later' ? new Date(publishAt).toISOString() : undefined,
+        video_url: videoUrl || undefined,
       })
       if (publishMode === 'now') {
         await publishCampaign.mutateAsync(created.id)
@@ -168,6 +175,17 @@ export function CampaignFormPage() {
               value={goalAmount ? formatCLP(Number(goalAmount)) : ''}
               onChange={handleGoalAmountChange}
               placeholder="$500.000"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm text-text-secondary">
+              Video (YouTube o Vimeo, opcional)
+            </label>
+            <Input
+              type="url"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://youtube.com/watch?v=..."
             />
           </div>
           <div>

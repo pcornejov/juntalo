@@ -33,6 +33,10 @@ type UpdateInput struct {
 	PublishAt      *time.Time
 	ClearPublishAt bool
 	Category       campaign.Category
+	// VideoURL sigue el mismo patrón "mantener si no viene" que CoverFileID.
+	// ClearVideoURL es el único camino para quitar un video ya asociado.
+	VideoURL      *string
+	ClearVideoURL bool
 }
 
 func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in UpdateInput) (campaign.Campaign, error) {
@@ -78,6 +82,16 @@ func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in Upda
 		category = in.Category
 	}
 
+	videoURL := existing.VideoURL
+	if in.ClearVideoURL {
+		videoURL = nil
+	} else if in.VideoURL != nil {
+		if err := campaign.ValidateVideoURL(*in.VideoURL); err != nil {
+			return campaign.Campaign{}, err
+		}
+		videoURL = in.VideoURL
+	}
+
 	return s.repo.Update(ctx, app.UpdateCampaignInput{
 		ID:          id,
 		Title:       in.Title,
@@ -88,6 +102,7 @@ func (s *UpdateService) Update(ctx context.Context, id, orgID uuid.UUID, in Upda
 		CoverFileID: coverFileID,
 		PublishAt:   publishAt,
 		Category:    category,
+		VideoURL:    videoURL,
 	})
 }
 
@@ -114,5 +129,6 @@ func (s *UpdateService) CancelSchedule(ctx context.Context, id, orgID uuid.UUID)
 		CoverFileID: existing.CoverFileID,
 		PublishAt:   nil,
 		Category:    existing.Category,
+		VideoURL:    existing.VideoURL,
 	})
 }
