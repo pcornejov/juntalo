@@ -3,6 +3,7 @@ import { ComponentsShowcasePage } from './ComponentsShowcasePage'
 import { DashboardLayout } from './DashboardLayout'
 import { RequireAuth } from './guard'
 import { NotFoundPage } from './NotFoundPage'
+import { PrivacyPage } from './PrivacyPage'
 import { RedirectToPublicCampaign } from './RedirectToPublicCampaign'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { RegisterPage } from '../features/auth/pages/RegisterPage'
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   { path: '/design', element: <ComponentsShowcasePage /> },
+  { path: '/privacidad', element: <PrivacyPage /> },
   { path: '/public/:slug', element: <PublicCampaignPage /> },
   { path: '/c/:slug', element: <RedirectToPublicCampaign /> },
   { path: '*', element: <NotFoundPage /> },

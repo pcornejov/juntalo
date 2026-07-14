@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Button, Input } from '../../../shared/ui'
 import { errorMessage } from '../../../shared/api/errors'
 import { useContribute } from '../hooks/useContribute'
@@ -75,7 +76,11 @@ export function ContributeSheet({ slug, cta, onClose, onSuccess }: ContributeShe
           {error && <p className="text-sm text-danger">{error}</p>}
           <p className="text-xs text-text-secondary">
             Tus datos se usan solo para procesar este aporte y contactarte si es necesario. No
-            los compartimos con terceros.
+            los compartimos con terceros. Ver{' '}
+            <Link to="/privacidad" className="underline" target="_blank" rel="noopener noreferrer">
+              política de privacidad
+            </Link>
+            .
           </p>
           <div className="flex gap-2">
             <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
