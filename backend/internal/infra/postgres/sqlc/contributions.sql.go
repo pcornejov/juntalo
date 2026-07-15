@@ -199,7 +199,6 @@ SELECT
   ct.email AS contributor_email,
   ct.phone AS contributor_phone,
   c.amount,
-  COALESCE(r.refunded, 0)::bigint AS refunded_amount,
   c.is_anonymous,
   c.status,
   c.created_at,
@@ -207,10 +206,6 @@ SELECT
   c.raffle_number
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
-LEFT JOIN payments p ON p.contribution_id = c.id
-LEFT JOIN LATERAL (
-  SELECT SUM(pr.amount) AS refunded FROM payment_refunds pr WHERE pr.payment_id = p.id
-) r ON true
 WHERE c.campaign_id = $1
 ORDER BY c.created_at DESC
 LIMIT $2 OFFSET $3
@@ -228,7 +223,6 @@ type ListParticipantsByCampaignRow struct {
 	ContributorEmail    pgtype.Text        `json:"contributor_email"`
 	ContributorPhone    pgtype.Text        `json:"contributor_phone"`
 	Amount              int64              `json:"amount"`
-	RefundedAmount      int64              `json:"refunded_amount"`
 	IsAnonymous         bool               `json:"is_anonymous"`
 	Status              string             `json:"status"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
@@ -251,7 +245,6 @@ func (q *Queries) ListParticipantsByCampaign(ctx context.Context, arg ListPartic
 			&i.ContributorEmail,
 			&i.ContributorPhone,
 			&i.Amount,
-			&i.RefundedAmount,
 			&i.IsAnonymous,
 			&i.Status,
 			&i.CreatedAt,
@@ -275,7 +268,6 @@ SELECT
   ct.email AS contributor_email,
   ct.phone AS contributor_phone,
   c.amount,
-  COALESCE(r.refunded, 0)::bigint AS refunded_amount,
   c.is_anonymous,
   c.status,
   c.created_at,
@@ -283,10 +275,6 @@ SELECT
   c.raffle_number
 FROM contributions c
 JOIN contributors ct ON ct.id = c.contributor_id
-LEFT JOIN payments p ON p.contribution_id = c.id
-LEFT JOIN LATERAL (
-  SELECT SUM(pr.amount) AS refunded FROM payment_refunds pr WHERE pr.payment_id = p.id
-) r ON true
 WHERE c.campaign_id = $1
   AND (
     $4::text IS NULL
@@ -313,7 +301,6 @@ type ListParticipantsByCampaignFilteredRow struct {
 	ContributorEmail    pgtype.Text        `json:"contributor_email"`
 	ContributorPhone    pgtype.Text        `json:"contributor_phone"`
 	Amount              int64              `json:"amount"`
-	RefundedAmount      int64              `json:"refunded_amount"`
 	IsAnonymous         bool               `json:"is_anonymous"`
 	Status              string             `json:"status"`
 	CreatedAt           pgtype.Timestamptz `json:"created_at"`
@@ -342,7 +329,6 @@ func (q *Queries) ListParticipantsByCampaignFiltered(ctx context.Context, arg Li
 			&i.ContributorEmail,
 			&i.ContributorPhone,
 			&i.Amount,
-			&i.RefundedAmount,
 			&i.IsAnonymous,
 			&i.Status,
 			&i.CreatedAt,

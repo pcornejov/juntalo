@@ -15,7 +15,6 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/app"
 	"github.com/pcornejov/juntalo/backend/internal/domain/apperr"
 	"github.com/pcornejov/juntalo/backend/internal/domain/contribution"
-	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 	"github.com/pcornejov/juntalo/backend/internal/domain/payment"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/sqlc"
 )
@@ -139,87 +138,12 @@ func (r *PaymentRepo) ConfirmByProviderRef(ctx context.Context, provider, provid
 	return result, transitioned, err
 }
 
-var (
-	errRefundExceedsBalance = apperr.New("refund_exceeds_balance", "El monto a reembolsar supera lo que queda del aporte")
-	errPaymentNotRefundable = apperr.New("payment_not_refundable", "Este pago no está en un estado que se pueda reembolsar")
-)
-
-// Refund is transactional: locks the payment row, valida que el monto no
-// supere el saldo pendiente (bruto - ya reembolsado), inserta el registro en
-// payment_refunds, y transiciona el pago (y su contribution) a refunded o
-// partially_refunded según si el reembolso cubre el saldo completo.
-func (r *PaymentRepo) Refund(ctx context.Context, paymentID uuid.UUID, amount money.CLP, providerRef, reason string) (payment.Payment, error) {
-	var result payment.Payment
-
-	err := pgx.BeginFunc(ctx, r.pool, func(tx pgx.Tx) error {
-		q := sqlc.New(tx)
-
-		row, err := q.GetPaymentByIDForUpdate(ctx, paymentID)
-		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
-				return apperr.New("payment_not_found", "Pago no encontrado")
-			}
-			return fmt.Errorf("lock payment: %w", err)
-		}
-
-		current := payment.Status(row.Status)
-		if current != payment.StatusConfirmed && current != payment.StatusPartiallyRefunded {
-			return errPaymentNotRefundable
-		}
-
-		alreadyRefunded, err := q.GetRefundedAmountByPaymentID(ctx, paymentID)
-		if err != nil {
-			return fmt.Errorf("get refunded amount: %w", err)
-		}
-		remaining := row.AmountGross - alreadyRefunded
-		if int64(amount) > remaining {
-			return errRefundExceedsBalance
-		}
-
-		if _, err := q.CreatePaymentRefund(ctx, sqlc.CreatePaymentRefundParams{
-			PaymentID:   paymentID,
-			Amount:      int64(amount),
-			ProviderRef: pgtype.Text{String: providerRef, Valid: providerRef != ""},
-			Reason:      pgtype.Text{String: reason, Valid: reason != ""},
-		}); err != nil {
-			return fmt.Errorf("create payment refund: %w", err)
-		}
-
-		newStatus := payment.StatusPartiallyRefunded
-		if int64(amount) == remaining {
-			newStatus = payment.StatusRefunded
-		}
-		if !payment.CanTransition(current, newStatus) {
-			return apperr.New("invalid_payment_transition", "Transición de pago no permitida")
-		}
-
-		updated, err := q.UpdatePaymentStatusOnly(ctx, sqlc.UpdatePaymentStatusOnlyParams{ID: paymentID, Status: string(newStatus)})
-		if err != nil {
-			return fmt.Errorf("update payment status: %w", err)
-		}
-
-		contributionStatus := mapPaymentStatusToContributionStatus(newStatus)
-		if err := q.UpdateContributionStatus(ctx, sqlc.UpdateContributionStatusParams{
-			ID:     row.ContributionID,
-			Status: string(contributionStatus),
-		}); err != nil {
-			return fmt.Errorf("update contribution status: %w", err)
-		}
-
-		result = mapPayment(updated)
-		return nil
-	})
-	return result, err
-}
-
 func mapPaymentStatusToContributionStatus(s payment.Status) contribution.Status {
 	switch s {
 	case payment.StatusConfirmed:
 		return contribution.StatusConfirmed
 	case payment.StatusFailed:
 		return contribution.StatusFailed
-	case payment.StatusRefunded, payment.StatusPartiallyRefunded:
-		return contribution.StatusRefunded
 	default:
 		return contribution.StatusPending
 	}

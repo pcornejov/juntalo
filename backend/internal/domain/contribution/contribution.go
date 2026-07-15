@@ -17,7 +17,6 @@ const (
 	StatusPending   Status = "pending"
 	StatusConfirmed Status = "confirmed"
 	StatusFailed    Status = "failed"
-	StatusRefunded  Status = "refunded"
 )
 
 type Contributor struct {

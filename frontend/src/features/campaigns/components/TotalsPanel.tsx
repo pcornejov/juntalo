@@ -4,8 +4,8 @@ import type { Campaign } from '../api'
 
 export function TotalsPanel({ campaign }: { campaign: Campaign }) {
   // El costo de servicio es la diferencia entre bruto y neto — no requiere
-  // conocer la tasa de comisión, ya se refleja en lo que ya resta la vista
-  // neta (que a su vez ya descuenta reembolsos, ver campaign_totals).
+  // conocer la tasa de comisión, ya se refleja en lo que resta la vista neta
+  // (ver campaign_totals).
   const serviceCost = campaign.totals.raised_gross - campaign.totals.raised_net_approx
 
   return (

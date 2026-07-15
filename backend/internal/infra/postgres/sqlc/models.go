@@ -151,15 +151,6 @@ type PasswordResetToken struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
-type PaymentRefund struct {
-	ID          uuid.UUID          `json:"id"`
-	PaymentID   uuid.UUID          `json:"payment_id"`
-	Amount      int64              `json:"amount"`
-	ProviderRef pgtype.Text        `json:"provider_ref"`
-	Reason      pgtype.Text        `json:"reason"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-}
-
 type Payout struct {
 	ID             uuid.UUID          `json:"id"`
 	OrganizationID uuid.UUID          `json:"organization_id"`

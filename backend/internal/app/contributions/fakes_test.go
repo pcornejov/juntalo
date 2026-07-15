@@ -11,7 +11,6 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/domain/campaign"
 	"github.com/pcornejov/juntalo/backend/internal/domain/contribution"
 	"github.com/pcornejov/juntalo/backend/internal/domain/identity"
-	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 	"github.com/pcornejov/juntalo/backend/internal/domain/payment"
 )
 
@@ -278,10 +277,6 @@ func (f *fakePaymentRepo) ConfirmByProviderRef(_ context.Context, provider, prov
 	return *p, true, nil
 }
 
-func (f *fakePaymentRepo) Refund(context.Context, uuid.UUID, money.CLP, string, string) (payment.Payment, error) {
-	return payment.Payment{}, apperr.New("payment_not_found", "no encontrado")
-}
-
 // ── fakeProvider: el mock del mock — controlado por el test ───────────────
 
 type fakeProvider struct {
@@ -307,8 +302,4 @@ func (f *fakeProvider) CreateIntent(_ context.Context, req app.IntentRequest) (a
 
 func (f *fakeProvider) GetIntent(context.Context, string) (app.PaymentIntent, error) {
 	return app.PaymentIntent{}, nil
-}
-
-func (f *fakeProvider) Refund(context.Context, string, money.CLP) (app.RefundResult, error) {
-	return app.RefundResult{}, nil
 }

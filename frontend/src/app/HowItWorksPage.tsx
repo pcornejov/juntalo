@@ -21,7 +21,7 @@ const steps = [
   {
     icon: ShieldCheck,
     title: 'Administra todo',
-    text: 'Ves cada aporte, exportas un CSV y puedes reembolsar si algo sale mal — todo desde tu panel.',
+    text: 'Ves cada aporte y exportas un CSV con todos los datos — todo desde tu panel.',
   },
 ]
 
@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     q: '¿Quién administra el dinero recaudado?',
-    a: 'Los aportes se procesan por Webpay hacia una cuenta operada por Juntalo, que los retiene brevemente antes de transferirlos al organizador en cortes periódicos (aprox. cada 15 días), descontando la comisión. Juntalo no organiza las campañas ni decide el uso de lo recaudado — eso es responsabilidad del organizador — pero sí custodia el dinero durante ese período de transferencia. Más detalle en las bases del sitio.',
+    a: 'Los aportes se procesan por Webpay hacia una cuenta operada por Juntalo, que los retiene brevemente antes de transferirlos al organizador en cortes periódicos (aprox. cada 15 días), descontando la comisión. Juntalo no organiza las campañas ni decide el uso de lo recaudado — eso es responsabilidad del organizador — pero sí custodia el dinero durante ese período de transferencia. Los aportes son definitivos al confirmarse: Juntalo no gestiona reembolsos. Más detalle en las bases del sitio.',
   },
   {
     q: '¿Necesito cuenta para aportar?',

@@ -58,29 +58,24 @@ SELECT
   (COALESCE(eligible.amount, 0) - COALESCE(paid.amount, 0))::bigint AS pending_amount
 FROM organizations o
 LEFT JOIN LATERAL (
-  SELECT SUM(p.amount_net - COALESCE(r.refunded, 0)) AS amount
+  SELECT SUM(p.amount_net) AS amount
   FROM campaigns c
   JOIN contributions ct ON ct.campaign_id = c.id
   JOIN payments p ON p.contribution_id = ct.id
-  LEFT JOIN LATERAL (
-    SELECT SUM(pr.amount) AS refunded FROM payment_refunds pr WHERE pr.payment_id = p.id
-  ) r ON true
   WHERE c.organization_id = o.id
-    AND p.status IN ('confirmed', 'partially_refunded')
-    AND p.confirmed_at <= now() - make_interval(days => $1::int)
+    AND p.status = 'confirmed'
 ) eligible ON true
 LEFT JOIN LATERAL (
   SELECT SUM(amount) AS amount FROM payouts WHERE organization_id = o.id
 ) paid ON true
 WHERE COALESCE(eligible.amount, 0) - COALESCE(paid.amount, 0) > 0
 ORDER BY o.name
-LIMIT $2 OFFSET $3
+LIMIT $1 OFFSET $2
 `
 
 type ListPendingPayoutsParams struct {
-	HoldDays int32 `json:"hold_days"`
-	Limit    int32 `json:"limit"`
-	Offset   int32 `json:"offset"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 type ListPendingPayoutsRow struct {
@@ -97,7 +92,7 @@ type ListPendingPayoutsRow struct {
 }
 
 func (q *Queries) ListPendingPayouts(ctx context.Context, arg ListPendingPayoutsParams) ([]ListPendingPayoutsRow, error) {
-	rows, err := q.db.Query(ctx, listPendingPayouts, arg.HoldDays, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listPendingPayouts, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

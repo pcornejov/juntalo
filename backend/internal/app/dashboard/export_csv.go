@@ -24,8 +24,7 @@ func NewExportCSVService(campaigns app.CampaignRepository, participants app.Part
 }
 
 // WriteCSV streams participantes a w. Columnas: fecha, nombre, email,
-// teléfono, monto, estado, anónimo, monto_reembolsado (Etapa 4 §3) — el
-// monto ya resta lo reembolsado en el reporting (Etapa 1 riesgo 10).
+// teléfono, monto, estado, anónimo, mensaje, numero_rifa.
 func (s *ExportCSVService) WriteCSV(ctx context.Context, campaignID, orgID uuid.UUID, w io.Writer) error {
 	if _, found, err := s.campaigns.GetByIDForOrg(ctx, campaignID, orgID); err != nil {
 		return err
@@ -39,7 +38,7 @@ func (s *ExportCSVService) WriteCSV(ctx context.Context, campaignID, orgID uuid.
 	}
 
 	cw := csv.NewWriter(w)
-	header := []string{"fecha", "nombre", "email", "telefono", "monto", "estado", "anonimo", "monto_reembolsado", "mensaje", "numero_rifa"}
+	header := []string{"fecha", "nombre", "email", "telefono", "monto", "estado", "anonimo", "mensaje", "numero_rifa"}
 	if err := cw.Write(header); err != nil {
 		return err
 	}
@@ -57,7 +56,6 @@ func (s *ExportCSVService) WriteCSV(ctx context.Context, campaignID, orgID uuid.
 			formatCLPPlain(r.Amount),
 			string(r.Status),
 			formatBool(r.IsAnonymous),
-			formatCLPPlain(r.RefundedAmount),
 			r.Message,
 			raffleNumber,
 		}

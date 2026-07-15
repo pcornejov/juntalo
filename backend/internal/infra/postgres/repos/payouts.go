@@ -40,11 +40,10 @@ func (r *PayoutRepo) Create(ctx context.Context, in app.CreatePayoutInput) (app.
 	}, nil
 }
 
-func (r *PayoutRepo) ListPending(ctx context.Context, holdDays int32, limit, offset int32) ([]app.PendingPayoutRow, error) {
+func (r *PayoutRepo) ListPending(ctx context.Context, limit, offset int32) ([]app.PendingPayoutRow, error) {
 	rows, err := r.q.ListPendingPayouts(ctx, sqlc.ListPendingPayoutsParams{
-		HoldDays: holdDays,
-		Limit:    limit,
-		Offset:   offset,
+		Limit:  limit,
+		Offset: offset,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list pending payouts: %w", err)

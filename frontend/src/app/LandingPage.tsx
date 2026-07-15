@@ -30,7 +30,7 @@ const highlights = [
   {
     icon: ShieldCheck,
     title: 'Transparente',
-    text: 'Cada aporte, cada comisión y cada reembolso quedan a la vista — sin sorpresas al final.',
+    text: 'Cada aporte y cada comisión quedan a la vista — sin sorpresas al final.',
   },
   {
     icon: QrCode,

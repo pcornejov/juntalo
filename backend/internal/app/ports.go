@@ -95,8 +95,8 @@ type UpdatePayoutInfoInput struct {
 }
 
 // PendingPayoutRow is one row of the backoffice "pendiente de liquidar"
-// list — una organización con plata confirmada (fuera del colchón de
-// reembolso) que todavía no se le ha transferido.
+// list — una organización con plata confirmada que todavía no se le ha
+// transferido.
 type PendingPayoutRow struct {
 	OrganizationID      uuid.UUID
 	OrganizationName    string
@@ -133,9 +133,9 @@ type PayoutRecord struct {
 // ya pagado (Etapa post-MVP: "quién junta el dinero y cuándo transfiere").
 type PayoutRepository interface {
 	Create(ctx context.Context, in CreatePayoutInput) (PayoutRecord, error)
-	// ListPending devuelve las organizaciones con saldo pendiente, más
-	// antiguo que holdDays (colchón de reembolso documentado en /bases).
-	ListPending(ctx context.Context, holdDays int32, limit, offset int32) ([]PendingPayoutRow, error)
+	// ListPending devuelve las organizaciones con saldo confirmado sin
+	// liquidar todavía.
+	ListPending(ctx context.Context, limit, offset int32) ([]PendingPayoutRow, error)
 }
 
 type RefreshTokenRepository interface {
@@ -312,18 +312,12 @@ type PaymentIntent struct {
 	RedirectURL string
 }
 
-type RefundResult struct {
-	ProviderRef string
-	Amount      money.CLP
-}
-
 // PaymentProvider is the abstraction over payment gateways (Etapa 2 §2.3).
 // MockPaymentProvider implements it today; Webpay/Mercado Pago/Stripe/Khipu
 // implement it tomorrow without touching any use case.
 type PaymentProvider interface {
 	CreateIntent(ctx context.Context, req IntentRequest) (PaymentIntent, error)
 	GetIntent(ctx context.Context, providerRef string) (PaymentIntent, error)
-	Refund(ctx context.Context, providerRef string, amount money.CLP) (RefundResult, error)
 }
 
 type CreateContributorInput struct {
@@ -383,25 +377,18 @@ type PaymentRepository interface {
 	// si el pago ya estaba en newStatus) — el caller lo usa para no mandar
 	// una notificación duplicada cuando el proveedor reintenta el webhook.
 	ConfirmByProviderRef(ctx context.Context, provider, providerRef string, newStatus payment.Status) (result payment.Payment, transitioned bool, err error)
-	// Refund registra un reembolso (total o parcial) sobre paymentID en una
-	// transacción: inserta el registro en payment_refunds y transiciona el
-	// pago (y su contribution vinculada) a partially_refunded o refunded
-	// según si amount cubre o no el saldo pendiente (Etapa 3 §5).
-	Refund(ctx context.Context, paymentID uuid.UUID, amount money.CLP, providerRef, reason string) (payment.Payment, error)
 }
 
 // ── Panel del organizador (Hito 4) ──────────────────────────────────────────
 
 // ParticipantRow is the dashboard read model: un aporte con los datos del
-// contribuyente y lo reembolsado, para participantes y export CSV
-// (Etapa 1 riesgo 10: los reembolsos restan en el reporting desde el día 1).
+// contribuyente, para participantes y export CSV.
 type ParticipantRow struct {
 	ContributionID uuid.UUID
 	FullName       string
 	Email          string
 	Phone          string
 	Amount         money.CLP
-	RefundedAmount money.CLP
 	IsAnonymous    bool
 	Status         contribution.Status
 	CreatedAt      time.Time

@@ -6,7 +6,7 @@
 // A diferencia del mock, Webpay Plus (Transacción Normal, REST v1.2) es un
 // flujo por redirect, no una API pura: el navegador del aportante tiene que
 // salir de Juntalo, entrar la tarjeta en la página de Transbank, y volver.
-// Por eso el ciclo de vida real tiene 3 pasos server-to-server distintos:
+// Por eso el ciclo de vida real tiene 2 pasos server-to-server distintos:
 //
 //  1. CreateIntent: POST /transactions — arma la transacción y devuelve un
 //     token + una URL fija a la que hay que redirigir al navegador (con el
@@ -14,7 +14,6 @@
 //  2. Confirmar (Commit): PUT /transactions/{token} — se llama SOLO cuando
 //     Transbank redirige de vuelta al return_url (ver
 //     internal/api/handlers/webpay.go), nunca antes.
-//  3. Refund: POST /transactions/{token}/refunds.
 package webpay
 
 import (
@@ -29,7 +28,6 @@ import (
 	"time"
 
 	"github.com/pcornejov/juntalo/backend/internal/app"
-	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 	"github.com/pcornejov/juntalo/backend/internal/domain/payment"
 )
 
@@ -164,31 +162,6 @@ func mapStatus(status string, responseCode *int) payment.Status {
 		return payment.StatusPending
 	}
 	return payment.StatusFailed
-}
-
-type refundRequest struct {
-	Amount int64 `json:"amount"`
-}
-
-type refundResponse struct {
-	Type              string `json:"type"`
-	ResponseCode      *int   `json:"response_code"`
-	AuthorizationCode string `json:"authorization_code"`
-}
-
-// Refund reembolsa (total o parcial) una transacción ya confirmada. type
-// "REVERSED" (mismo día) o "NULLIFIED" (día distinto) ambos cuentan como
-// éxito — Transbank decide cuál aplica, a Juntalo solo le importa que el
-// dinero vuelva.
-func (p *Provider) Refund(ctx context.Context, providerRef string, amount money.CLP) (app.RefundResult, error) {
-	var resp refundResponse
-	if err := p.do(ctx, http.MethodPost, transactionsPath+"/"+providerRef+"/refunds", refundRequest{Amount: int64(amount)}, &resp); err != nil {
-		return app.RefundResult{}, fmt.Errorf("webpay: refund: %w", err)
-	}
-	if resp.ResponseCode == nil || *resp.ResponseCode != 0 {
-		return app.RefundResult{}, fmt.Errorf("webpay: refund rejected (type=%s)", resp.Type)
-	}
-	return app.RefundResult{ProviderRef: resp.AuthorizationCode, Amount: amount}, nil
 }
 
 func (p *Provider) do(ctx context.Context, method, path string, reqBody, respBody any) error {

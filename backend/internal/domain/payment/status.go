@@ -3,23 +3,18 @@ package payment
 type Status string
 
 const (
-	StatusPending           Status = "pending"
-	StatusConfirmed         Status = "confirmed"
-	StatusFailed            Status = "failed"
-	StatusRefunded          Status = "refunded"
-	StatusPartiallyRefunded Status = "partially_refunded"
+	StatusPending   Status = "pending"
+	StatusConfirmed Status = "confirmed"
+	StatusFailed    Status = "failed"
 )
 
-// allowedTransitions is the payment state machine (Etapa 3 §5):
-// pending -> confirmed -> {partially_refunded -> refunded, refunded}
-// pending -> failed
-// failed y refunded son terminales.
+// allowedTransitions is the payment state machine: pending -> {confirmed,
+// failed}. confirmed y failed son terminales — Juntalo es solo para aportar
+// a causas, no hay reembolso self-service que reabra un pago confirmado.
 var allowedTransitions = map[Status][]Status{
-	StatusPending:           {StatusConfirmed, StatusFailed},
-	StatusConfirmed:         {StatusPartiallyRefunded, StatusRefunded},
-	StatusPartiallyRefunded: {StatusRefunded},
-	StatusFailed:            {},
-	StatusRefunded:          {},
+	StatusPending:   {StatusConfirmed, StatusFailed},
+	StatusConfirmed: {},
+	StatusFailed:    {},
 }
 
 // CanTransition reports whether moving from 'from' to 'to' is legal.

@@ -10,19 +10,16 @@ import (
 	"github.com/pcornejov/juntalo/backend/internal/api/middleware"
 	"github.com/pcornejov/juntalo/backend/internal/app"
 	dashboarduc "github.com/pcornejov/juntalo/backend/internal/app/dashboard"
-	"github.com/pcornejov/juntalo/backend/internal/domain/apperr"
-	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 )
 
 type DashboardHandler struct {
 	participants *dashboarduc.ParticipantsService
 	export       *dashboarduc.ExportCSVService
-	refund       *dashboarduc.RefundService
 	orgs         app.OrganizationRepository
 }
 
-func NewDashboardHandler(participants *dashboarduc.ParticipantsService, export *dashboarduc.ExportCSVService, refund *dashboarduc.RefundService, orgs app.OrganizationRepository) *DashboardHandler {
-	return &DashboardHandler{participants: participants, export: export, refund: refund, orgs: orgs}
+func NewDashboardHandler(participants *dashboarduc.ParticipantsService, export *dashboarduc.ExportCSVService, orgs app.OrganizationRepository) *DashboardHandler {
+	return &DashboardHandler{participants: participants, export: export, orgs: orgs}
 }
 
 func (h *DashboardHandler) orgID(c *fiber.Ctx) (uuid.UUID, error) {
@@ -76,7 +73,6 @@ func (h *DashboardHandler) Participants(c *fiber.Ctx) error {
 			Email:          r.Email,
 			Phone:          r.Phone,
 			Amount:         int64(r.Amount),
-			RefundedAmount: int64(r.RefundedAmount),
 			IsAnonymous:    r.IsAnonymous,
 			Status:         string(r.Status),
 			CreatedAt:      r.CreatedAt,
@@ -105,35 +101,4 @@ func (h *DashboardHandler) ExportCSV(c *fiber.Ctx) error {
 	c.Set("Content-Type", "text/csv; charset=utf-8")
 	c.Set("Content-Disposition", `attachment; filename="participantes.csv"`)
 	return c.Send(buf.Bytes())
-}
-
-func (h *DashboardHandler) Refund(c *fiber.Ctx) error {
-	orgID, err := h.orgID(c)
-	if err != nil {
-		return dto.WriteError(c, err)
-	}
-	campaignID, err := uuid.Parse(c.Params("id"))
-	if err != nil {
-		return dto.WriteError(c, dashboarduc.ErrCampaignNotFound)
-	}
-	contributionID, err := uuid.Parse(c.Params("contributionId"))
-	if err != nil {
-		return dto.WriteError(c, dashboarduc.ErrContributionNotFound)
-	}
-
-	var req dto.RefundRequest
-	if err := c.BodyParser(&req); err != nil || req.Amount <= 0 {
-		return dto.WriteError(c, apperr.New("validation_failed", "El monto a reembolsar debe ser mayor a cero"))
-	}
-
-	p, err := h.refund.Refund(c.Context(), campaignID, contributionID, orgID, money.CLP(req.Amount), req.Reason)
-	if err != nil {
-		return dto.WriteError(c, err)
-	}
-
-	return c.JSON(dto.RefundResponse{
-		PaymentID: p.ID.String(),
-		Status:    string(p.Status),
-		Amount:    req.Amount,
-	})
 }

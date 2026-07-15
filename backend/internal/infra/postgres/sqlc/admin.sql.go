@@ -216,7 +216,7 @@ SELECT
   (SELECT COUNT(*) FROM contributions WHERE status = 'confirmed')::bigint AS total_contributions,
   (SELECT COALESCE(SUM(raised_gross), 0)::bigint FROM campaign_totals) AS raised_gross,
   (SELECT COALESCE(SUM(raised_net_approx), 0)::bigint FROM campaign_totals) AS raised_net_approx,
-  (SELECT COALESCE(SUM(commission_amount), 0)::bigint FROM payments WHERE status IN ('confirmed', 'partially_refunded')) AS total_commission
+  (SELECT COALESCE(SUM(commission_amount), 0)::bigint FROM payments WHERE status = 'confirmed') AS total_commission
 `
 
 type GetAdminMetricsRow struct {

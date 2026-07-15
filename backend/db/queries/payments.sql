@@ -21,11 +21,3 @@ SELECT * FROM payments WHERE id = $1 FOR UPDATE;
 UPDATE payments SET status = $2, confirmed_at = $3, failed_at = $4, updated_at = now()
 WHERE id = $1
 RETURNING *;
-
--- name: UpdatePaymentStatusOnly :one
--- Para transiciones que no deben tocar confirmed_at/failed_at (reembolsos):
--- UpdatePaymentStatus recibiría esas columnas vacías y las dejaría en NULL,
--- borrando cuándo se confirmó el pago originalmente.
-UPDATE payments SET status = $2, updated_at = now()
-WHERE id = $1
-RETURNING *;

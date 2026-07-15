@@ -226,38 +226,3 @@ func (q *Queries) UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStat
 	)
 	return i, err
 }
-
-const updatePaymentStatusOnly = `-- name: UpdatePaymentStatusOnly :one
-UPDATE payments SET status = $2, updated_at = now()
-WHERE id = $1
-RETURNING id, contribution_id, idempotency_key, provider, provider_ref, status, amount_gross, commission_rate_applied, commission_amount, amount_net, currency, payee_snapshot, confirmed_at, failed_at, created_at, updated_at
-`
-
-type UpdatePaymentStatusOnlyParams struct {
-	ID     uuid.UUID `json:"id"`
-	Status string    `json:"status"`
-}
-
-func (q *Queries) UpdatePaymentStatusOnly(ctx context.Context, arg UpdatePaymentStatusOnlyParams) (Payment, error) {
-	row := q.db.QueryRow(ctx, updatePaymentStatusOnly, arg.ID, arg.Status)
-	var i Payment
-	err := row.Scan(
-		&i.ID,
-		&i.ContributionID,
-		&i.IdempotencyKey,
-		&i.Provider,
-		&i.ProviderRef,
-		&i.Status,
-		&i.AmountGross,
-		&i.CommissionRateApplied,
-		&i.CommissionAmount,
-		&i.AmountNet,
-		&i.Currency,
-		&i.PayeeSnapshot,
-		&i.ConfirmedAt,
-		&i.FailedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}

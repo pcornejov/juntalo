@@ -110,7 +110,7 @@ func TestParticipantsService_FiltersBySearchAndStatus(t *testing.T) {
 	}}
 	participants := &fakeParticipantRepo{rows: []app.ParticipantRow{
 		{FullName: "Zoe Findable", Status: contribution.StatusConfirmed},
-		{FullName: "Ana Pérez", Status: contribution.StatusRefunded},
+		{FullName: "Ana Pérez", Status: contribution.StatusFailed},
 	}}
 	svc := NewParticipantsService(campaigns, participants)
 
@@ -122,7 +122,7 @@ func TestParticipantsService_FiltersBySearchAndStatus(t *testing.T) {
 		t.Fatalf("expected search to find Zoe Findable, got %+v", got)
 	}
 
-	got, err = svc.List(context.Background(), campaignID, orgID, "", "refunded", 100, 0)
+	got, err = svc.List(context.Background(), campaignID, orgID, "", "failed", 100, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -139,7 +139,7 @@ func TestExportCSVService_WriteCSV(t *testing.T) {
 	participants := &fakeParticipantRepo{rows: []app.ParticipantRow{
 		{
 			FullName: "Ana Pérez", Email: "ana@example.com", Amount: 10_000,
-			RefundedAmount: 2_000, IsAnonymous: false, Status: contribution.StatusConfirmed,
+			IsAnonymous: false, Status: contribution.StatusConfirmed,
 		},
 		{
 			FullName: "Anónimo", Amount: 5_000, IsAnonymous: true, Status: contribution.StatusConfirmed,
@@ -153,10 +153,10 @@ func TestExportCSVService_WriteCSV(t *testing.T) {
 	}
 
 	out := buf.String()
-	if !strings.Contains(out, "fecha,nombre,email,telefono,monto,estado,anonimo,monto_reembolsado") {
+	if !strings.Contains(out, "fecha,nombre,email,telefono,monto,estado,anonimo") {
 		t.Errorf("missing expected header, got: %s", out)
 	}
-	if !strings.Contains(out, "Ana Pérez") || !strings.Contains(out, "10000") || !strings.Contains(out, "2000") {
+	if !strings.Contains(out, "Ana Pérez") || !strings.Contains(out, "10000") {
 		t.Errorf("missing expected row data, got: %s", out)
 	}
 	if !strings.Contains(out, ",si,") {

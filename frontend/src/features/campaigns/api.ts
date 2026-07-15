@@ -152,9 +152,8 @@ export interface Participant {
   email?: string
   phone?: string
   amount: number
-  refunded_amount: number
   is_anonymous: boolean
-  status: 'pending' | 'confirmed' | 'failed' | 'refunded'
+  status: 'pending' | 'confirmed' | 'failed'
   created_at: string
   message?: string
   raffle_number?: number
@@ -175,17 +174,4 @@ export function listParticipants(
   return apiClient.get<{ items: Participant[]; has_more: boolean }>(
     `/campaigns/${campaignId}/contributions?${params.toString()}`,
   )
-}
-
-export interface RefundResult {
-  payment_id: string
-  status: string
-  amount: number
-}
-
-export function refundContribution(campaignId: string, contributionId: string, amount: number, reason?: string) {
-  return apiClient.post<RefundResult>(`/campaigns/${campaignId}/contributions/${contributionId}/refund`, {
-    amount,
-    reason: reason ?? '',
-  })
 }

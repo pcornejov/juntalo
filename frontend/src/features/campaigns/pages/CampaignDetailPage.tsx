@@ -435,7 +435,6 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
         ) : (
           <ParticipantsTable
             items={participants}
-            campaignId={campaign.id}
             search={participantSearch}
             onSearchChange={setParticipantSearch}
             status={participantStatus}

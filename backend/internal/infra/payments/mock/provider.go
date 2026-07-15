@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pcornejov/juntalo/backend/internal/app"
-	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 	"github.com/pcornejov/juntalo/backend/internal/domain/payment"
 )
 
@@ -78,12 +77,6 @@ func (p *Provider) GetIntent(_ context.Context, providerRef string) (app.Payment
 	// El mock no mantiene estado propio más allá del ref; la fuente de verdad
 	// de estado es siempre la tabla payments, actualizada vía webhook.
 	return app.PaymentIntent{ProviderRef: providerRef, Status: payment.StatusPending}, nil
-}
-
-// Refund simula un reembolso exitoso e instantáneo — no hay dinero real
-// involucrado, así que no hay nada que pueda fallar del lado del proveedor.
-func (p *Provider) Refund(_ context.Context, providerRef string, amount money.CLP) (app.RefundResult, error) {
-	return app.RefundResult{ProviderRef: "mock_refund_" + uuid.New().String(), Amount: amount}, nil
 }
 
 // confirmAsync simula la confirmación asíncrona de una pasarela real: espera

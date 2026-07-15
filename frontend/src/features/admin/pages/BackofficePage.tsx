@@ -28,8 +28,6 @@ const paymentStatusTone: Record<string, 'neutral' | 'success' | 'warning' | 'dan
   pending: 'warning',
   confirmed: 'success',
   failed: 'danger',
-  refunded: 'neutral',
-  partially_refunded: 'neutral',
 }
 
 function MetricCard({

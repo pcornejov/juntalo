@@ -50,8 +50,8 @@ LIMIT $1 OFFSET $2;
 
 -- name: GetAdminMetrics :one
 -- Métricas globales para el dashboard del backoffice — raised_gross/
--- raised_net_approx se agregan sobre campaign_totals (que ya descuenta
--- reembolsos), no sobre payments directo, para no duplicar esa lógica.
+-- raised_net_approx se agregan sobre campaign_totals, no sobre payments
+-- directo, para no duplicar esa lógica.
 SELECT
   (SELECT COUNT(*) FROM users)::bigint AS total_users,
   (SELECT COUNT(*) FROM campaigns WHERE deleted_at IS NULL)::bigint AS total_campaigns,
@@ -61,4 +61,4 @@ SELECT
   (SELECT COUNT(*) FROM contributions WHERE status = 'confirmed')::bigint AS total_contributions,
   (SELECT COALESCE(SUM(raised_gross), 0)::bigint FROM campaign_totals) AS raised_gross,
   (SELECT COALESCE(SUM(raised_net_approx), 0)::bigint FROM campaign_totals) AS raised_net_approx,
-  (SELECT COALESCE(SUM(commission_amount), 0)::bigint FROM payments WHERE status IN ('confirmed', 'partially_refunded')) AS total_commission;
+  (SELECT COALESCE(SUM(commission_amount), 0)::bigint FROM payments WHERE status = 'confirmed') AS total_commission;

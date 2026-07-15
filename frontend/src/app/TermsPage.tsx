@@ -38,19 +38,9 @@ export function TermsPage() {
         <h2 className="font-medium">Transferencias al organizador</h2>
         <p className="text-sm text-text-secondary">
           Los fondos recaudados se transfieren a la cuenta del organizador en cortes periódicos
-          (aproximadamente cada 15 días), descontando la comisión de Juntalo. Los aportes
-          confirmados en los últimos días antes de cada corte no se incluyen en esa transferencia
-          — quedan para el corte siguiente, como margen para resolver eventuales reembolsos antes
-          de que el dinero salga de la plataforma.
-        </p>
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="font-medium">Reembolsos</h2>
-        <p className="text-sm text-text-secondary">
-          El organizador puede reembolsar un aporte, total o parcialmente, desde su panel mientras
-          los fondos correspondientes sigan en la plataforma. Una vez transferidos al organizador,
-          cualquier reembolso debe coordinarse directamente entre el organizador y el aportante.
+          (aproximadamente cada 15 días), descontando la comisión de Juntalo. Los aportes se
+          consideran definitivos al confirmarse el pago — Juntalo es una plataforma para aportar a
+          causas, no gestiona reembolsos.
         </p>
       </section>
 

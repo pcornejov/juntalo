@@ -27,11 +27,6 @@ var (
 // organización con 5000% de comisión.
 const maxCommissionRate = 0.5
 
-// payoutHoldDays es el mismo colchón documentado en /bases: los aportes
-// confirmados en los últimos 5 días no cuentan como "pendiente de
-// liquidar" todavía, para dejar margen a un reembolso antes de transferir.
-const payoutHoldDays = 5
-
 type Service struct {
 	repo      app.AdminRepository
 	campaigns app.CampaignRepository
@@ -96,7 +91,7 @@ func (s *Service) UpdateOrgCommissionRate(ctx context.Context, orgID uuid.UUID, 
 // liquidar todavía — la vista central del backoffice para saber a quién y
 // cuánto transferir manualmente.
 func (s *Service) ListPendingPayouts(ctx context.Context, limit, offset int32) ([]app.PendingPayoutRow, error) {
-	return s.payouts.ListPending(ctx, payoutHoldDays, limit, offset)
+	return s.payouts.ListPending(ctx, limit, offset)
 }
 
 // CreatePayout registra una transferencia manual ya hecha por el operador.
@@ -112,7 +107,7 @@ func (s *Service) CreatePayout(ctx context.Context, orgID uuid.UUID, amount mone
 	// ListPending no filtra por organización — se busca la fila puntual
 	// entre las pendientes (a esta escala, decenas de organizaciones, es
 	// más simple que sumar un endpoint dedicado por-org).
-	all, err := s.payouts.ListPending(ctx, payoutHoldDays, 10_000, 0)
+	all, err := s.payouts.ListPending(ctx, 10_000, 0)
 	if err != nil {
 		return app.PayoutRecord{}, err
 	}

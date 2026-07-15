@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/pcornejov/juntalo/backend/internal/app"
-	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 	"github.com/pcornejov/juntalo/backend/internal/domain/payment"
 )
 
@@ -100,37 +99,5 @@ func TestProvider_Commit_HTTPError(t *testing.T) {
 	}
 	if status != payment.StatusFailed {
 		t.Errorf("got status %s, want failed on error", status)
-	}
-}
-
-func TestProvider_Refund_Success(t *testing.T) {
-	responseCode := 0
-	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
-		_ = json.NewEncoder(w).Encode(refundResponse{Type: "REVERSED", ResponseCode: &responseCode, AuthorizationCode: "auth123"})
-	})
-
-	result, err := p.Refund(context.Background(), "tok_abc", money.CLP(500))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if result.Amount != money.CLP(500) {
-		t.Errorf("got amount %d, want 500", result.Amount)
-	}
-	if result.ProviderRef != "auth123" {
-		t.Errorf("got provider ref %q", result.ProviderRef)
-	}
-}
-
-func TestProvider_Refund_Rejected(t *testing.T) {
-	responseCode := -1
-	p := newTestProvider(t, func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(refundResponse{Type: "NULLIFIED", ResponseCode: &responseCode})
-	})
-
-	if _, err := p.Refund(context.Background(), "tok_abc", money.CLP(500)); err == nil {
-		t.Fatal("expected an error for a rejected refund")
 	}
 }
