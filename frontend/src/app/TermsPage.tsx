@@ -14,9 +14,13 @@ export function TermsPage() {
       <section className="space-y-2">
         <h2 className="font-medium">¿Cómo funciona Juntalo?</h2>
         <p className="text-sm text-text-secondary">
-          Juntalo es una plataforma de software: no organiza las campañas ni administra los
-          fondos recaudados. El organizador de cada campaña es responsable de su contenido y del
-          uso del dinero que recibe.
+          Juntalo es una plataforma de software: no organiza las campañas, y el organizador de
+          cada una es responsable de su contenido y del uso del dinero que recibe. En cuanto al
+          dinero: los aportes se procesan a través de Webpay hacia una cuenta operada por Juntalo,
+          que retiene los fondos temporalmente y los transfiere al organizador en cortes
+          periódicos, descontando la comisión (ver detalle abajo). Juntalo no es dueño de esos
+          fondos ni decide su destino final — solo los custodia brevemente como parte del
+          procesamiento del pago.
         </p>
       </section>
 

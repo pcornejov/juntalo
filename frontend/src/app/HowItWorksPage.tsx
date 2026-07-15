@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     q: '¿Quién administra el dinero recaudado?',
-    a: 'Juntalo es una plataforma de software: no organiza las campañas ni administra los fondos. El organizador es responsable del contenido de su campaña y del uso de lo recaudado.',
+    a: 'Los aportes se procesan por Webpay hacia una cuenta operada por Juntalo, que los retiene brevemente antes de transferirlos al organizador en cortes periódicos (aprox. cada 15 días), descontando la comisión. Juntalo no organiza las campañas ni decide el uso de lo recaudado — eso es responsabilidad del organizador — pero sí custodia el dinero durante ese período de transferencia. Más detalle en las bases del sitio.',
   },
   {
     q: '¿Necesito cuenta para aportar?',

@@ -4,9 +4,14 @@ export function Footer() {
   return (
     <footer className="border-t border-border-default p-4 text-center text-xs text-text-secondary">
       <p>
-        Juntalo es una plataforma de software. No organiza ni administra las campañas publicadas
-        por sus usuarios, quienes son responsables de su contenido y del uso de los fondos
-        recaudados.
+        Juntalo no organiza las campañas publicadas por sus usuarios: cada organizador es
+        responsable de su contenido y del uso de lo recaudado. Los aportes se procesan a través de
+        Webpay y Juntalo los retiene temporalmente antes de transferirlos al organizador en cortes
+        periódicos, descontando su comisión. Más detalles en{' '}
+        <Link to="/bases" className="underline">
+          bases del sitio
+        </Link>
+        .
       </p>
       <p className="mt-2 flex items-center justify-center gap-3">
         <Link to="/explorar" className="underline">
