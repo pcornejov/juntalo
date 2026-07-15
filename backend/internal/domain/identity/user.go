@@ -22,6 +22,13 @@ type Organization struct {
 	Slug           string
 	Kind           string
 	CommissionRate float64
+	// Datos de transferencia para la liquidación manual — vacíos hasta que
+	// el organizador los completa desde su panel.
+	Rut                 string
+	PayoutBank          string
+	PayoutAccountType   string
+	PayoutAccountNumber string
+	PayoutHolderName    string
 }
 
 type RefreshToken struct {

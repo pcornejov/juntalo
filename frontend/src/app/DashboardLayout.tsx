@@ -1,5 +1,5 @@
 import { Link, Outlet } from 'react-router-dom'
-import { LogOut, ShieldCheck } from 'lucide-react'
+import { Landmark, LogOut, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../features/auth/hooks/useAuth'
 import { VerifyEmailBanner } from '../features/auth/components/VerifyEmailBanner'
 import { Button, ThemeToggle } from '../shared/ui'
@@ -17,6 +17,13 @@ export function DashboardLayout() {
           <p className="text-sm text-text-secondary">{organization?.name}</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard/payout"
+            className="flex items-center gap-1.5 text-sm font-medium text-text-secondary hover:text-text-primary"
+          >
+            <Landmark className="h-3.5 w-3.5" strokeWidth={1.75} />
+            Datos de transferencia
+          </Link>
           {user?.is_admin && (
             <Link
               to="/dashboard/backoffice"

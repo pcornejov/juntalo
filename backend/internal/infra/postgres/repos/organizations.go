@@ -7,8 +7,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/pcornejov/juntalo/backend/internal/app"
 	"github.com/pcornejov/juntalo/backend/internal/domain/identity"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/sqlc"
 )
@@ -68,6 +70,21 @@ func (r *OrganizationRepo) GetOwnerInfo(ctx context.Context, id uuid.UUID) (full
 		return "", false, fmt.Errorf("get organization owner: %w", err)
 	}
 	return row.FullName, row.EmailVerifiedAt.Valid, nil
+}
+
+func (r *OrganizationRepo) UpdatePayoutInfo(ctx context.Context, id uuid.UUID, in app.UpdatePayoutInfoInput) (identity.Organization, error) {
+	o, err := r.q.UpdateOrganizationPayoutInfo(ctx, sqlc.UpdateOrganizationPayoutInfoParams{
+		ID:                  id,
+		Rut:                 pgtype.Text{String: in.Rut, Valid: in.Rut != ""},
+		PayoutBank:          pgtype.Text{String: in.PayoutBank, Valid: in.PayoutBank != ""},
+		PayoutAccountType:   pgtype.Text{String: in.PayoutAccountType, Valid: in.PayoutAccountType != ""},
+		PayoutAccountNumber: pgtype.Text{String: in.PayoutAccountNumber, Valid: in.PayoutAccountNumber != ""},
+		PayoutHolderName:    pgtype.Text{String: in.PayoutHolderName, Valid: in.PayoutHolderName != ""},
+	})
+	if err != nil {
+		return identity.Organization{}, fmt.Errorf("update organization payout info: %w", err)
+	}
+	return mapOrganization(o), nil
 }
 
 func (r *OrganizationRepo) UpdateCommissionRate(ctx context.Context, id uuid.UUID, rate float64) (identity.Organization, bool, error) {

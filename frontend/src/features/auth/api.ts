@@ -13,6 +13,11 @@ export interface Organization {
   name: string
   slug: string
   kind: string
+  rut?: string
+  payout_bank?: string
+  payout_account_type?: string
+  payout_account_number?: string
+  payout_holder_name?: string
 }
 
 export interface AuthResponse {

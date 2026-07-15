@@ -88,6 +88,10 @@ func (f *fakeOrgRepo) UpdateCommissionRate(context.Context, uuid.UUID, float64) 
 	return identity.Organization{}, false, nil
 }
 
+func (f *fakeOrgRepo) UpdatePayoutInfo(context.Context, uuid.UUID, app.UpdatePayoutInfoInput) (identity.Organization, error) {
+	return identity.Organization{}, nil
+}
+
 func (f *fakeOrgRepo) GetBySlug(context.Context, string) (identity.Organization, bool, error) {
 	return identity.Organization{}, false, nil
 }

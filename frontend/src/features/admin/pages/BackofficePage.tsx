@@ -8,11 +8,13 @@ import {
   useAdminPayments,
   useDeleteAdminCampaign,
   useUpdateOrgCommissionRate,
+  usePendingPayouts,
+  useCreatePayout,
 } from '../hooks/useAdmin'
 import { formatCLP } from '../../../shared/lib/clp'
 import { typeLabels } from '../../campaigns/typeMeta'
 import { Badge, Button, Card, Input } from '../../../shared/ui'
-import type { AdminCampaign, AdminPayment, AdminUser } from '../api'
+import type { AdminCampaign, AdminPayment, AdminUser, PendingPayout } from '../api'
 
 const campaignStatusTone: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = {
   draft: 'neutral',
@@ -238,10 +240,126 @@ function PaymentsTable({ items }: { items: AdminPayment[] }) {
   )
 }
 
+// PayoutForm: registra una transferencia manual ya hecha por el operador —
+// no dispara ningún movimiento de dinero real, solo deja constancia para
+// que ListPendingPayouts no la vuelva a contar como pendiente.
+function PayoutForm({ payout, onDone }: { payout: PendingPayout; onDone: () => void }) {
+  const [amount, setAmount] = useState(String(payout.pending_amount))
+  const [note, setNote] = useState('')
+  const createPayout = useCreatePayout()
+
+  function submit() {
+    const parsed = Number(amount)
+    if (!parsed || parsed <= 0 || parsed > payout.pending_amount) return
+    createPayout.mutate(
+      { orgId: payout.organization_id, amount: parsed, note: note || undefined },
+      { onSuccess: onDone },
+    )
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 py-2">
+      <Input
+        type="number"
+        min={1}
+        max={payout.pending_amount}
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        className="w-32"
+        aria-label="Monto transferido"
+      />
+      <Input
+        type="text"
+        placeholder="Nota (opcional)"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        className="w-48"
+      />
+      <Button onClick={submit} disabled={createPayout.isPending}>
+        {createPayout.isPending ? 'Guardando…' : 'Confirmar transferencia'}
+      </Button>
+      <Button variant="secondary" onClick={onDone} disabled={createPayout.isPending}>
+        Cancelar
+      </Button>
+      {createPayout.isError && (
+        <span className="text-xs text-danger">No se pudo registrar la transferencia.</span>
+      )}
+    </div>
+  )
+}
+
+const accountTypeLabels: Record<string, string> = {
+  corriente: 'Cuenta corriente',
+  vista: 'Cuenta vista',
+  ahorro: 'Cuenta de ahorro',
+  rut: 'Cuenta RUT',
+}
+
+function PendingPayoutsTable({ items }: { items: PendingPayout[] }) {
+  const [paying, setPaying] = useState<string | null>(null)
+
+  if (items.length === 0) {
+    return <p className="text-sm text-text-secondary">No hay liquidaciones pendientes.</p>
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-border-default text-text-secondary">
+            <th className="py-2 pr-4">Organización</th>
+            <th className="py-2 pr-4">Datos bancarios</th>
+            <th className="py-2 pr-4">Pendiente</th>
+            <th className="py-2 pr-4" />
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((p) => (
+            <tr key={p.organization_id} className="border-b border-border-default last:border-0">
+              {paying === p.organization_id ? (
+                <td colSpan={4} className="px-2">
+                  <PayoutForm payout={p} onDone={() => setPaying(null)} />
+                </td>
+              ) : (
+                <>
+                  <td className="py-2 pr-4">{p.organization_name}</td>
+                  <td className="py-2 pr-4 text-text-secondary">
+                    {p.payout_bank ? (
+                      <>
+                        {p.payout_bank} — {accountTypeLabels[p.payout_account_type] ?? p.payout_account_type}
+                        <br />
+                        {p.payout_account_number} · {p.payout_holder_name} · {p.rut}
+                      </>
+                    ) : (
+                      <span className="text-danger">Sin datos bancarios cargados</span>
+                    )}
+                  </td>
+                  <td className="py-2 pr-4 tabular-nums">{formatCLP(p.pending_amount)}</td>
+                  <td className="py-2 pr-4 text-right">
+                    {p.payout_bank && (
+                      <button
+                        className="text-xs font-medium text-brand-hover hover:underline"
+                        onClick={() => setPaying(p.organization_id)}
+                      >
+                        Marcar como pagado
+                      </button>
+                    )}
+                  </td>
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 const tabs = [
   { id: 'users', label: 'Usuarios' },
   { id: 'campaigns', label: 'Campañas' },
   { id: 'payments', label: 'Pagos' },
+  { id: 'payouts', label: 'Liquidaciones' },
 ] as const
 
 type TabID = (typeof tabs)[number]['id']
@@ -257,8 +375,10 @@ export function BackofficePage() {
   const users = useAdminUsers()
   const campaigns = useAdminCampaigns()
   const payments = useAdminPayments()
+  const payouts = usePendingPayouts()
 
-  const active = tab === 'users' ? users : tab === 'campaigns' ? campaigns : payments
+  const active =
+    tab === 'users' ? users : tab === 'campaigns' ? campaigns : tab === 'payments' ? payments : payouts
 
   return (
     <div className="space-y-6">
@@ -305,6 +425,7 @@ export function BackofficePage() {
             {tab === 'users' && <UsersTable items={users.items} />}
             {tab === 'campaigns' && <CampaignsTable items={campaigns.items} />}
             {tab === 'payments' && <PaymentsTable items={payments.items} />}
+            {tab === 'payouts' && <PendingPayoutsTable items={payouts.items} />}
           </>
         )}
         {active.hasNextPage && (

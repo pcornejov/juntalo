@@ -24,6 +24,7 @@ import (
 	contributionsuc "github.com/pcornejov/juntalo/backend/internal/app/contributions"
 	dashboarduc "github.com/pcornejov/juntalo/backend/internal/app/dashboard"
 	filesuc "github.com/pcornejov/juntalo/backend/internal/app/files"
+	organizationsuc "github.com/pcornejov/juntalo/backend/internal/app/organizations"
 	infraauth "github.com/pcornejov/juntalo/backend/internal/infra/auth"
 	"github.com/pcornejov/juntalo/backend/internal/infra/captcha"
 	"github.com/pcornejov/juntalo/backend/internal/infra/email"
@@ -183,6 +184,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	passwordResetRepo := repos.NewPasswordResetRepo(db)
 	emailVerificationRepo := repos.NewEmailVerificationRepo(db)
 	adminRepo := repos.NewAdminRepo(db)
+	payoutRepo := repos.NewPayoutRepo(db)
 
 	adminEmails := splitAdminEmails(cfg.AdminEmails)
 
@@ -212,7 +214,8 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	participantsSvc := dashboarduc.NewParticipantsService(campaignRepo, participantRepo)
 	exportSvc := dashboarduc.NewExportCSVService(campaignRepo, participantRepo)
 	refundSvc := dashboarduc.NewRefundService(campaignRepo, contributionRepo, paymentRepo, paymentProvider)
-	adminSvc := adminuc.NewService(adminRepo, campaignRepo, orgRepo)
+	adminSvc := adminuc.NewService(adminRepo, campaignRepo, orgRepo, payoutRepo)
+	orgProfileSvc := organizationsuc.NewService(orgRepo)
 
 	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks, adminEmails)
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, cloneSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
@@ -222,6 +225,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	contributionHandler := handlers.NewContributionHandler(startSvc, statusSvc)
 	webhookHandler := handlers.NewWebhookHandler(confirmSvc, cfg.MockWebhookSecret)
 	adminHandler := handlers.NewAdminHandler(adminSvc)
+	organizationHandler := handlers.NewOrganizationHandler(orgProfileSvc, orgRepo)
 
 	v1 := fiberApp.Group("/api/v1")
 	mountAuthRoutes(v1, authHandler, signer)
@@ -231,6 +235,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	mountWebhookRoutes(v1, webhookHandler)
 	mountMetaRoutes(v1)
 	mountAdminRoutes(v1, adminHandler, signer, userRepo, adminEmails)
+	mountOrganizationRoutes(v1, organizationHandler, signer)
 	if webpayProvider != nil {
 		webpayHandler := handlers.NewWebpayHandler(webpayProvider, confirmSvc, contributionRepo, campaignRepo, cfg.FrontendURL)
 		mountWebpayRoutes(v1, webpayHandler)

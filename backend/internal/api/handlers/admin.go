@@ -5,7 +5,9 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/pcornejov/juntalo/backend/internal/api/dto"
+	"github.com/pcornejov/juntalo/backend/internal/api/middleware"
 	adminuc "github.com/pcornejov/juntalo/backend/internal/app/admin"
+	"github.com/pcornejov/juntalo/backend/internal/domain/money"
 )
 
 const (
@@ -142,6 +144,64 @@ func (h *AdminHandler) DeleteCampaign(c *fiber.Ctx) error {
 		return dto.WriteError(c, err)
 	}
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// PendingPayouts implements GET /admin/payouts/pending: qué organizaciones
+// tienen plata confirmada sin liquidar todavía.
+func (h *AdminHandler) PendingPayouts(c *fiber.Ctx) error {
+	limit, offset := h.adminListParams(c)
+	items, err := h.svc.ListPendingPayouts(c.Context(), limit+1, offset)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	hasMore := int32(len(items)) > limit
+	if hasMore {
+		items = items[:limit]
+	}
+	out := make([]dto.PendingPayoutResponse, len(items))
+	for i, p := range items {
+		out[i] = dto.PendingPayoutResponse{
+			OrganizationID:      p.OrganizationID.String(),
+			OrganizationName:    p.OrganizationName,
+			Rut:                 p.Rut,
+			PayoutBank:          p.PayoutBank,
+			PayoutAccountType:   p.PayoutAccountType,
+			PayoutAccountNumber: p.PayoutAccountNumber,
+			PayoutHolderName:    p.PayoutHolderName,
+			EligibleNet:         int64(p.EligibleNet),
+			TotalPaid:           int64(p.TotalPaid),
+			PendingAmount:       int64(p.PendingAmount),
+		}
+	}
+	return c.JSON(dto.PendingPayoutListResponse{Items: out, HasMore: hasMore})
+}
+
+// CreatePayout implements POST /admin/organizations/:id/payouts: deja
+// constancia de una transferencia manual que el operador ya hizo desde su
+// banco — no dispara ningún movimiento de dinero real.
+func (h *AdminHandler) CreatePayout(c *fiber.Ctx) error {
+	orgID, err := uuid.Parse(c.Params("id"))
+	if err != nil {
+		return dto.WriteError(c, adminuc.ErrNotFound)
+	}
+	var req dto.CreatePayoutRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	if err := dto.Validate(req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	record, err := h.svc.CreatePayout(c.Context(), orgID, money.CLP(req.Amount), req.Note, middleware.UserID(c))
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+	return c.Status(fiber.StatusCreated).JSON(dto.PayoutResponse{
+		ID:             record.ID.String(),
+		OrganizationID: record.OrganizationID.String(),
+		Amount:         int64(record.Amount),
+		Note:           record.Note,
+		CreatedAt:      record.CreatedAt,
+	})
 }
 
 func (h *AdminHandler) Payments(c *fiber.Ctx) error {

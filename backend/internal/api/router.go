@@ -96,4 +96,14 @@ func mountAdminRoutes(router fiber.Router, h *handlers.AdminHandler, signer app.
 	admin.Get("/campaigns", h.Campaigns)
 	admin.Delete("/campaigns/:id", h.DeleteCampaign)
 	admin.Get("/payments", h.Payments)
+	admin.Get("/payouts/pending", h.PendingPayouts)
+	admin.Post("/organizations/:id/payouts", h.CreatePayout)
+}
+
+// mountOrganizationRoutes: el organizador administra sus propios datos de
+// transferencia — sin esto, la liquidación manual del backoffice no tiene
+// a dónde transferir.
+func mountOrganizationRoutes(router fiber.Router, h *handlers.OrganizationHandler, signer app.TokenSigner) {
+	orgs := router.Group("/organizations", middleware.RequireAuth(signer))
+	orgs.Patch("/me/payout", h.UpdatePayoutInfo)
 }

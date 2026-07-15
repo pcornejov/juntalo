@@ -22,6 +22,7 @@ import { PublicCampaignPage } from '../features/public-campaign/pages/PublicCamp
 import { BlogIndexPage } from '../features/blog/pages/BlogIndexPage'
 import { BlogArticlePage } from '../features/blog/pages/BlogArticlePage'
 import { BackofficePage } from '../features/admin/pages/BackofficePage'
+import { PayoutSettingsPage } from '../features/organizations/pages/PayoutSettingsPage'
 
 export const router = createBrowserRouter([
   { path: '/', element: <LandingPage /> },
@@ -51,6 +52,7 @@ export const router = createBrowserRouter([
           { index: true, element: <CampaignListPage /> },
           { path: 'campaigns/new', element: <CampaignFormPage /> },
           { path: 'campaigns/:id', element: <CampaignDetailPage /> },
+          { path: 'payout', element: <PayoutSettingsPage /> },
           {
             element: <RequireAdmin />,
             children: [{ path: 'backoffice', element: <BackofficePage /> }],

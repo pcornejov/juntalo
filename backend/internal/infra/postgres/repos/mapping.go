@@ -30,11 +30,16 @@ func mapUser(u sqlc.User) identity.User {
 func mapOrganization(o sqlc.Organization) identity.Organization {
 	rate, _ := o.CommissionRate.Float64Value()
 	return identity.Organization{
-		ID:             o.ID,
-		Name:           o.Name,
-		Slug:           o.Slug,
-		Kind:           o.Kind,
-		CommissionRate: rate.Float64,
+		ID:                  o.ID,
+		Name:                o.Name,
+		Slug:                o.Slug,
+		Kind:                o.Kind,
+		CommissionRate:      rate.Float64,
+		Rut:                 o.Rut.String,
+		PayoutBank:          o.PayoutBank.String,
+		PayoutAccountType:   o.PayoutAccountType.String,
+		PayoutAccountNumber: o.PayoutAccountNumber.String,
+		PayoutHolderName:    o.PayoutHolderName.String,
 	}
 }
 

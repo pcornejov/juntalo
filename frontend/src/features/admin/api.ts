@@ -52,6 +52,19 @@ export interface AdminPayment {
   contributor_name: string
 }
 
+export interface PendingPayout {
+  organization_id: string
+  organization_name: string
+  rut: string
+  payout_bank: string
+  payout_account_type: string
+  payout_account_number: string
+  payout_holder_name: string
+  eligible_net: number
+  total_paid: number
+  pending_amount: number
+}
+
 export const ADMIN_PAGE_SIZE = 20
 
 export function getAdminMetrics() {
@@ -88,4 +101,16 @@ export function listAdminPayments(offset = 0, limit = ADMIN_PAGE_SIZE) {
   return apiClient.get<{ items: AdminPayment[]; has_more: boolean }>(
     `/admin/payments?limit=${limit}&offset=${offset}`,
   )
+}
+
+export function listPendingPayouts(offset = 0, limit = ADMIN_PAGE_SIZE) {
+  return apiClient.get<{ items: PendingPayout[]; has_more: boolean }>(
+    `/admin/payouts/pending?limit=${limit}&offset=${offset}`,
+  )
+}
+
+// createPayout deja constancia de una transferencia manual ya hecha por el
+// operador — no dispara ningún movimiento de dinero real.
+export function createPayout(orgId: string, amount: number, note?: string) {
+  return apiClient.post<{ id: string }>(`/admin/organizations/${orgId}/payouts`, { amount, note })
 }

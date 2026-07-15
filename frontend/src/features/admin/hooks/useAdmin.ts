@@ -62,3 +62,25 @@ export function useAdminPayments() {
   })
   return { ...query, items: query.data?.pages.flatMap((p) => p.items) ?? [] }
 }
+
+export function usePendingPayouts() {
+  const query = useInfiniteQuery({
+    queryKey: ['admin', 'payouts', 'pending'],
+    queryFn: ({ pageParam }) => adminApi.listPendingPayouts(pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.has_more ? allPages.length * adminApi.ADMIN_PAGE_SIZE : undefined,
+  })
+  return { ...query, items: query.data?.pages.flatMap((p) => p.items) ?? [] }
+}
+
+export function useCreatePayout() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ orgId, amount, note }: { orgId: string; amount: number; note?: string }) =>
+      adminApi.createPayout(orgId, amount, note),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'payouts', 'pending'] })
+    },
+  })
+}

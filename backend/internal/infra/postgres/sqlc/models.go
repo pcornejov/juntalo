@@ -160,6 +160,15 @@ type PaymentRefund struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
+type Payout struct {
+	ID             uuid.UUID          `json:"id"`
+	OrganizationID uuid.UUID          `json:"organization_id"`
+	Amount         int64              `json:"amount"`
+	Note           pgtype.Text        `json:"note"`
+	CreatedBy      uuid.UUID          `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
 type RefreshToken struct {
 	ID        uuid.UUID          `json:"id"`
 	UserID    uuid.UUID          `json:"user_id"`

@@ -64,6 +64,37 @@ type AdminPaymentListResponse struct {
 	HasMore bool                   `json:"has_more"`
 }
 
+type PendingPayoutResponse struct {
+	OrganizationID      string `json:"organization_id"`
+	OrganizationName    string `json:"organization_name"`
+	Rut                 string `json:"rut"`
+	PayoutBank          string `json:"payout_bank"`
+	PayoutAccountType   string `json:"payout_account_type"`
+	PayoutAccountNumber string `json:"payout_account_number"`
+	PayoutHolderName    string `json:"payout_holder_name"`
+	EligibleNet         int64  `json:"eligible_net"`
+	TotalPaid           int64  `json:"total_paid"`
+	PendingAmount       int64  `json:"pending_amount"`
+}
+
+type PendingPayoutListResponse struct {
+	Items   []PendingPayoutResponse `json:"items"`
+	HasMore bool                    `json:"has_more"`
+}
+
+type CreatePayoutRequest struct {
+	Amount int64  `json:"amount" validate:"required,gt=0"`
+	Note   string `json:"note"`
+}
+
+type PayoutResponse struct {
+	ID             string    `json:"id"`
+	OrganizationID string    `json:"organization_id"`
+	Amount         int64     `json:"amount"`
+	Note           string    `json:"note,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 type AdminMetricsResponse struct {
 	TotalUsers         int64 `json:"total_users"`
 	TotalCampaigns     int64 `json:"total_campaigns"`

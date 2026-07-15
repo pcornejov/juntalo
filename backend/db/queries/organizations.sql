@@ -28,3 +28,16 @@ LIMIT 1;
 UPDATE organizations SET commission_rate = $2, updated_at = now()
 WHERE id = $1
 RETURNING *;
+
+-- name: UpdateOrganizationPayoutInfo :one
+-- Datos de transferencia que el organizador carga desde su panel — sin
+-- esto, la liquidación manual del backoffice no tiene a dónde transferir.
+UPDATE organizations SET
+  rut = $2,
+  payout_bank = $3,
+  payout_account_type = $4,
+  payout_account_number = $5,
+  payout_holder_name = $6,
+  updated_at = now()
+WHERE id = $1
+RETURNING *;

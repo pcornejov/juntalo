@@ -27,6 +27,9 @@ type Querier interface {
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreatePaymentRefund(ctx context.Context, arg CreatePaymentRefundParams) (PaymentRefund, error)
+	CreatePayout(ctx context.Context, arg CreatePayoutParams) (Payout, error)
+	ListPendingPayouts(ctx context.Context, arg ListPendingPayoutsParams) ([]ListPendingPayoutsRow, error)
+	ListPayoutsByOrg(ctx context.Context, arg ListPayoutsByOrgParams) ([]Payout, error)
 	CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserIdentity(ctx context.Context, arg CreateUserIdentityParams) (UserIdentity, error)
@@ -44,6 +47,7 @@ type Querier interface {
 	GetOrganizationBySlug(ctx context.Context, slug string) (Organization, error)
 	GetOrganizationOwnerByOrgID(ctx context.Context, organizationID uuid.UUID) (GetOrganizationOwnerByOrgIDRow, error)
 	UpdateOrganizationCommissionRate(ctx context.Context, arg UpdateOrganizationCommissionRateParams) (Organization, error)
+	UpdateOrganizationPayoutInfo(ctx context.Context, arg UpdateOrganizationPayoutInfoParams) (Organization, error)
 	GetPasswordIdentityByUserID(ctx context.Context, userID uuid.UUID) (UserIdentity, error)
 	GetPaymentByContributionID(ctx context.Context, contributionID uuid.UUID) (Payment, error)
 	GetPaymentByIDForUpdate(ctx context.Context, id uuid.UUID) (Payment, error)

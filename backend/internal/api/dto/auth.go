@@ -36,6 +36,13 @@ type OrganizationResponse struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 	Kind string `json:"kind"`
+	// Datos de transferencia — vacíos hasta que el organizador los completa
+	// desde su panel (Etapa post-MVP: liquidación manual).
+	Rut                 string `json:"rut,omitempty"`
+	PayoutBank          string `json:"payout_bank,omitempty"`
+	PayoutAccountType   string `json:"payout_account_type,omitempty"`
+	PayoutAccountNumber string `json:"payout_account_number,omitempty"`
+	PayoutHolderName    string `json:"payout_holder_name,omitempty"`
 }
 
 type AuthResponse struct {

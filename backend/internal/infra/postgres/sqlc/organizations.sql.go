@@ -149,6 +149,54 @@ func (q *Queries) UpdateOrganizationCommissionRate(ctx context.Context, arg Upda
 	return i, err
 }
 
+const updateOrganizationPayoutInfo = `-- name: UpdateOrganizationPayoutInfo :one
+UPDATE organizations SET
+  rut = $2,
+  payout_bank = $3,
+  payout_account_type = $4,
+  payout_account_number = $5,
+  payout_holder_name = $6,
+  updated_at = now()
+WHERE id = $1
+RETURNING id, name, kind, commission_rate, rut, payout_bank, payout_account_type, payout_account_number, payout_holder_name, created_at, updated_at, slug
+`
+
+type UpdateOrganizationPayoutInfoParams struct {
+	ID                  uuid.UUID   `json:"id"`
+	Rut                 pgtype.Text `json:"rut"`
+	PayoutBank          pgtype.Text `json:"payout_bank"`
+	PayoutAccountType   pgtype.Text `json:"payout_account_type"`
+	PayoutAccountNumber pgtype.Text `json:"payout_account_number"`
+	PayoutHolderName    pgtype.Text `json:"payout_holder_name"`
+}
+
+func (q *Queries) UpdateOrganizationPayoutInfo(ctx context.Context, arg UpdateOrganizationPayoutInfoParams) (Organization, error) {
+	row := q.db.QueryRow(ctx, updateOrganizationPayoutInfo,
+		arg.ID,
+		arg.Rut,
+		arg.PayoutBank,
+		arg.PayoutAccountType,
+		arg.PayoutAccountNumber,
+		arg.PayoutHolderName,
+	)
+	var i Organization
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Kind,
+		&i.CommissionRate,
+		&i.Rut,
+		&i.PayoutBank,
+		&i.PayoutAccountType,
+		&i.PayoutAccountNumber,
+		&i.PayoutHolderName,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Slug,
+	)
+	return i, err
+}
+
 const getOrganizationOwnerByOrgID = `-- name: GetOrganizationOwnerByOrgID :one
 SELECT u.email, u.full_name, u.email_verified_at FROM users u
 JOIN organization_members om ON om.user_id = u.id

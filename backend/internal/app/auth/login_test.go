@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/pcornejov/juntalo/backend/internal/app"
 	"github.com/pcornejov/juntalo/backend/internal/domain/apperr"
 	"github.com/pcornejov/juntalo/backend/internal/domain/identity"
 )
@@ -51,6 +52,10 @@ func (f *fakeOrgRepo) GetByID(_ context.Context, id uuid.UUID) (identity.Organiz
 
 func (f *fakeOrgRepo) UpdateCommissionRate(context.Context, uuid.UUID, float64) (identity.Organization, bool, error) {
 	return identity.Organization{}, false, nil
+}
+
+func (f *fakeOrgRepo) UpdatePayoutInfo(context.Context, uuid.UUID, app.UpdatePayoutInfoInput) (identity.Organization, error) {
+	return identity.Organization{}, nil
 }
 
 func (f *fakeOrgRepo) GetBySlug(context.Context, string) (identity.Organization, bool, error) {

@@ -78,6 +78,64 @@ type OrganizationRepository interface {
 	// GetOwnerEmail — proxy honesto para el badge de verificación de la
 	// página pública (inspirado en Vaki), sin cola de revisión manual.
 	GetOwnerInfo(ctx context.Context, id uuid.UUID) (fullName string, isVerified bool, err error)
+	// UpdatePayoutInfo guarda los datos de transferencia que el organizador
+	// carga desde su panel — sin esto, la liquidación manual no tiene a
+	// dónde transferir.
+	UpdatePayoutInfo(ctx context.Context, id uuid.UUID, in UpdatePayoutInfoInput) (identity.Organization, error)
+}
+
+// UpdatePayoutInfoInput carries the bank details an organizer sets to
+// receive manual payouts.
+type UpdatePayoutInfoInput struct {
+	Rut                 string
+	PayoutBank          string
+	PayoutAccountType   string
+	PayoutAccountNumber string
+	PayoutHolderName    string
+}
+
+// PendingPayoutRow is one row of the backoffice "pendiente de liquidar"
+// list — una organización con plata confirmada (fuera del colchón de
+// reembolso) que todavía no se le ha transferido.
+type PendingPayoutRow struct {
+	OrganizationID      uuid.UUID
+	OrganizationName    string
+	Rut                 string
+	PayoutBank          string
+	PayoutAccountType   string
+	PayoutAccountNumber string
+	PayoutHolderName    string
+	EligibleNet         money.CLP
+	TotalPaid           money.CLP
+	PendingAmount       money.CLP
+}
+
+// CreatePayoutInput carries what PayoutRepository.Create needs to record a
+// manual transfer the operator already made outside the platform.
+type CreatePayoutInput struct {
+	OrganizationID uuid.UUID
+	Amount         money.CLP
+	Note           string
+	CreatedBy      uuid.UUID
+}
+
+type PayoutRecord struct {
+	ID             uuid.UUID
+	OrganizationID uuid.UUID
+	Amount         money.CLP
+	Note           string
+	CreatedBy      uuid.UUID
+	CreatedAt      time.Time
+}
+
+// PayoutRepository backs la liquidación manual del backoffice — no dispara
+// transferencias reales, solo calcula cuánto falta y deja constancia de lo
+// ya pagado (Etapa post-MVP: "quién junta el dinero y cuándo transfiere").
+type PayoutRepository interface {
+	Create(ctx context.Context, in CreatePayoutInput) (PayoutRecord, error)
+	// ListPending devuelve las organizaciones con saldo pendiente, más
+	// antiguo que holdDays (colchón de reembolso documentado en /bases).
+	ListPending(ctx context.Context, holdDays int32, limit, offset int32) ([]PendingPayoutRow, error)
 }
 
 type RefreshTokenRepository interface {
