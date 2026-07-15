@@ -31,6 +31,45 @@ type AuthRepository interface {
 	Register(ctx context.Context, in RegisterInput) (identity.User, identity.Organization, error)
 	GetPasswordHash(ctx context.Context, userID uuid.UUID) (string, error)
 	UpdatePasswordHash(ctx context.Context, userID uuid.UUID, newHash string) error
+
+	// GetUserIDByGoogleSubject busca una identidad ya vinculada a Google por
+	// su "sub" (identificador estable de la cuenta de Google, no el email —
+	// el email puede cambiar, el sub no).
+	GetUserIDByGoogleSubject(ctx context.Context, subject string) (uuid.UUID, bool, error)
+	// LinkGoogleIdentity agrega una identidad de Google a un usuario que ya
+	// existe (creado originalmente con password) — se usa cuando el email de
+	// la cuenta de Google coincide con una cuenta existente y Google confirma
+	// email_verified=true.
+	LinkGoogleIdentity(ctx context.Context, userID uuid.UUID, subject string) error
+	// RegisterGoogle es como Register pero sin password: crea user + identidad
+	// de Google + organización personal + membership en una transacción.
+	RegisterGoogle(ctx context.Context, in RegisterGoogleInput) (identity.User, identity.Organization, error)
+}
+
+// RegisterGoogleInput carries what AuthRepository.RegisterGoogle needs —
+// mismo espíritu que RegisterInput, sin PasswordHash y con Subject en su
+// lugar.
+type RegisterGoogleInput struct {
+	Email    string
+	FullName string
+	Subject  string
+}
+
+// GoogleClaims es lo que Juntalo necesita de un ID token de Google ya
+// verificado — ver infra/googleauth.
+type GoogleClaims struct {
+	Subject       string
+	Email         string
+	EmailVerified bool
+	FullName      string
+}
+
+// GoogleTokenVerifier aísla la verificación criptográfica del ID token que
+// entrega el botón de Google Identity Services — mismo espíritu que
+// CaptchaVerifier: una interfaz estable, la implementación real vive en
+// infra/googleauth.
+type GoogleTokenVerifier interface {
+	Verify(ctx context.Context, idToken string) (GoogleClaims, error)
 }
 
 // PasswordResetRepository backs "olvidé mi contraseña": un token de un solo

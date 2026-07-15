@@ -13,12 +13,35 @@ import (
 )
 
 type fakeAuthRepo struct {
-	emails    map[string]bool
-	passwords map[uuid.UUID]string
+	emails         map[string]bool
+	passwords      map[uuid.UUID]string
+	googleSubjects map[string]uuid.UUID // subject -> userID
 }
 
 func newFakeAuthRepo() *fakeAuthRepo {
-	return &fakeAuthRepo{emails: map[string]bool{}, passwords: map[uuid.UUID]string{}}
+	return &fakeAuthRepo{emails: map[string]bool{}, passwords: map[uuid.UUID]string{}, googleSubjects: map[string]uuid.UUID{}}
+}
+
+func (f *fakeAuthRepo) GetUserIDByGoogleSubject(_ context.Context, subject string) (uuid.UUID, bool, error) {
+	id, ok := f.googleSubjects[subject]
+	return id, ok, nil
+}
+
+func (f *fakeAuthRepo) LinkGoogleIdentity(_ context.Context, userID uuid.UUID, subject string) error {
+	f.googleSubjects[subject] = userID
+	return nil
+}
+
+func (f *fakeAuthRepo) RegisterGoogle(_ context.Context, in app.RegisterGoogleInput) (identity.User, identity.Organization, error) {
+	if f.emails[in.Email] {
+		return identity.User{}, identity.Organization{}, apperr.New("email_already_registered", "ya existe")
+	}
+	f.emails[in.Email] = true
+	userID := uuid.New()
+	f.googleSubjects[in.Subject] = userID
+	user := identity.User{ID: userID, Email: in.Email, FullName: in.FullName, Status: "active"}
+	org := identity.Organization{ID: uuid.New(), Name: "org de " + in.FullName, Kind: "personal"}
+	return user, org, nil
 }
 
 func (f *fakeAuthRepo) Register(_ context.Context, in app.RegisterInput) (identity.User, identity.Organization, error) {

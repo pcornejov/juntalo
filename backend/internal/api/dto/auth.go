@@ -19,6 +19,13 @@ type LoginRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type GoogleLoginRequest struct {
+	// Credential es el ID token (JWT) que entrega el callback de Google
+	// Identity Services en el frontend — se verifica server-side en
+	// infra/googleauth antes de confiar en nada de su contenido.
+	Credential string `json:"credential" validate:"required"`
+}
+
 type UserResponse struct {
 	ID            string `json:"id"`
 	Email         string `json:"email"`

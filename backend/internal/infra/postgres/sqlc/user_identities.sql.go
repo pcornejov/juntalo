@@ -68,3 +68,46 @@ func (q *Queries) UpdatePasswordHash(ctx context.Context, arg UpdatePasswordHash
 	_, err := q.db.Exec(ctx, updatePasswordHash, arg.UserID, arg.PasswordHash)
 	return err
 }
+
+const createGoogleUserIdentity = `-- name: CreateGoogleUserIdentity :one
+INSERT INTO user_identities (user_id, provider, provider_subject)
+VALUES ($1, 'google', $2)
+RETURNING id, user_id, provider, password_hash, provider_subject, created_at
+`
+
+type CreateGoogleUserIdentityParams struct {
+	UserID          uuid.UUID   `json:"user_id"`
+	ProviderSubject pgtype.Text `json:"provider_subject"`
+}
+
+func (q *Queries) CreateGoogleUserIdentity(ctx context.Context, arg CreateGoogleUserIdentityParams) (UserIdentity, error) {
+	row := q.db.QueryRow(ctx, createGoogleUserIdentity, arg.UserID, arg.ProviderSubject)
+	var i UserIdentity
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Provider,
+		&i.PasswordHash,
+		&i.ProviderSubject,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getUserIdentityByGoogleSubject = `-- name: GetUserIdentityByGoogleSubject :one
+SELECT id, user_id, provider, password_hash, provider_subject, created_at FROM user_identities WHERE provider = 'google' AND provider_subject = $1
+`
+
+func (q *Queries) GetUserIdentityByGoogleSubject(ctx context.Context, providerSubject pgtype.Text) (UserIdentity, error) {
+	row := q.db.QueryRow(ctx, getUserIdentityByGoogleSubject, providerSubject)
+	var i UserIdentity
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Provider,
+		&i.PasswordHash,
+		&i.ProviderSubject,
+		&i.CreatedAt,
+	)
+	return i, err
+}

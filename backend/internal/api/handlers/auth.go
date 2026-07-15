@@ -22,6 +22,7 @@ const (
 type AuthHandler struct {
 	register         *authuc.RegisterService
 	login            *authuc.LoginService
+	googleLogin      *authuc.GoogleLoginService
 	refresh          *authuc.RefreshService
 	forgotPassword   *authuc.ForgotPasswordService
 	resetPassword    *authuc.ResetPasswordService
@@ -39,6 +40,7 @@ type AuthHandler struct {
 func NewAuthHandler(
 	register *authuc.RegisterService,
 	login *authuc.LoginService,
+	googleLogin *authuc.GoogleLoginService,
 	refresh *authuc.RefreshService,
 	forgotPassword *authuc.ForgotPasswordService,
 	resetPassword *authuc.ResetPasswordService,
@@ -59,6 +61,7 @@ func NewAuthHandler(
 	return &AuthHandler{
 		register:         register,
 		login:            login,
+		googleLogin:      googleLogin,
 		refresh:          refresh,
 		forgotPassword:   forgotPassword,
 		resetPassword:    resetPassword,
@@ -118,6 +121,26 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	}
 
 	user, org, err := h.login.Login(c.Context(), req.Email, req.Password)
+	if err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	return h.issueSession(c, user, org, fiber.StatusOK)
+}
+
+// GoogleLogin resuelve el ID token que entrega el botón de Google Identity
+// Services — solo se monta la ruta si GOOGLE_CLIENT_ID está configurado (ver
+// router.go), mismo patrón "vacío = off" que Webpay/R2/Resend.
+func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
+	var req dto.GoogleLoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return dto.WriteError(c, err)
+	}
+	if err := dto.Validate(req); err != nil {
+		return dto.WriteError(c, err)
+	}
+
+	user, org, err := h.googleLogin.Login(c.Context(), req.Credential)
 	if err != nil {
 		return dto.WriteError(c, err)
 	}

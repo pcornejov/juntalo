@@ -44,6 +44,10 @@ export function login(input: { email: string; password: string }) {
   return apiClient.post<AuthResponse>('/auth/login', input, { skipAuth: true })
 }
 
+export function loginWithGoogle(credential: string) {
+  return apiClient.post<AuthResponse>('/auth/google', { credential }, { skipAuth: true })
+}
+
 export function refresh() {
   return apiClient.post<{ access_token: string }>('/auth/refresh', undefined, { skipAuth: true })
 }

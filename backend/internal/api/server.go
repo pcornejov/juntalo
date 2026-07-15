@@ -28,6 +28,7 @@ import (
 	infraauth "github.com/pcornejov/juntalo/backend/internal/infra/auth"
 	"github.com/pcornejov/juntalo/backend/internal/infra/captcha"
 	"github.com/pcornejov/juntalo/backend/internal/infra/email"
+	"github.com/pcornejov/juntalo/backend/internal/infra/googleauth"
 	"github.com/pcornejov/juntalo/backend/internal/infra/payments/mock"
 	"github.com/pcornejov/juntalo/backend/internal/infra/payments/webpay"
 	"github.com/pcornejov/juntalo/backend/internal/infra/postgres/repos"
@@ -78,6 +79,9 @@ type Config struct {
 	// Captcha (Cloudflare Turnstile) en el registro. Vacío = sin captcha
 	// (ver infra/config).
 	TurnstileSecretKey string
+
+	// Login con Google. Vacío = ruta /auth/google no se monta (ver infra/config).
+	GoogleClientID string
 }
 
 func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
@@ -168,6 +172,10 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	} else {
 		captchaVerifier = captcha.NoopVerifier{}
 	}
+	var googleVerifier app.GoogleTokenVerifier
+	if cfg.GoogleClientID != "" {
+		googleVerifier = googleauth.NewVerifier(cfg.GoogleClientID)
+	}
 
 	authRepo := repos.NewAuthRepo(db)
 	userRepo := repos.NewUserRepo(db)
@@ -190,6 +198,10 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 
 	registerSvc := authuc.NewRegisterService(authRepo, hasher, captchaVerifier)
 	loginSvc := authuc.NewLoginService(userRepo, authRepo, orgRepo, hasher)
+	var googleLoginSvc *authuc.GoogleLoginService
+	if googleVerifier != nil {
+		googleLoginSvc = authuc.NewGoogleLoginService(authRepo, userRepo, orgRepo, googleVerifier)
+	}
 	refreshSvc := authuc.NewRefreshService(refreshRepo)
 	forgotPasswordSvc := authuc.NewForgotPasswordService(userRepo, passwordResetRepo)
 	resetPasswordSvc := authuc.NewResetPasswordService(passwordResetRepo, authRepo, hasher)
@@ -216,7 +228,7 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 	adminSvc := adminuc.NewService(adminRepo, campaignRepo, orgRepo, payoutRepo)
 	orgProfileSvc := organizationsuc.NewService(orgRepo)
 
-	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks, adminEmails)
+	authHandler := handlers.NewAuthHandler(registerSvc, loginSvc, googleLoginSvc, refreshSvc, forgotPasswordSvc, resetPasswordSvc, emailVerifySvc, userRepo, orgRepo, signer, emailSender, cfg.FrontendURL, cfg.IsProd, cfg.ExposeResetLinks, adminEmails)
 	campaignHandler := handlers.NewCampaignHandler(createSvc, getSvc, listSvc, updateSvc, transitionSvc, deleteSvc, cloneSvc, uploadSvc, orgRepo, fileRepo, campaignImageRepo, storage, auditRepo, cfg.SelfURL)
 	dashboardHandler := handlers.NewDashboardHandler(participantsSvc, exportSvc, orgRepo)
 	fileHandler := handlers.NewFileHandler(uploadSvc, orgRepo)
@@ -228,6 +240,9 @@ func NewServer(db *pgxpool.Pool, cfg Config) *fiber.App {
 
 	v1 := fiberApp.Group("/api/v1")
 	mountAuthRoutes(v1, authHandler, signer)
+	if googleLoginSvc != nil {
+		mountGoogleAuthRoute(v1, authHandler)
+	}
 	mountCampaignRoutes(v1, campaignHandler, dashboardHandler, fileHandler, signer)
 	mountPublicRoutes(fiberApp, v1, publicHandler)
 	mountContributionRoutes(v1, contributionHandler, middleware.ContributeLimiter())

@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -22,6 +23,7 @@ type Querier interface {
 	CreateContributor(ctx context.Context, arg CreateContributorParams) (Contributor, error)
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) error
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
+	CreateGoogleUserIdentity(ctx context.Context, arg CreateGoogleUserIdentityParams) (UserIdentity, error)
 	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (Organization, error)
 	CreateOrganizationMember(ctx context.Context, arg CreateOrganizationMemberParams) error
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) error
@@ -55,6 +57,7 @@ type Querier interface {
 	GetPersonalOrganizationByUserID(ctx context.Context, userID uuid.UUID) (Organization, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
+	GetUserIdentityByGoogleSubject(ctx context.Context, providerSubject pgtype.Text) (UserIdentity, error)
 	GetValidEmailVerificationTokenByHash(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
 	GetValidPasswordResetTokenByHash(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidRefreshTokenByHash(ctx context.Context, tokenHash string) (RefreshToken, error)

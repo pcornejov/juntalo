@@ -17,12 +17,20 @@ func mountAuthRoutes(router fiber.Router, h *handlers.AuthHandler, signer app.To
 	auth.Post("/register", authLimiter, h.Register)
 	auth.Post("/login", authLimiter, h.Login)
 	auth.Post("/refresh", h.Refresh)
+	// /auth/google se monta aparte, solo si GOOGLE_CLIENT_ID está configurado
+	// (ver mountGoogleAuthRoute en server.go).
 	auth.Post("/logout", h.Logout)
 	auth.Post("/forgot-password", authLimiter, h.ForgotPassword)
 	auth.Post("/reset-password", authLimiter, h.ResetPassword)
 	auth.Post("/verify-email", h.VerifyEmail)
 	auth.Post("/resend-verification", middleware.RequireAuth(signer), h.ResendVerification)
 	auth.Get("/me", middleware.RequireAuth(signer), h.Me)
+}
+
+// mountGoogleAuthRoute solo se llama si hay un GOOGLE_CLIENT_ID configurado
+// (ver server.go) — mismo patrón "vacío = off" que mountWebpayRoutes.
+func mountGoogleAuthRoute(router fiber.Router, h *handlers.AuthHandler) {
+	router.Post("/auth/google", middleware.AuthLimiter(), h.GoogleLogin)
 }
 
 func mountCampaignRoutes(router fiber.Router, h *handlers.CampaignHandler, dashH *handlers.DashboardHandler, fileH *handlers.FileHandler, signer app.TokenSigner) {

@@ -56,6 +56,8 @@ var codeStatus = map[string]int{
 	"campaign_image_not_found":   fiber.StatusNotFound,
 	"invalid_reset_token":        fiber.StatusUnprocessableEntity,
 	"invalid_verification_token": fiber.StatusUnprocessableEntity,
+	"invalid_google_token":       fiber.StatusUnauthorized,
+	"google_email_not_verified":  fiber.StatusUnprocessableEntity,
 }
 
 // WriteError maps err to the stable envelope + HTTP status. Unknown errors never

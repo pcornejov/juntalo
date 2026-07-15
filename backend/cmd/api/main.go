@@ -66,6 +66,7 @@ func main() {
 		WebpayEnvironment:  cfg.WebpayEnvironment,
 		AdminEmails:        cfg.AdminEmails,
 		TurnstileSecretKey: cfg.TurnstileSecretKey,
+		GoogleClientID:     cfg.GoogleClientID,
 	})
 
 	log.Printf("juntalo-api listening on :%s (env=%s)", cfg.Port, cfg.Env)

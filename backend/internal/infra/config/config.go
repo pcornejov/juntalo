@@ -69,6 +69,13 @@ type Config struct {
 	// (mismo patrón "vacío = off"). El site key público lo consume el
 	// frontend directo (VITE_TURNSTILE_SITE_KEY), no pasa por acá.
 	TurnstileSecretKey string `envconfig:"TURNSTILE_SECRET_KEY" default:""`
+
+	// Login con Google (Etapa 1: el modelo de datos ya lo contemplaba desde
+	// el día 1 — user_identities.provider incluye 'google'). Vacío = la ruta
+	// /auth/google ni se monta (mismo patrón "vacío = off"). El Client ID no
+	// es un secreto (Google lo espera público en el frontend, VITE_GOOGLE_CLIENT_ID),
+	// pero igual se deja a mano por deploy en vez de commitearlo.
+	GoogleClientID string `envconfig:"GOOGLE_CLIENT_ID" default:""`
 }
 
 func Load() (Config, error) {
