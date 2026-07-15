@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "@fontsource-variable/sora";
 
+/* El toggle de tema setea data-theme en <html> (shared/lib/theme.ts), no
+   depende de prefers-color-scheme — sin este variant, cualquier clase
+   dark: quedaría atada solo a la preferencia del SO e ignoraría el toggle
+   manual. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   /* Display face reserved for headings, big money figures and the primary

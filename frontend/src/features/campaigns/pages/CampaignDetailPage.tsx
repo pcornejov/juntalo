@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Copy, Pencil } from 'lucide-react'
 import {
@@ -236,6 +236,7 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
   // el dominio del backend, no del frontend — necesario cuando ambos están
   // en dominios distintos, como en este deploy de prueba en Render).
   const publicUrl = campaign.public_url
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function handleAddImages(e: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? [])
@@ -385,15 +386,20 @@ function CampaignDetailContent({ campaign }: { campaign: Campaign }) {
           </div>
         )}
         <div>
-          <label className="mb-1 block text-sm text-text-secondary">
+          <span className="mb-1 block text-sm text-text-secondary">
             {campaign.images.length > 0 ? 'Agregar más fotos' : 'Agregar fotos (opcional)'}
-          </label>
+          </span>
           <input
+            ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp"
             multiple
+            className="hidden"
             onChange={handleAddImages}
           />
+          <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+            Elegir fotos
+          </Button>
         </div>
       </Card>
 

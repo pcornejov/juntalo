@@ -109,7 +109,7 @@ export function PayoutSettingsPage() {
           </div>
           {error && <p className="text-sm text-danger">{error}</p>}
           {saved && (
-            <p className="flex items-center gap-1.5 text-sm text-green-600">
+            <p className="flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
               <Check className="h-4 w-4" strokeWidth={2} />
               Datos guardados.
             </p>
